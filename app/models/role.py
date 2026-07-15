@@ -38,12 +38,20 @@ class RoleRepository:
             return False
     
     @staticmethod
-    def update_role(role_id, name, code, description, status):
-        """更新角色"""
+    def update_role(role_id, **kwargs):
+        """更新角色（仅更新提供的字段）"""
+        allowed_fields = {"name", "code", "description", "status"}
+        updates = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
+        if not updates:
+            return False
+        
+        set_clause = ", ".join([f"{k}=?" for k in updates.keys()])
+        values = list(updates.values()) + [role_id]
+        
         with get_connection() as conn:
             conn.execute(
-                "UPDATE roles SET name=?, code=?, description=?, status=?, updated_at=datetime('now', 'localtime') WHERE id=?",
-                (name, code, description, status, role_id)
+                f"UPDATE roles SET {set_clause}, updated_at=datetime('now', 'localtime') WHERE id=?",
+                values
             )
             return True
     

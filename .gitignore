@@ -4,12 +4,12 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 数据库
-*.db
-database/
+# 数据库（当前版本需要上传，取消注释后可忽略）
+# *.db
+# database/
 
-# 文档和开发辅助
-docs/
+# 文档和开发辅助（docs/ 需上传，取消注释后可忽略）
+# docs/
 skills/
 temp/
 test/

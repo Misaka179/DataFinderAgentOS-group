@@ -9,11 +9,12 @@
     color: #fff !important;
     font-size: 20px;
     font-weight: 600;
-    line-height: 60px;
+    line-height: normal;
+    width: 220px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 20px;
+    gap: 6px;
+    padding: 0 10px 0 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -80,6 +81,7 @@
     color: #1e293b;
     margin-bottom: 8px;
     font-weight: 600;
+    line-height: normal;
 }
 .dashboard-header p {
     color: #64748b;
@@ -216,48 +218,84 @@
         </div>
 
         <div class="dashboard-cards">
-            <div class="dashboard-card">
+            <div class="dashboard-card" id="stat-user_count">
                 <div class="card-icon blue">
                     <i class="layui-icon layui-icon-user"></i>
                 </div>
                 <div class="card-info">
-                    <h3>128</h3>
+                    <h3>{{ stats.get('user_count', 0) }}</h3>
                     <p>用户总数</p>
                 </div>
             </div>
-            <div class="dashboard-card">
+            <div class="dashboard-card" id="stat-data_count">
                 <div class="card-icon green">
                     <i class="layui-icon layui-icon-form"></i>
                 </div>
                 <div class="card-info">
-                    <h3>2,456</h3>
-                    <p>数据记录</p>
+                    <h3>{{ stats.get('data_count', 0) }}</h3>
+                    <p>数据记录（数据仓库）</p>
                 </div>
             </div>
-            <div class="dashboard-card">
+            <div class="dashboard-card" id="stat-task_count">
                 <div class="card-icon purple">
                     <i class="layui-icon layui-icon-component"></i>
                 </div>
                 <div class="card-info">
-                    <h3>89</h3>
-                    <p>采集任务</p>
+                    <h3>{{ stats.get('task_count', 0) }}</h3>
+                    <p>采集任务（总计）</p>
                 </div>
             </div>
-            <div class="dashboard-card">
+            <div class="dashboard-card" id="stat-model_count">
                 <div class="card-icon orange">
                     <i class="layui-icon layui-icon-chart-screen"></i>
                 </div>
                 <div class="card-info">
-                    <h3>24</h3>
+                    <h3>{{ stats.get('model_count', 0) }}</h3>
                     <p>智能模型</p>
+                </div>
+            </div>
+            <div class="dashboard-card" id="stat-watch_count">
+                <div class="card-icon blue">
+                    <i class="layui-icon layui-icon-website"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ stats.get('watch_count', 0) }}</h3>
+                    <p>瞭源数量</p>
+                </div>
+            </div>
+            <div class="dashboard-card" id="stat-de_count">
+                <div class="card-icon green">
+                    <i class="layui-icon layui-icon-user"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ stats.get('de_count', 0) }}</h3>
+                    <p>数字员工</p>
+                </div>
+            </div>
+            <div class="dashboard-card" id="stat-today_task_count">
+                <div class="card-icon purple">
+                    <i class="layui-icon layui-icon-time"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ stats.get('today_task_count', 0) }}</h3>
+                    <p>今日采集任务</p>
+                </div>
+            </div>
+            <div class="dashboard-card" id="stat-deep_count">
+                <div class="card-icon orange">
+                    <i class="layui-icon layui-icon-engine"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ stats.get('deep_count', 0) }}</h3>
+                    <p>深度采集数据量</p>
                 </div>
             </div>
         </div>
 
         <div class="dashboard-panel">
-            <h3>系统概览</h3>
+            <h3>系统概览 <span style="font-size:12px;color:#94a3b8;font-weight:normal;" id="refresh-time"></span></h3>
             <blockquote class="layui-elem-quote">
-                当前系统运行正常，所有服务状态良好。数据采集任务每日定时执行，您可以在"数据管理"中查看采集情况。
+                当前系统运行正常，所有服务状态良好。数据采集任务每日定时执行，您可以在各功能模块中查看详情。
             </blockquote>
             <table class="layui-table">
                 <colgroup>
@@ -274,24 +312,34 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>数据库服务</td>
+                        <td>用户系统</td>
                         <td><span class="layui-badge layui-bg-green">正常</span></td>
-                        <td>SQLite 数据库运行正常，连接稳定</td>
+                        <td>共 <strong>{{ stats.get('user_count', 0) }}</strong> 个注册用户</td>
                     </tr>
                     <tr>
-                        <td>数据采集服务</td>
+                        <td>瞭望采集服务</td>
                         <td><span class="layui-badge layui-bg-green">正常</span></td>
-                        <td>今日已完成 24 次数据采集任务</td>
+                        <td>共 <strong>{{ stats.get('watch_count', 0) }}</strong> 个瞭源，今日已采集 <strong>{{ stats.get('today_task_count', 0) }}</strong> 条数据</td>
+                    </tr>
+                    <tr>
+                        <td>数据仓库</td>
+                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td>共 <strong>{{ stats.get('data_count', 0) }}</strong> 条数据记录，其中 <strong>{{ stats.get('deep_count', 0) }}</strong> 条已完成深度采集</td>
                     </tr>
                     <tr>
                         <td>模型引擎服务</td>
                         <td><span class="layui-badge layui-bg-green">正常</span></td>
-                        <td>所有智能模型正常加载</td>
+                        <td>共配置 <strong>{{ stats.get('model_count', 0) }}</strong> 个AI模型</td>
                     </tr>
                     <tr>
-                        <td>系统安全</td>
-                        <td><span class="layui-badge layui-bg-blue">正常</span></td>
-                        <td>安全防护已启用，最新漏洞已修复</td>
+                        <td>数字员工</td>
+                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td>共 <strong>{{ stats.get('de_count', 0) }}</strong> 个数字员工</td>
+                    </tr>
+                    <tr>
+                        <td>深度采集任务</td>
+                        <td><span class="layui-badge layui-bg-blue">运行中</span></td>
+                        <td>累计 <strong>{{ stats.get('task_count', 0) }}</strong> 次采集任务</td>
                     </tr>
                 </tbody>
             </table>
@@ -318,6 +366,45 @@ layui.use(['element', 'layer', 'jquery'], function() {
         var match = document.cookie.match(/(_xsrf=([^;]*)|$)/);
         return match ? decodeURIComponent(match[2]) : '';
     }
+
+    // ========== 实时刷新统计数据 ==========
+    function refreshStats() {
+        $.ajax({
+            url: '/api/dashboard/stats',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    var d = res.data;
+                    $('#stat-user_count h3').text(d.user_count || 0);
+                    $('#stat-data_count h3').text(d.data_count || 0);
+                    $('#stat-task_count h3').text(d.task_count || 0);
+                    $('#stat-model_count h3').text(d.model_count || 0);
+                    $('#stat-watch_count h3').text(d.watch_count || 0);
+                    $('#stat-de_count h3').text(d.de_count || 0);
+                    $('#stat-today_task_count h3').text(d.today_task_count || 0);
+                    $('#stat-deep_count h3').text(d.deep_count || 0);
+                    // 更新系统概览表格
+                    var $tbody = $('.dashboard-panel table tbody');
+                    $tbody.find('tr').eq(0).find('td').eq(2).html('共 <strong>' + (d.user_count||0) + '</strong> 个注册用户');
+                    $tbody.find('tr').eq(1).find('td').eq(2).html('共 <strong>' + (d.watch_count||0) + '</strong> 个瞭源，今日已采集 <strong>' + (d.today_task_count||0) + '</strong> 条数据');
+                    $tbody.find('tr').eq(2).find('td').eq(2).html('共 <strong>' + (d.data_count||0) + '</strong> 条数据记录，其中 <strong>' + (d.deep_count||0) + '</strong> 条已完成深度采集');
+                    $tbody.find('tr').eq(3).find('td').eq(2).html('共配置 <strong>' + (d.model_count||0) + '</strong> 个AI模型');
+                    $tbody.find('tr').eq(4).find('td').eq(2).html('共 <strong>' + (d.de_count||0) + '</strong> 个数字员工');
+                    $tbody.find('tr').eq(5).find('td').eq(2).html('累计 <strong>' + (d.task_count||0) + '</strong> 次采集任务');
+                    // 更新刷新时间
+                    var now = new Date();
+                    $('#refresh-time').text('上次更新: ' + now.toLocaleTimeString('zh-CN'));
+                }
+            }
+        });
+    }
+
+    // 页面加载完成后立即刷新一次，然后每30秒自动刷新
+    $(function() {
+        refreshStats();
+        setInterval(refreshStats, 30000);
+    });
 
     // 个人信息弹窗
     window.showProfile = function() {

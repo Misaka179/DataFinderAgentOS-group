@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-
 /* ===== 标准Admin布局覆写 ===== */
 .layui-layout-admin .layui-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -14,11 +10,12 @@
     color: #fff !important;
     font-size: 20px;
     font-weight: 600;
-    line-height: 60px;
+    line-height: normal;
+    width: 220px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 20px;
+    gap: 6px;
+    padding: 0 10px 0 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

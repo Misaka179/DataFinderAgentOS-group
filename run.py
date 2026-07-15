@@ -12,7 +12,7 @@ from app.controllers.user_chat import (
     UserConversationsApiHandler,
     UserChatApiHandler
 )
-from app.controllers.home import IndexHandler, AdminIndexHandler
+from app.controllers.home import IndexHandler, AdminIndexHandler, DashboardStatsApiHandler
 from app.controllers.admin_user import (
     UserManagementHandler,
     UserListApiHandler,
@@ -24,6 +24,7 @@ from app.controllers.admin_user import (
 from app.controllers.admin_role import (
     RoleManagementHandler,
     RoleListApiHandler,
+    RoleGetApiHandler,
     RoleCreateApiHandler,
     RoleUpdateApiHandler,
     RoleDeleteApiHandler,
@@ -133,6 +134,8 @@ def webapp():
         (r"/admin/login", AdminLoginHandler),
         (r"/admin/logout", AdminLogoutHandler),
         (r"/admin/index", AdminIndexHandler),
+        # 控制台统计数据API（实时刷新用）
+        (r"/api/dashboard/stats", DashboardStatsApiHandler),
         # 用户管理
         (r"/admin/user-management", UserManagementHandler),
         (r"/api/users/list", UserListApiHandler),
@@ -143,6 +146,7 @@ def webapp():
         # 角色管理
         (r"/admin/role-management", RoleManagementHandler),
         (r"/api/roles/list", RoleListApiHandler),
+        (r"/api/roles/get", RoleGetApiHandler),
         (r"/api/roles/create", RoleCreateApiHandler),
         (r"/api/roles/update", RoleUpdateApiHandler),
         (r"/api/roles/delete", RoleDeleteApiHandler),
@@ -303,31 +307,16 @@ if __name__ == '__main__':
                     ("数据仓库", "data_warehouse", "layui-icon-template", "/admin/warehouse-management", 3, watch_center_id, 1)
                 )
                 print("✓ 已添加「数据仓库」功能到瞭望中心")
-            # 确保数据仓库功能已分配角色和菜单（即使非首次启动）
-            warehouse_func = conn.execute("SELECT id FROM functions WHERE code='data_warehouse'").fetchone()
-            if warehouse_func:
-                conn.execute(
-                    "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
-                    (admin_role_id, warehouse_func["id"])
-                )
-                # 检查是否已有菜单记录，没有则添加
-                menu_exists = conn.execute(
-                    "SELECT id FROM menus WHERE role_id=? AND func_id=?",
-                    (admin_role_id, warehouse_func["id"])
-                ).fetchone()
-                if not menu_exists:
-                    max_order = conn.execute(
-                        "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role_id,)
-                    ).fetchone()[0] or 0
-                    conn.execute(
-                        "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
-                        (admin_role_id, warehouse_func["id"], max_order + 1)
-                    )
             
             # 迁移：统一模型引擎图标
             cur = conn.execute("UPDATE functions SET icon='layui-icon-senior' WHERE code='model_engine' AND icon!='layui-icon-senior'")
             if cur.rowcount > 0:
                 print("✓ 已更新「模型引擎」图标")
+            
+            # 迁移：统一智能中枢图标（与瞭望中心区分）
+            cur = conn.execute("UPDATE functions SET icon='layui-icon-bot' WHERE code='intelligent_hub' AND icon!='layui-icon-bot'")
+            if cur.rowcount > 0:
+                print("✓ 已更新「智能中枢」图标")
             
             # 迁移：回填数据仓库中为空的关键词（从瞭望采集数据按标题匹配）
             cur = conn.execute("""
@@ -361,6 +350,26 @@ if __name__ == '__main__':
                         (admin_role_id, func["id"], i + 1)
                     )
                 print(f"✓ 已为系统管理员创建 {len(funcs)} 个默认菜单")
+            
+            # 确保数据仓库功能已分配角色和菜单（即使非首次启动）
+            warehouse_func = conn.execute("SELECT id FROM functions WHERE code='data_warehouse'").fetchone()
+            if warehouse_func:
+                conn.execute(
+                    "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
+                    (admin_role_id, warehouse_func["id"])
+                )
+                menu_exists = conn.execute(
+                    "SELECT id FROM menus WHERE role_id=? AND func_id=?",
+                    (admin_role_id, warehouse_func["id"])
+                ).fetchone()
+                if not menu_exists:
+                    max_order = conn.execute(
+                        "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role_id,)
+                    ).fetchone()[0] or 0
+                    conn.execute(
+                        "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
+                        (admin_role_id, warehouse_func["id"], max_order + 1)
+                    )
         # 创建默认 admin 用户（如果不存在）
         user_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if user_count == 0:
@@ -452,7 +461,7 @@ if __name__ == '__main__':
         if not hub_func:
             conn.execute(
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                ("智能中枢", "intelligent_hub", "layui-icon-engine", "", 4, 0, 1)
+                ("智能中枢", "intelligent_hub", "layui-icon-bot", "", 4, 0, 1)
             )
             print("✓ 已创建「智能中枢」功能")
             hub_func = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()
@@ -603,6 +612,33 @@ if __name__ == '__main__':
                 )
             )
             print("✓ 已迁移天气员工参数（format=%C... → format=j1，支持中文输出）")
+
+        # ============================================================
+        # 通用保障：确保所有已启用的功能都已分配给admin角色并创建菜单
+        # 这解决了增量部署时新功能缺少菜单的问题
+        # ============================================================
+        all_funcs = conn.execute("SELECT id, name FROM functions WHERE status=1 ORDER BY sort_order, id").fetchall()
+        if admin_role:
+            for func in all_funcs:
+                # 确保角色-功能关联存在
+                conn.execute(
+                    "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
+                    (admin_role_id, func["id"])
+                )
+                # 确保菜单存在
+                menu_exists = conn.execute(
+                    "SELECT id FROM menus WHERE role_id=? AND func_id=?",
+                    (admin_role_id, func["id"])
+                ).fetchone()
+                if not menu_exists:
+                    max_order = conn.execute(
+                        "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role_id,)
+                    ).fetchone()[0] or 0
+                    conn.execute(
+                        "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
+                        (admin_role_id, func["id"], max_order + 1)
+                    )
+            print(f"✓ 已完成所有功能的菜单保障检查 (共 {len(all_funcs)} 个功能)")
 
         conn.commit()
         conn.close()

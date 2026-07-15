@@ -382,7 +382,7 @@ def init_db():
             # 一级功能（智能中枢）
             conn.execute(
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                ("智能中枢", "intelligent_hub", "layui-icon-engine", "", 4, 0, 1)
+                ("智能中枢", "intelligent_hub", "layui-icon-bot", "", 4, 0, 1)
             )
             hub_id = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()["id"]
             # 二级功能（智能中枢下）

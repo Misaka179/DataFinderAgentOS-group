@@ -9,11 +9,12 @@
     color: #fff !important;
     font-size: 20px;
     font-weight: 600;
-    line-height: 60px;
+    line-height: normal;
+    width: 220px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 20px;
+    gap: 6px;
+    padding: 0 10px 0 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -329,7 +330,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                             '<td>' + menu.sort_order + '</td>' +
                             '<td>' + menu.func_name + '</td>' +
                             '<td>' + levelHtml + '</td>' +
-                            '<td>' + (menu.func_icon || '-') + '</td>' +
+                            '<td>' + (menu.func_icon ? '<i class="layui-icon ' + menu.func_icon + '" style="font-size:18px;"></i>' : '-') + '</td>' +
                             '<td>' + (menu.func_route || '-') + '</td>' +
                             '<td>' + statusHtml + '</td>' +
                             '<td>' +

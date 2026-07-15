@@ -1,0 +1,48 @@
+Folder PATH listing for volume Data
+Volume serial number is 0000007C 76EC:5782
+D:.
+└───DataFinderAgentOS
+    │   run.py
+    │   
+    ├───app
+    |   |————_init_.py
+    |   |
+    │   ├───controllers
+    │   │       auth.py
+    │   │       base.py
+    │   │       home.py
+    │   │       _init_.py
+    │   │       
+    │   ├───models
+    │   │       db.py
+    │   │       user.py
+    │   │       _init_.py
+    │   │       
+    │   ├───static
+    │   │   ├───css
+    │   │   │       base.css
+    │   │   │       
+    │   │   ├───dist
+    │   │   └───js
+    │   │           base.js
+    │   │           
+    │   └───templates
+    │       │   base.html
+    │       │   index.html
+    │       │   login.html
+    │       │   register.html
+    │       │   
+    │       └───admin
+    │               base.html
+    │               index.html
+    │               login.html
+    │               
+    ├───config
+    ├───database
+    ├───docs
+    │       project_tree.txt
+    │       
+    ├───skills
+    ├───test
+    └───venv
+        

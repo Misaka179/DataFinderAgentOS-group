@@ -80,6 +80,25 @@ class RoleUpdateApiHandler(BaseHandler):
             self.set_status(400)
             self.write(json.dumps({"success": False, "message": "更新失败"}))
 
+
+class RoleGetApiHandler(BaseHandler):
+    """获取单个角色API（用于编辑弹窗回填）"""
+    @tornado.web.authenticated
+    def get(self):
+        role_id = self.get_argument("role_id", "")
+        if not role_id:
+            self.set_status(400)
+            self.write(json.dumps({"success": False, "message": "角色ID不能为空"}))
+            return
+        
+        role = RoleRepository.get_role_by_id(int(role_id))
+        if not role:
+            self.set_status(404)
+            self.write(json.dumps({"success": False, "message": "角色不存在"}))
+            return
+        
+        self.write(json.dumps({"success": True, "data": dict(role)}))
+
 class RoleDeleteApiHandler(BaseHandler):
     """删除角色API"""
     @tornado.web.authenticated

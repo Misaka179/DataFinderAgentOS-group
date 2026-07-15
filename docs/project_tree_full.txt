@@ -1,0 +1,121 @@
+Folder PATH listing for volume Data
+Volume serial number is 00000042 76EC:5782
+D:.
+└───DataFinderAgentOS
+    │   run.py                         项目入口（路由注册 + 服务启动 + 数据库初始化）
+    │   
+    ├───app
+    |   |————_init_.py
+    │   ├───controllers 控制层-controllers包
+    │   │   │   _init_.py
+    │   │   │   auth.py                登录/注销控制器（前台+后台）
+    │   │   │   base.py                基础Handler（会话管理、用户信息、菜单树）
+    │   │   │   home.py                首页渲染 + DashboardStatsApiHandler（控制台实时统计API）
+    │   │   │   admin_user.py          用户管理页面+API（CRUD/分页/搜索/超管保护）
+    │   │   │   admin_role.py          角色管理页面+API（CRUD/功能分配树/编辑弹窗）
+    │   │   │   admin_function.py      功能管理页面+API（父子层级/启用禁用）
+    │   │   │   admin_menu.py          菜单管理页面+API（CRUD/排序/预览/图标展示）
+    │   │   │   admin_profile.py       个人信息/修改密码API
+    │   │   │   admin_source.py        瞭源管理页面+API（CRUD/URL模板/请求头配置）
+    │   │   │   admin_watch.py         瞭望采集页面+API（采集触发/采集数据查询/橱窗展示）
+    │   │   │   admin_warehouse.py     数据仓库页面+API（CRUD/深度采集/批量操作）
+    │   │   │   admin_model.py         模型引擎页面+API（CRUD/分类筛选/SSE对话测试）
+    │   │   │   admin_digital_employee.py  数字员工管理页面+API（CRUD/LLM+API双型/测试）
+    │   │   │   user_chat.py           用户侧对话API（SSE流式代理/意图识别/问数/报表）
+    │   │   │   data_query.py          数据查询API（智能问数/数据库查询/分析）
+    │   │   │
+    │   ├───models 模型层-models包
+    │   │   │   _init_.py
+    │   │   │   db.py                  数据库连接与表初始化（全部表结构 + 初始功能创建）
+    │   │   │   user.py                用户仓库（CRUD + PBKDF2密码哈希/验证）
+    │   │   │   role.py                角色仓库（CRUD + 更新方法）
+    │   │   │   function.py            功能仓库（CRUD）
+    │   │   │   menu.py                菜单仓库（CRUD + 树构建）
+    │   │   │   role_function.py       角色-功能关联仓库
+    │   │   │   watch_source.py        瞭源仓库（CRUD + 活跃查询）
+    │   │   │   watch_data.py          采集数据仓库（分页查询 + 批量入库）
+    │   │   │   data_warehouse.py      数据仓库模型（CRUD + 去重upsert）
+    │   │   │   deep_collect.py        深度采集仓库（任务管理 + 结果持久化）
+    │   │   │   ai_model.py            模型引擎仓库（CRUD + 分类筛选）
+    │   │   │   digital_employee.py    数字员工仓库（CRUD + 双型支持）
+    │   │   │   conversation.py        对话历史仓库（会话管理）
+    │   │   │
+    │   ├───static 资源目录
+    │   │   ├───css
+    │   │   │       base.css
+    │   │   │       chat.css            用户侧对话页面专用样式
+    │   │   │
+    │   │   ├───dist 本地化第三方前端资源
+    │   │   │   ├───bootstrap-5.3.8-dist Bootstrap补充样式库（保留备用）
+    │   │   │   └───layui Layui官方组件包（前后台界面优先使用）
+    │   │   │       ├───css
+    │   │   │       ├───font
+    │   │   │       └───layui.js
+    │   │   │
+    │   │   └───js
+    │   │           base.js
+    │   │           chat.js             用户侧对话页面专用JS
+    │   │           marked.min.js       Markdown渲染库
+    │   │
+    │   └───templates 模板目录
+    │       │   base.html              用户侧-公共基础模板页
+    │       │   index.html             用户侧-登录后主页（重定向到/chat）
+    │       │   login.html             用户侧-登录页（双栏品牌布局）
+    │       │   register.html          用户侧-注册页（含表单验证+XSRF防护）
+    │       │   chat.html              用户侧-智能问数对话主页（五区布局+SSE流式）
+    │       │
+    │       └───admin 后台管理侧目录
+    │               base.html          后台管理侧-公共基础模板（Layui Admin布局）
+    │               login.html         后台管理侧-登录页
+    │               index.html         后台管理侧-首页仪表盘（含实时统计卡片+系统概览）
+    │               user_management.html     用户管理（CRUD/分页/超管保护）
+    │               role_management.html     角色管理（CRUD/功能分配树/编辑弹窗）
+    │               function_management.html 功能管理（父子层级/启用禁用/图标）
+    │               menu_management.html     菜单管理（CRUD/排序/预览/图标展示）
+    │               source_management.html   瞭源管理（采集源CRUD/URL模板配置）
+    │               watch_management.html    瞭望采集（A搜索/B瞭源开关/C橱窗列表）
+    │               warehouse_management.html 数据仓库（列表/深度采集/结果查看/批量操作）
+    │               model_engine.html        模型引擎（网格布局/分类筛选/SSE对话测试）
+    │               digital_employee_management.html 数字员工（CRUD/双型/测试）
+    │               profile_modals.html      个人信息/修改密码弹窗（嵌入模板）
+    │
+    ├───config 系统配置目录（运行配置/安全配置/模型配置）
+    ├───database 数据库存储目录
+    │       finderos.db SQLite单文件数据库（自动创建）
+    ├───data 数据存储目录
+    │   └───dgUser 数字员工MD文件存储目录
+    ├───docs 开发帮助文档目录
+    │       codingprompt.txt        编码提示词工程文件（人类维护）
+    │       constraint.md           全局开发约束文档（AI自动维护）
+    │       project_tree_base.txt   初始项目基础树（代表最初始框架结构）
+    │       project_tree_full.txt   完整项目树（AI自动跟踪维护）
+    │       requirement.md          需求跟踪文档（AI自动维护）
+    │       role.md                 角色体系说明（人类约定，AI不维护）
+    │       template.md             模板规范说明（人类约定，AI不维护）
+    │       test_case.md            测试用例文档（按指令维护）
+    │
+    ├───skills 技能目录（自定义开发技能）
+    ├───test 测试代码目录
+    │       test_user_models.py     用户模型测试脚本
+    │
+    └───venv Python虚拟环境
+
+补充技术栈说明
+- 界面组件栈：Layui优先，Bootstrap补充。
+- AI对话通信栈：SSE（Server-Sent Events）代理到OpenAI兼容API，基于Tornado AsyncHTTPClient。
+- 数据存储：SQLite本地单文件模式（database/finderos.db）。
+- 认证机制：Tornado secure_cookie + PBKDF2-HMAC-SHA256密码哈希 + XSRF防护。
+
+补充业务需求说明
+- 系统定位：某政务智能瞭望与智能问数系统，采用Web B/S结构。
+- 用户侧基础模块：用户登录、用户注册、用户对话、数字员工、@天气、@新闻、@音乐、@电影、@yummy、报表功能、历史记录、报告导出。
+- 管理侧基础模块：用户管理、功能管理、菜单管理、角色管理、瞭望采集、瞭源管理、数据仓库、深度采集、模型引擎、数字员工、数智大屏、舆情大屏。
+
+补充界面与安全要求说明
+- 界面设计要求：响应式设计、沉浸式风格、自适应模式（移动端+PC端）。
+- 安全设计要求：对OWASP Top 10主要漏洞具备应对策略和机制。
+- 配置治理要求：所有配置统一存放在config目录下。
+
+补充路由设计说明
+- 后台路由统一使用 `/admin/` 前缀，对外形式为 `http://xxx/admin/`。
+- 前台路由统一使用根路径体系，对外形式为 `http://xxx/`。
