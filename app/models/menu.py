@@ -15,7 +15,7 @@ class MenuRepository:
                 FROM menus m
                 JOIN functions f ON m.func_id = f.id
                 WHERE m.role_id = ? AND f.status = 1
-                ORDER BY m.sort_order
+                ORDER BY f.parent_id, m.sort_order
                 """,
                 (role_id,)
             ).fetchall()
@@ -27,11 +27,12 @@ class MenuRepository:
         with get_connection() as conn:
             rows = conn.execute(
                 """
-                SELECT m.*, r.name as role_name, f.name as func_name
+                SELECT m.*, r.name as role_name, f.name as func_name,
+                       f.parent_id as func_parent_id
                 FROM menus m
                 JOIN roles r ON m.role_id = r.id
                 JOIN functions f ON m.func_id = f.id
-                ORDER BY m.role_id, m.sort_order
+                ORDER BY m.role_id, f.parent_id, m.sort_order
                 """
             ).fetchall()
             return rows

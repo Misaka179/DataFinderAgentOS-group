@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="stylesheet" href="{{ static_url('css/chat.css') }}">
+{% end %}
+{% block body %}
+<div class="app-container">
+  <!-- 移动端遮罩 -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- 左侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <!-- A区：LOGO + 系统标题 -->
+    <div class="sidebar-header">
+      <button class="mobile-toggle" id="sidebarClose">✕</button>
+      <div class="sidebar-logo">O</div>
+      <div class="sidebar-title">
+        智能瞭望与问数
+        <small>政务数据智能平台</small>
+      </div>
+    </div>
+
+    <!-- B区：模型切换 -->
+    <div class="sidebar-model">
+      <label>模型选择</label>
+      <select id="modelSelect">
+        <option value="">加载中...</option>
+      </select>
+    </div>
+
+    <!-- C区：任务/历史列表 -->
+    <div class="sidebar-tasks">
+      <div class="sidebar-tasks-header">
+        <span>对话历史</span>
+        <div>
+          <button id="clearHistoryBtn" title="清空历史">清空</button>
+          <button id="newChatBtn" title="新建对话">+ 新建</button>
+        </div>
+      </div>
+      <div id="taskList"></div>
+    </div>
+  </aside>
+
+  <!-- 右侧工作区 -->
+  <main class="main-content">
+    <!-- 移动端切换按钮 -->
+    <div style="padding: 8px 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--bg-sidebar);">
+      <button class="mobile-toggle" id="mobileToggle">☰</button>
+      <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-left: 8px;">
+        {% if username %}
+          {{ username }}
+        {% end %}
+      </span>
+      <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+        <a href="/index" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">首页</a>
+        <form method="post" action="/logout" style="margin:0; padding:0; display:inline;" id="logoutForm">
+          {% module xsrf_form_html() %}
+          <button type="submit" style="font-size: 13px; color: var(--text-tertiary); background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer;">退出</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- D区：对话区 -->
+    <div class="chat-area" id="chatContainer">
+      <div class="chat-container" id="messageList">
+        <!-- 欢迎区域 -->
+        <div class="welcome-message" id="welcomeArea">
+          <div class="welcome-icon">💬</div>
+          <h2>您好，有什么可以帮助您的？</h2>
+          <p>我是政务智能问数助手，可以为您提供数据查询、分析、采集等服务。您还可以输入 <kbd style="background:#e8ecf1;padding:2px 6px;border-radius:4px;font-size:12px;">/</kbd> 使用快捷功能，或输入 <kbd style="background:#e8ecf1;padding:2px 6px;border-radius:4px;font-size:12px;">@</kbd> 调用数字员工。</p>
+          <div class="welcome-suggestions" id="suggestionChips">
+            <div class="welcome-suggestion-chip" data-text="请帮我分析数据仓库中的数据概况">📊 数据概况分析</div>
+            <div class="welcome-suggestion-chip" data-text="请生成一份数据统计报表">📈 生成统计报表</div>
+            <div class="welcome-suggestion-chip" data-text="@采集专员 请采集最新的科技新闻">🔍 @采集专员 采集新闻</div>
+            <div class="welcome-suggestion-chip" data-text="今天的瞭望任务有哪些">👁 查看瞭望任务</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 停止生成按钮 -->
+    <div style="text-align: center;">
+      <button class="stop-generate" id="stopBtn">⏹ 停止生成</button>
+    </div>
+
+    <!-- E区：输入区 -->
+    <div class="input-area">
+      <div class="input-container">
+        <!-- 快捷菜单 -->
+        <div class="quick-menu" id="quickMenu">
+          <div id="quickMenuItems"></div>
+        </div>
+
+        <!-- @员工标签 -->
+        <div class="input-tag" id="inputTag" style="display:none;">
+          <span id="employeeTagName"></span>
+          <span class="tag-close" id="tagClose">✕</span>
+        </div>
+
+        <div class="input-row">
+          <textarea id="inputText" rows="1" placeholder="输入消息，输入 / 使用快捷功能，输入 @ 调用数字员工..." autofocus></textarea>
+          <div class="input-actions">
+            <button class="btn-send" id="sendBtn" title="发送 (Enter)">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="{{ static_url('js/chat.js') }}"></script>
+<script>
+// 快捷建议点击
+document.querySelectorAll('.welcome-suggestion-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.getElementById('inputText').value = this.dataset.text;
+    document.getElementById('inputText').focus();
+  });
+});
+</script>
+{% end %}

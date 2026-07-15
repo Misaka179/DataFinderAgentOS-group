@@ -5,6 +5,10 @@ from app.models.user import UserRepository
 
 class LoginHandler(BaseHandler):
     def get(self):
+        # 如果已登录，直接跳转到首页
+        if self.current_user:
+            self.redirect("/index")
+            return
         self.render("login.html",title="登录页面",error=None)
 
     def post(self):
@@ -25,6 +29,14 @@ class LogoutHandler(BaseHandler):
     def post(self):
         self.clear_cookie("username")
         self.redirect("/")
+
+class RegisterHandler(BaseHandler):
+    """用户侧注册页面"""
+    def get(self):
+        if self.current_user:
+            self.redirect("/index")
+            return
+        self.render("register.html", title="用户注册")
 
 class AdminLoginHandler(BaseHandler):
     def get(self):

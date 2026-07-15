@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.layui-layout-admin .layui-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.layui-layout-admin .layui-logo { color: #fff !important; font-size: 20px; font-weight: 600; line-height: 60px; display: flex; align-items: center; gap: 10px; padding-left: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layui-side { background: #1e293b !important; top: 60px; }
+.layui-side-scroll { width: 220px; }
+.layui-nav-tree { background: #1e293b !important; }
+.layui-nav-tree .layui-nav-item a { color: rgba(255,255,255,.75); height: 46px; line-height: 46px; }
+.layui-nav-tree .layui-nav-item a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.layui-nav-tree .layui-nav-item.layui-this a { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; color: #fff; }
+.layui-body { top: 60px; left: 220px; background: #f1f5f9; padding: 20px; overflow-y: auto; }
+.layui-footer { left: 220px; background: #fff; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center; line-height: 50px; }
+.search-bar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.data-table { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.data-table .table-wrap { overflow-x: auto; }
+.data-table table { min-width: 900px; }
+.data-table td:last-child { white-space: nowrap; }
+.data-table .title-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.data-table .title-cell:hover { overflow: visible; white-space: normal; word-break: break-all; background: #fff; position: relative; z-index: 1; }
+.pagination-bar { background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; }
+
+/* 详情弹窗 */
+.detail-view { padding: 0 15px; }
+.detail-view .detail-item { margin-bottom: 15px; }
+.detail-view .detail-label { font-weight: 600; color: #475569; font-size: 13px; margin-bottom: 4px; display: block; }
+.detail-view .detail-value { color: #1e293b; font-size: 14px; line-height: 1.6; word-break: break-all; }
+
+/* 浮动窗占位 */
+.floating-panel-placeholder { display: none; }
+</style>
+
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;"><i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}</a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}"><i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}</a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+    <div class="layui-body">
+        <div class="search-bar">
+            <form class="layui-form">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-md6">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">搜索</label>
+                            <div class="layui-input-block">
+                                <input type="text" id="searchInput" placeholder="标题 / 来源 / 关键词" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md6">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <button class="layui-btn" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                <button class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="data-table">
+            <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
+                <button class="layui-btn layui-btn-sm" id="batchDeleteBtn" disabled style="background:#e74c3c;"><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
+                <button class="layui-btn layui-btn-sm layui-btn-normal" id="batchDeepCollectBtn" disabled><i class="layui-icon layui-icon-export"></i> 批量深度采集</button>
+                <span id="batchInfo" style="color:#999;font-size:12px;"></span>
+            </div>
+            <div class="table-wrap">
+            <table class="layui-table" lay-skin="line">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
+                        <th style="width:50px;">#</th>
+                        <th>标题</th>
+                        <th style="width:100px;">来源</th>
+                        <th style="width:90px;">关键词</th>
+                        <th style="width:80px;">深度采集</th>
+                        <th style="width:140px;">采集时间</th>
+                        <th style="width:220px;white-space:nowrap;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="warehouseBody">
+                    <tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        <div class="pagination-bar"><div id="pagination"></div></div>
+    </div>
+    <div class="layui-footer">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
+</div>
+
+<!-- 详情弹窗 -->
+<div style="display:none;" id="detailModal">
+    <div class="detail-view">
+        <div class="detail-item"><label class="detail-label">标题</label><div class="detail-value" id="detailTitle"></div></div>
+        <div class="detail-item"><label class="detail-label">URL</label><div class="detail-value" id="detailUrl"></div></div>
+        <div class="detail-item"><label class="detail-label">来源</label><div class="detail-value" id="detailSource"></div></div>
+        <div class="detail-item"><label class="detail-label">关键词</label><div class="detail-value" id="detailKeyword"></div></div>
+        <div class="detail-item"><label class="detail-label">深度采集</label><div class="detail-value" id="detailDeep"></div></div>
+        <div class="detail-item"><label class="detail-label">采集时间</label><div class="detail-value" id="detailTime"></div></div>
+        <div class="detail-item"><label class="detail-label">数据ID</label><div class="detail-value" id="detailWarehouseId"></div></div>
+    </div>
+</div>
+
+<!-- 深度采集结果弹窗（tab分栏版） -->
+<div style="display:none;" id="deepResultModal">
+    <div style="padding:15px;">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;background:#f8fafc;padding:10px 14px;border-radius:6px;border:1px solid #e2e8f0;">
+            <div><span style="color:#64748b;font-size:12px;">数据标题：</span><span style="color:#1e293b;font-size:13px;font-weight:600;" id="drTitle"></span></div>
+            <div><span style="color:#64748b;font-size:12px;">数字员工：</span><span style="color:#1e293b;font-size:13px;" id="drEmployee"></span></div>
+            <div><span style="color:#64748b;font-size:12px;">状态：</span><span id="drStatus"></span></div>
+            <div><span style="color:#64748b;font-size:12px;">时间：</span><span style="color:#1e293b;font-size:13px;" id="drTime"></span></div>
+        </div>
+        <div class="layui-tab" lay-filter="deepResultTab" style="margin:0;">
+            <ul class="layui-tab-title" style="border-bottom-color:#e2e8f0;">
+                <li class="layui-this" id="tabTitleContent">网页爬取内容</li>
+                <li id="tabTitleAnalysis">AI分析结果</li>
+                <li id="tabTitleMeta">元数据</li>
+            </ul>
+            <div class="layui-tab-content" style="padding:12px 0;">
+                <div class="layui-tab-item layui-show">
+                    <div id="drCrawledContent" style="background:#f8fafc;padding:12px;border-radius:4px;border:1px solid #e2e8f0;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.7;"></div>
+                </div>
+                <div class="layui-tab-item">
+                    <div id="drAnalysisResult" style="background:#f8fafc;padding:12px;border-radius:4px;border:1px solid #e2e8f0;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.7;"></div>
+                </div>
+                <div class="layui-tab-item">
+                    <div id="drMeta" style="font-size:13px;line-height:2;"></div>
+                </div>
+            </div>
+        </div>
+        <div id="drErrorWrap" style="display:none;margin-top:8px;">
+            <span style="color:#dc2626;font-size:13px;font-weight:600;">错误信息：</span>
+            <div id="drError" style="color:#dc2626;background:#fef2f2;padding:8px;border-radius:4px;margin-top:4px;"></div>
+        </div>
+    </div>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+<script>
+layui.use(['form', 'layer', 'element', 'jquery'], function(){
+    var form = layui.form;
+    var layer = layui.layer;
+    var element = layui.element;
+    var $ = layui.$;
+    var currentPage = 1;
+    var pageSize = 20;
+
+    function getXsrfToken() {
+        var m = document.cookie.match(/(_xsrf=([^;]*)|$)/);
+        return m ? decodeURIComponent(m[2]) : '';
+    }
+
+    window.updateBatchBtnState = function() {
+        var checked = $('.wh-checkbox:checked').length;
+        $('#batchInfo').text(checked > 0 ? '已选择 ' + checked + ' 项' : '');
+        $('#batchDeleteBtn').prop('disabled', checked === 0);
+        $('#batchDeepCollectBtn').prop('disabled', checked === 0);
+    };
+
+    function getSelectedIds() {
+        var ids = [];
+        $('.wh-checkbox:checked').each(function() { ids.push($(this).data('id')); });
+        return ids;
+    }
+
+    function loadData(page, search) {
+        $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>');
+        $.ajax({
+            url: '/api/warehouse/list',
+            type: 'GET',
+            dataType: 'json',
+            data: {page: page || 1, page_size: pageSize, search: search || ''},
+            success: function(res) {
+                if (!res || !res.data) {
+                    $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:red;">数据格式错误</td></tr>');
+                    return;
+                }
+                if (res.data.length === 0) {
+                    $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">暂无数据</td></tr>');
+                    $('#pagination').html('');
+                    return;
+                }
+                var html = '';
+                res.data.forEach(function(item, index) {
+                    var rowNum = (res.page - 1) * res.page_size + index + 1;
+                    var deepHtml = item.is_deep_collected == 1
+                        ? '<span class="layui-badge layui-bg-green">是</span>'
+                        : '<span class="layui-badge layui-bg-gray">否</span>';
+                    var collectBtn = item.is_deep_collected == 1
+                        ? '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="viewDeepResult(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看结果</button> '
+                        : '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="deepCollect(' + item.id + ')"><i class="layui-icon layui-icon-export"></i> 深度采集</button> ';
+                    html += '<tr>' +
+                        '<td><input type="checkbox" class="wh-checkbox" data-id="' + item.id + '" onchange="updateBatchBtnState()"></td>' +
+                        '<td>' + rowNum + '</td>' +
+                        '<td><div class="title-cell" title="' + (item.title || '').replace(/"/g,'&quot;') + '">' + (item.title || '-') + '</div></td>' +
+                        '<td>' + (item.source_name || '-') + '</td>' +
+                        '<td>' + (item.keyword || '-') + '</td>' +
+                        '<td>' + deepHtml + '</td>' +
+                        '<td>' + (item.collected_at || '-') + '</td>' +
+                        '<td>' +
+                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button> ' +
+                            collectBtn +
+                            '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteItem(' + item.id + ', \'' + (item.title || '').replace(/'/g,"\\'") + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                $('#warehouseBody').html(html);
+                $('#selectAllCheckbox').prop('checked', false);
+                updateBatchBtnState();
+                renderPagination(res.total, res.page, res.page_size);
+            },
+            error: function() {
+                $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:red;">加载失败</td></tr>');
+            }
+        });
+    }
+
+    function renderPagination(total, page, size) {
+        var pages = Math.ceil(total / size);
+        var html = '<div class="layui-box layui-laypage layui-laypage-default">';
+        html += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
+        for (var i = 1; i <= pages; i++) {
+            html += '<a href="javascript:;" class="layui-laypage-em ' + (i == page ? 'current' : '') + '" data-page="' + i + '">' + i + '</a>';
+        }
+        html += '</div>';
+        $('#pagination').html(html);
+        $('#pagination a').on('click', function() {
+            currentPage = $(this).data('page');
+            loadData(currentPage, $('#searchInput').val());
+        });
+    }
+
+    // 查看详情
+    window.viewDetail = function(id) {
+        $.ajax({
+            url: '/api/warehouse/get', type: 'GET', dataType: 'json', data: {id: id},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.message, {icon:2}); return; }
+                var d = res.data;
+                $('#detailTitle').text(d.title || '-');
+                $('#detailUrl').html(d.url ? '<a href="' + d.url + '" target="_blank" style="color:#2563eb;">' + d.url + '</a>' : '-');
+                $('#detailSource').text(d.source_name || '-');
+                $('#detailKeyword').text(d.keyword || '-');
+                $('#detailDeep').text(d.is_deep_collected == 1 ? '是' : '否');
+                $('#detailTime').text(d.collected_at || '-');
+                $('#detailWarehouseId').text(d.id || '-');
+                layer.open({type: 1, title: '数据详情', area: ['600px', '420px'], content: $('#detailModal')});
+            },
+            error: function() { layer.msg('获取详情失败', {icon:2}); }
+        });
+    };
+
+    // 深度采集任务面板内容模板
+    var pollTimers = {};
+
+    function stopPoll(taskId) {
+        if (pollTimers[taskId]) {
+            clearInterval(pollTimers[taskId]);
+            delete pollTimers[taskId];
+        }
+    }
+
+    function openDeepPanel(taskId, warehouseTitle) {
+        var panelId = 'deepPanel_' + taskId;
+        // 如果已有面板，关闭先
+        if ($('#' + panelId).length > 0) {
+            layer.close($('#' + panelId).data('index'));
+        }
+        var panelHtml = '<div id="' + panelId + '" style="padding:15px;display:none;">' +
+            '<div style="margin-bottom:15px;">' +
+                '<label style="font-weight:600;color:#475569;font-size:13px;">数据标题</label>' +
+                '<div style="color:#1e293b;font-size:14px;margin-top:4px;" class="dp-title">' + (warehouseTitle || '未知') + '</div>' +
+            '</div>' +
+            '<div style="margin-bottom:15px;">' +
+                '<label style="font-weight:600;color:#475569;font-size:13px;">调度数字员工</label>' +
+                '<div style="color:#1e293b;font-size:14px;margin-top:4px;" class="dp-employee">加载中...</div>' +
+            '</div>' +
+            '<div style="margin-bottom:15px;">' +
+                '<label style="font-weight:600;color:#475569;font-size:13px;">采集进度</label>' +
+                '<div class="layui-progress" style="margin-top:24px;" lay-showpercent="true">' +
+                    '<div class="layui-progress-bar layui-bg-blue" style="width:0%;"><span class="layui-progress-text">0%</span></div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="margin-bottom:15px;">' +
+                '<label style="font-weight:600;color:#475569;font-size:13px;">执行步骤</label>' +
+                '<div style="margin-top:6px;" class="dp-steps"></div>' +
+            '</div>' +
+            '<div style="margin-bottom:5px;">' +
+                '<label style="font-weight:600;color:#475569;font-size:13px;">执行日志</label>' +
+            '</div>' +
+            '<div class="dp-logs" style="background:#1e293b;color:#e2e8f0;padding:10px;border-radius:4px;max-height:200px;overflow-y:auto;font-size:12px;font-family:Consolas,monospace;line-height:1.8;"></div>' +
+        '</div>';
+
+        var idx = layer.open({
+            type: 1,
+            title: '深度采集任务 #' + taskId,
+            area: ['620px', '520px'],
+            content: panelHtml,
+            cancel: function(index) {
+                stopPoll(taskId);
+                layer.close(index);
+            },
+            end: function() {
+                stopPoll(taskId);
+            }
+        });
+        $('#' + panelId).data('index', idx);
+        $('#' + panelId).show();
+
+        // 开始轮询
+        pollTimers[taskId] = setInterval(function() {
+            $.ajax({
+                url: '/api/deep-collect/task?task_id=' + taskId,
+                type: 'GET', dataType: 'json',
+                success: function(res) {
+                    if (!res.success) {
+                        stopPoll(taskId);
+                        return;
+                    }
+                    updatePanelContent(panelId, res.data);
+                    // 完成或失败停止轮询
+                    if (res.data.status === 'completed' || res.data.status === 'failed') {
+                        stopPoll(taskId);
+                        // 刷新列表以更新按钮状态
+                        loadData(currentPage, $('#searchInput').val());
+                    }
+                },
+                error: function() {
+                    stopPoll(taskId);
+                }
+            });
+        }, 1500);
+    }
+
+    function updatePanelContent(panelId, data) {
+        var $panel = $('#' + panelId);
+        if (!$panel.length) return;
+
+        $panel.find('.dp-employee').text(data.employee_name || '未知');
+
+        // 进度条
+        var progress = data.progress || 0;
+        var $progress = $panel.find('.layui-progress-bar');
+        $progress.css('width', progress + '%');
+        $progress.find('.layui-progress-text').text(progress + '%');
+
+        // 步骤
+        var stepsHtml = '';
+        var steps = data.steps || [];
+        if (typeof steps === 'string') { try { steps = JSON.parse(steps); } catch(e) { steps = []; } }
+        steps.forEach(function(s) {
+            var icon = s.status === 'completed' ? '<i class="layui-icon layui-icon-ok-circle" style="color:#22c55e;"></i>'
+                : s.status === 'running' ? '<i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="color:#2563eb;"></i>'
+                : s.status === 'failed' ? '<i class="layui-icon layui-icon-close-fill" style="color:#ef4444;"></i>'
+                : '<i class="layui-icon layui-icon-circle-dot" style="color:#94a3b8;"></i>';
+            stepsHtml += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;">' +
+                icon + '<span>' + (s.name || '') + '</span>' +
+                (s.time ? '<span style="color:#94a3b8;font-size:11px;margin-left:auto;">' + s.time + '</span>' : '') +
+            '</div>';
+        });
+        $panel.find('.dp-steps').html(stepsHtml || '<span style="color:#94a3b8;">暂无步骤</span>');
+
+        // 日志
+        var logsHtml = '';
+        var logs = data.logs || [];
+        if (typeof logs === 'string') { try { logs = JSON.parse(logs); } catch(e) { logs = []; } }
+        logs.forEach(function(log) {
+            var color = log.level === 'error' ? '#ef4444'
+                : log.level === 'success' ? '#22c55e'
+                : log.level === 'warning' ? '#f59e0b'
+                : '#e2e8f0';
+            logsHtml += '<div style="color:' + color + ';">' +
+                (log.time ? '[' + log.time + '] ' : '') + (log.msg || '') +
+            '</div>';
+        });
+        $panel.find('.dp-logs').html(logsHtml || '<div style="color:#94a3b8;">暂无日志</div>');
+        // 滚动到底部
+        $panel.find('.dp-logs').scrollTop($panel.find('.dp-logs')[0].scrollHeight);
+    }
+
+    // 深度采集
+    window.deepCollect = function(id) {
+        var index = layer.load(1, {shade: [0.3, '#fff']});
+        $.ajax({
+            url: '/api/deep-collect/start',
+            type: 'POST', dataType: 'json',
+            data: {warehouse_id: id},
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                layer.close(index);
+                if (res.success) {
+                    layer.msg('任务已启动', {icon:1, time:1000});
+                    // 获取当前行标题
+                    var title = '-';
+                    $('.wh-checkbox').each(function() {
+                        if ($(this).data('id') == id) {
+                            var $tr = $(this).closest('tr');
+                            title = $tr.find('.title-cell').text() || '-';
+                        }
+                    });
+                    openDeepPanel(res.task_id, title);
+                } else {
+                    layer.msg(res.message || '启动失败', {icon:2});
+                }
+            },
+            error: function() {
+                layer.close(index);
+                layer.msg('请求失败', {icon:2});
+            }
+        });
+    };
+
+    // 查看深度采集结果（tab分栏版）
+    window.viewDeepResult = function(warehouseId) {
+        var index = layer.load(1, {shade: [0.3, '#fff']});
+        $.ajax({
+            url: '/api/deep-collect/result?warehouse_id=' + warehouseId,
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                layer.close(index);
+                if (!res.success || !res.data) {
+                    layer.msg('未找到采集记录', {icon:2});
+                    return;
+                }
+                var d = res.data;
+                if (d.task_status === 'running') {
+                    $.ajax({
+                        url: '/api/deep-collect/task?warehouse_id=' + warehouseId,
+                        type: 'GET', dataType: 'json',
+                        success: function(r) {
+                            if (r.success && r.data) openDeepPanel(r.data.id, d.warehouse_title || '-');
+                            else layer.msg('任务运行中', {icon:0});
+                        }
+                    });
+                    return;
+                }
+                // 填充顶部摘要信息
+                $('#drTitle').text(d.warehouse_title || '-');
+                $('#drEmployee').text(d.employee_name || '-');
+                var statusMap = {'completed':'已完成','failed':'失败','running':'运行中','pending':'等待中'};
+                $('#drStatus').html(d.task_status === 'completed'
+                    ? '<span class="layui-badge layui-bg-green">已完成</span>'
+                    : d.task_status === 'failed'
+                    ? '<span class="layui-badge layui-bg-red">失败</span>'
+                    : '<span class="layui-badge layui-bg-blue">' + (statusMap[d.task_status] || d.task_status) + '</span>');
+                $('#drTime').text(d.completed_at || d.created_at || '-');
+
+                // Tab1: 网页爬取内容
+                var contentText = d.crawled_content || '(无爬取内容)';
+                $('#drCrawledContent').text(contentText);
+
+                // Tab2: AI分析结果
+                var analysisText = d.analysis_result || '(无分析结果)';
+                $('#drAnalysisResult').text(analysisText);
+
+                // Tab3: 元数据
+                var extra = d.extra_data || {};
+                if (typeof extra === 'string') { try { extra = JSON.parse(extra); } catch(e) { extra = {}; } }
+                var metaHtml = '';
+                metaHtml += '<div style="display:grid;grid-template-columns:100px 1fr;gap:4px 12px;">';
+                var metaItems = [
+                    ['URL', d.warehouse_url || extra.url || '-'],
+                    ['来源', extra.source || '-'],
+                    ['关键词', extra.keyword || '-'],
+                    ['摘要', extra.summary || '-'],
+                    ['数字员工', extra.employee_name || d.employee_name || '-'],
+                    ['采集时间', d.completed_at || '-']
+                ];
+                metaItems.forEach(function(item) {
+                    metaHtml += '<div style="color:#64748b;font-weight:600;">' + item[0] + '</div>';
+                    metaHtml += '<div style="color:#1e293b;word-break:break-all;">' + item[1] + '</div>';
+                });
+                metaHtml += '</div>';
+                $('#drMeta').html(metaHtml);
+
+                // 错误信息
+                if (d.task_status === 'failed') {
+                    $('#drErrorWrap').show();
+                    $('#drError').text(d.error_message || d.analysis_result || '未知错误');
+                } else {
+                    $('#drErrorWrap').hide();
+                }
+
+                layer.open({
+                    type: 1, title: '深度采集结果', area: ['760px', '580px'],
+                    content: $('#deepResultModal'),
+                    success: function() {
+                        // 确保layui tab渲染
+                        try { layui.element.init(); } catch(e) {}
+                    }
+                });
+            },
+            error: function() {
+                layer.close(index);
+                layer.msg('获取结果失败', {icon:2});
+            }
+        });
+    };
+
+    // 删除
+    window.deleteItem = function(id, title) {
+        layer.confirm('确定要删除 "' + title + '" 吗？', function(idx) {
+            $.ajax({
+                url: '/api/warehouse/delete', type: 'POST', dataType: 'json',
+                data: {id: id},
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    if (res.success) { layer.msg('已删除', {icon:1}); layer.close(idx); loadData(currentPage, $('#searchInput').val()); }
+                    else { layer.msg(res.message, {icon:2}); }
+                },
+                error: function() { layer.msg('删除失败', {icon:2}); }
+            });
+        });
+    };
+
+    // 搜索
+    $('#searchBtn').on('click', function() {
+        currentPage = 1;
+        loadData(1, $('#searchInput').val());
+        return false;
+    });
+    $('#resetBtn').on('click', function() {
+        $('#searchInput').val('');
+        currentPage = 1;
+        loadData(1);
+        return false;
+    });
+    $('#searchInput').on('keydown', function(e) {
+        if (e.key === 'Enter') { currentPage = 1; loadData(1, $(this).val()); }
+    });
+
+    // 全选/全不选
+    window.toggleSelectAll = function(el) {
+        $('.wh-checkbox').prop('checked', el.checked);
+        updateBatchBtnState();
+    };
+
+    // 批量删除
+    $('#batchDeleteBtn').on('click', function() {
+        var ids = getSelectedIds();
+        if (ids.length === 0) { layer.msg('请先选择数据', {icon:2}); return; }
+        layer.confirm('确定要删除选中的 ' + ids.length + ' 条数据吗？', function(idx) {
+            $.ajax({
+                url: '/api/warehouse/batch-delete',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify({ids: ids}),
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    if (res.success) {
+                        layer.msg(res.message, {icon:1});
+                        layer.close(idx);
+                        loadData(currentPage, $('#searchInput').val());
+                    } else {
+                        layer.msg(res.message, {icon:2});
+                    }
+                },
+                error: function() { layer.msg('批量删除失败', {icon:2}); }
+            });
+        });
+    });
+
+    // 批量深度采集任务队列
+    var batchPanelPollTimer = null;
+
+    function openBatchPanel(taskInfos) {
+        // taskInfos: [{task_id, warehouse_title, warehouse_id}, ...]
+        if (batchPanelPollTimer) { clearInterval(batchPanelPollTimer); batchPanelPollTimer = null; }
+        // 关闭已有面板
+        if ($('#batchPanelWrap').length > 0) {
+            layer.close($('#batchPanelWrap').data('index'));
+        }
+
+        var rowsHtml = '';
+        taskInfos.forEach(function(t, idx) {
+            rowsHtml += '<div class="batch-task-item" data-task-id="' + t.task_id + '" data-warehouse-id="' + t.warehouse_id + '" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;margin-bottom:10px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                    '<span style="font-weight:600;color:#1e293b;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:350px;" title="' + t.title.replace(/"/g,'&quot;') + '">' + (idx+1) + '. ' + t.title + '</span>' +
+                    '<span class="batch-status" style="font-size:12px;padding:2px 8px;border-radius:4px;background:#fef3c7;color:#d97706;">等待中</span>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<div class="layui-progress" style="flex:1;height:8px;margin:0;" lay-showpercent="false">' +
+                        '<div class="layui-progress-bar layui-bg-blue" style="width:0%;"></div>' +
+                    '</div>' +
+                    '<span class="batch-progress-text" style="font-size:12px;color:#64748b;min-width:36px;text-align:right;">0%</span>' +
+                '</div>' +
+                '<div class="batch-step-info" style="font-size:12px;color:#94a3b8;margin-top:4px;"></div>' +
+            '</div>';
+        });
+
+        var panelHtml = '<div id="batchPanelWrap" style="display:none;padding:10px;">' +
+            '<div style="margin-bottom:12px;color:#475569;font-size:13px;">任务队列（共 ' + taskInfos.length + ' 条）</div>' +
+            '<div id="batchTaskList" style="max-height:400px;overflow-y:auto;">' + rowsHtml + '</div>' +
+        '</div>';
+
+        var idx = layer.open({
+            type: 1,
+            title: '批量深度采集队列',
+            area: ['620px', '520px'],
+            content: panelHtml,
+            cancel: function(index) {
+                if (batchPanelPollTimer) { clearInterval(batchPanelPollTimer); batchPanelPollTimer = null; }
+                layer.close(index);
+            },
+            end: function() {
+                if (batchPanelPollTimer) { clearInterval(batchPanelPollTimer); batchPanelPollTimer = null; }
+            }
+        });
+        $('#batchPanelWrap').data('index', idx);
+        $('#batchPanelWrap').show();
+
+        // 开始轮询所有任务
+        batchPanelPollTimer = setInterval(function() {
+            var allDone = true;
+            taskInfos.forEach(function(t) {
+                var $item = $('.batch-task-item[data-task-id="' + t.task_id + '"]');
+                if ($item.length === 0) return;
+                var statusLabel = $item.find('.batch-status');
+                if (statusLabel.text().indexOf('已完成') > -1 || statusLabel.text().indexOf('失败') > -1) return;
+                allDone = false;
+                $.ajax({
+                    url: '/api/deep-collect/task?task_id=' + t.task_id,
+                    type: 'GET', dataType: 'json',
+                    async: false,
+                    success: function(res) {
+                        if (!res.success || !res.data) return;
+                        var d = res.data;
+                        // 更新进度条
+                        var pct = d.progress || 0;
+                        $item.find('.layui-progress-bar').css('width', pct + '%');
+                        $item.find('.batch-progress-text').text(pct + '%');
+                        // 更新状态
+                        var statusMap = {'pending':'等待中','running':'运行中','completed':'已完成','failed':'失败'};
+                        var label = statusMap[d.status] || d.status;
+                        var colorMap = {'pending':'#fef3c7;color:#d97706','running':'#dbeafe;color:#2563eb','completed':'#dcfce7;color:#16a34a','failed':'#fee2e2;color:#dc2626'};
+                        var bg = colorMap[d.status] || '#fef3c7;color:#d97706';
+                        statusLabel.html(label).attr('style', 'font-size:12px;padding:2px 8px;border-radius:4px;background:' + bg.split(';')[0] + ';color:' + bg.split('color:')[1]);
+                        // 步骤信息
+                        var steps = d.steps || [];
+                        if (typeof steps === 'string') { try { steps = JSON.parse(steps); } catch(e) { steps = []; } }
+                        var stepActive = '';
+                        steps.forEach(function(s) {
+                            if (s.status === 'running') stepActive = s.name;
+                        });
+                        $item.find('.batch-step-info').text(stepActive ? '当前步骤: ' + stepActive : '');
+                    }
+                });
+            });
+            if (allDone) {
+                clearInterval(batchPanelPollTimer);
+                batchPanelPollTimer = null;
+                loadData(currentPage, $('#searchInput').val());
+            }
+        }, 1500);
+    }
+
+    // 批量深度采集
+    $('#batchDeepCollectBtn').on('click', function() {
+        var ids = getSelectedIds();
+        if (ids.length === 0) { layer.msg('请先选择数据', {icon:2}); return; }
+        var idx = layer.load(1, {shade: [0.3, '#fff']});
+        $.ajax({
+            url: '/api/warehouse/batch-deep-collect',
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({ids: ids}),
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                layer.close(idx);
+                if (res.success) {
+                    layer.msg(res.message || '已提交深度采集', {icon:1, time:2000});
+                    $('#selectAllCheckbox').prop('checked', false);
+                    $('.wh-checkbox').prop('checked', false);
+                    updateBatchBtnState();
+                    // 构造任务信息列表
+                    if (res.task_ids && res.task_ids.length > 0) {
+                        var taskInfos = [];
+                        res.task_ids.forEach(function(tid) {
+                            var title = '-';
+                            var wid = 0;
+                            $('.wh-checkbox').each(function() {
+                                var cid = $(this).data('id');
+                                if (ids.indexOf(cid) > -1 && taskInfos.length === 0) {
+                                    var $tr = $(this).closest('tr');
+                                    title = $tr.find('.title-cell').text() || '-';
+                                    wid = cid;
+                                }
+                            });
+                            // 简化：用索引匹配
+                            var idx2 = res.task_ids.indexOf(tid);
+                            var wid2 = ids[idx2] || 0;
+                            var title2 = '-';
+                            $('.wh-checkbox').each(function() {
+                                if ($(this).data('id') == wid2) {
+                                    title2 = $(this).closest('tr').find('.title-cell').text() || '-';
+                                }
+                            });
+                            taskInfos.push({task_id: tid, warehouse_id: wid2, title: title2});
+                        });
+                        setTimeout(function() {
+                            openBatchPanel(taskInfos);
+                        }, 500);
+                    }
+                } else {
+                    layer.msg(res.message || '操作失败', {icon:2});
+                }
+            },
+            error: function() {
+                layer.close(idx);
+                layer.msg('批量深度采集失败', {icon:2});
+            }
+        });
+    });
+
+    loadData(1);
+});
+</script>
+{% end %}

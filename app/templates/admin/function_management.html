@@ -135,19 +135,20 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th style="width:50px;">ID</th>
                         <th>功能名称</th>
+                        <th style="width:60px;">层级</th>
                         <th>功能编码</th>
                         <th>图标</th>
                         <th>路由</th>
                         <th>父功能</th>
-                        <th>排序</th>
-                        <th>状态</th>
-                        <th>操作</th>
+                        <th style="width:50px;">排序</th>
+                        <th style="width:50px;">状态</th>
+                        <th style="width:190px;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="funcTableBody">
-                    <tr><td colspan="9" style="text-align: center;">加载中...</td></tr>
+                    <tr><td colspan="10" style="text-align: center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -321,15 +322,17 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 });
                 var html = '';
                 if (data.length === 0) {
-                    html = '<tr><td colspan="9" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                    html = '<tr><td colspan="10" style="text-align: center; color: #999;">暂无数据</td></tr>';
                 } else {
                     data.forEach(function(func) {
                         var statusHtml = func.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
-                        var parentName = func.parent_id == 0 ? '<span style="color:#999;">一级功能</span>' : (parentMap[func.parent_id] || 'ID:' + func.parent_id);
+                        var parentName = func.parent_id == 0 ? '<span style="color:#999;">-</span>' : (parentMap[func.parent_id] || 'ID:' + func.parent_id);
+                        var levelHtml = func.parent_id == 0 ? '<span class="layui-badge layui-bg-blue">一级</span>' : '<span class="layui-badge layui-bg-cyan">二级</span>';
                         var iconHtml = func.icon ? '<i class="layui-icon ' + func.icon + '"></i>' : '-';
                         html += '<tr>' +
                             '<td>' + func.id + '</td>' +
                             '<td>' + func.name + '</td>' +
+                            '<td>' + levelHtml + '</td>' +
                             '<td>' + func.code + '</td>' +
                             '<td>' + iconHtml + '</td>' +
                             '<td>' + (func.route || '-') + '</td>' +
@@ -348,7 +351,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Functions API Error:', status, error);
-                $('#funcTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#funcTableBody').html('<tr><td colspan="10" style="text-align: center; color: red;">加载失败</td></tr>');
             }
         });
     }

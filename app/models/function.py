@@ -6,9 +6,9 @@ class FunctionRepository:
     
     @staticmethod
     def get_all_functions():
-        """获取所有功能"""
+        """获取所有功能（一级在前，按排序）"""
         with get_connection() as conn:
-            return conn.execute("SELECT * FROM functions ORDER BY sort_order, id").fetchall()
+            return conn.execute("SELECT * FROM functions ORDER BY parent_id, sort_order, id").fetchall()
     
     @staticmethod
     def get_parent_functions():

@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 
 # 数据库
+*.db
 database/
 
 # 文档和开发辅助

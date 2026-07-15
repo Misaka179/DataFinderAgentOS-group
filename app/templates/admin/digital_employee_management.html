@@ -1,0 +1,802 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.layui-layout-admin .layui-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.layui-layout-admin .layui-logo { color: #fff !important; font-size: 20px; font-weight: 600; line-height: 60px; display: flex; align-items: center; gap: 10px; padding-left: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layui-side { background: #1e293b !important; top: 60px; }
+.layui-side-scroll { width: 220px; }
+.layui-nav-tree { background: #1e293b !important; }
+.layui-nav-tree .layui-nav-item a { color: rgba(255,255,255,.75); height: 46px; line-height: 46px; }
+.layui-nav-tree .layui-nav-item a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.layui-nav-tree .layui-nav-item.layui-this a { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; color: #fff; }
+.layui-body { top: 60px; left: 220px; background: #f1f5f9; padding: 20px; overflow-y: auto; }
+.layui-footer { left: 220px; background: #fff; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center; line-height: 50px; }
+.search-bar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.data-table { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.data-table .table-wrap { overflow-x: auto; }
+.data-table table { min-width: 700px; }
+.data-table td:last-child { white-space: nowrap; }
+.data-table .desc-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pagination-bar { background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; }
+.type-badge-llm { background: #6366f1 !important; }
+.type-badge-api { background: #0ea5e9 !important; }
+.form-section-title { font-size: 14px; font-weight: 600; color: #1e293b; padding: 8px 0; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+/* 表单弹窗内容过多时滚动 */
+#employeeFormModal { overflow-y: auto; max-height: 70vh; padding-right: 5px; }
+</style>
+
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;"><i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}</a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}"><i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}</a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+    <div class="layui-body">
+        <div class="search-bar">
+            <form class="layui-form">
+                <div class="layui-row layui-col-space10">
+                    <div class="layui-col-md3">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">搜索</label>
+                            <div class="layui-input-block">
+                                <input type="text" id="searchInput" placeholder="名称" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md3">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">类型</label>
+                            <div class="layui-input-block">
+                                <select id="typeFilter">
+                                    <option value="">全部</option>
+                                    <option value="llm">LLM</option>
+                                    <option value="api">API</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md6">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <button type="button" class="layui-btn layui-btn-sm" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="addBtn"><i class="layui-icon layui-icon-addition"></i> 新建员工</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="data-table">
+            <div class="table-wrap">
+            <table class="layui-table" lay-skin="line">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">ID</th>
+                        <th style="width:120px;">名称</th>
+                        <th style="width:80px;">类型</th>
+                        <th>描述</th>
+                        <th style="width:60px;">排序</th>
+                        <th style="width:60px;">状态</th>
+                        <th style="width:150px;">创建时间</th>
+                        <th style="width:180px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeBody">
+                    <tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        <div class="pagination-bar"><div id="pagination"></div></div>
+    </div>
+    <div class="layui-footer">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div style="display:none;" id="employeeFormModal">
+    <form class="layui-form layui-form-pane" lay-filter="employeeForm" id="employeeForm" style="padding:20px;">
+        <input type="hidden" name="id" id="editId">
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">名称 <span style="color:red;">*</span></label>
+            <div class="layui-input-block">
+                <input type="text" name="name" lay-verify="required" placeholder="数字员工名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">类型 <span style="color:red;">*</span></label>
+            <div class="layui-input-block">
+                <input type="radio" name="type" value="llm" title="LLM 数字员工" checked onchange="toggleEmployeeType()">
+                <input type="radio" name="type" value="api" title="API 数字员工" onchange="toggleEmployeeType()">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">描述</label>
+            <div class="layui-input-block">
+                <textarea name="description" placeholder="简要描述数字员工的能力" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">排序</label>
+            <div class="layui-input-block">
+                <input type="number" name="sort_order" value="0" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" value="1" title="启用" checked>
+                <input type="radio" name="status" value="0" title="禁用">
+            </div>
+        </div>
+
+        <!-- LLM 类型配置 -->
+        <div id="llmConfigSection">
+            <div class="form-section-title">LLM 配置</div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">关联模型</label>
+                <div class="layui-input-block">
+                    <select name="model_id" id="modelSelect">
+                        <option value="">使用默认模型</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">系统提示词</label>
+                <div class="layui-input-block">
+                    <textarea name="system_prompt" placeholder="系统提示词（Prompt），用于定义数字员工的行为和能力" class="layui-textarea" style="min-height:80px;"></textarea>
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="mdUploadBtn"><i class="layui-icon layui-icon-upload"></i> 上传.md文件</button>
+                        <span style="color:#999;font-size:12px;">支持上传一个或多个 .md 文件，内容将自动追加到提示词中</span>
+                    </div>
+                    <input type="file" id="mdFileInput" accept=".md" multiple style="display:none;">
+                    <div id="mdFileList" style="margin-top:6px;display:none;"></div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">技能配置</label>
+                <div class="layui-input-block">
+                    <textarea name="skills" placeholder='JSON格式的技能配置，如：[{"name":"天气查询","description":"查询天气","action":"weather"}]' class="layui-textarea" style="min-height:60px;"></textarea>
+                    <div style="color:#999;font-size:12px;margin-top:4px;">可选，Skill 技能支持，用于增强数字员工能力</div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">Crawl4AI</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" name="crawl4ai_enabled" value="1" title="启用网络爬虫能力">
+                    <div style="color:#999;font-size:12px;margin-top:4px;">可选，启用后数字员工可获取网页内容进行分析</div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">卡片配置</label>
+                <div class="layui-input-block">
+                    <textarea name="card_config" placeholder='卡片配置JSON，如：{"enabled":true,"type":"data_card","title":"数据概览","fields":[{"key":"字段名","label":"显示名称"}]}' class="layui-textarea" style="min-height:60px;"></textarea>
+                    <div style="color:#999;font-size:12px;margin-top:4px;">可选，配置后前台@该员工时渲染数据卡片。type支持：data_card（数据卡片）、weather（天气卡片）。fields定义显示字段映射。</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API 类型配置 -->
+        <div id="apiConfigSection" style="display:none;">
+            <div class="form-section-title">API 配置</div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">API 地址 <span style="color:red;">*</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="api_url" placeholder="https://api.example.com/endpoint" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">请求方法</label>
+                <div class="layui-input-block">
+                    <select name="api_method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">请求头</label>
+                <div class="layui-input-block">
+                    <textarea name="api_headers" placeholder='JSON格式，如：{"Authorization":"Bearer xxx"}' class="layui-input" style="min-height:60px;"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">请求参数</label>
+                <div class="layui-input-block">
+                    <textarea name="api_params" placeholder='JSON格式，如：{"city":"{city}","date":"{date}"}，支持占位符' class="layui-input" style="min-height:60px;"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">响应模板</label>
+                <div class="layui-input-block">
+                    <textarea name="api_response_template" placeholder="可选，JSON路径表达式，用于解析API响应中的有效数据" class="layui-input" style="min-height:60px;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="saveBtn">保存</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="cancelBtn">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 详情弹窗 -->
+<div style="display:none;" id="detailModal">
+    <div class="detail-view" style="padding:0 15px;">
+        <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">名称</label><div style="color:#1e293b;font-size:14px;" id="detailName"></div></div>
+        <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">类型</label><div style="color:#1e293b;font-size:14px;" id="detailType"></div></div>
+        <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">描述</label><div style="color:#1e293b;font-size:14px;" id="detailDesc"></div></div>
+        <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">状态</label><div style="color:#1e293b;font-size:14px;" id="detailStatus"></div></div>
+        <div id="detailLlmFields" style="display:none;">
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">关联模型</label><div style="color:#1e293b;font-size:14px;" id="detailModel"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">系统提示词</label><div style="color:#1e293b;font-size:14px;white-space:pre-wrap;word-break:break-all;" id="detailPrompt"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">技能</label><div style="color:#1e293b;font-size:14px;" id="detailSkills"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">Crawl4AI</label><div style="color:#1e293b;font-size:14px;" id="detailCrawl4ai"></div></div>
+        </div>
+        <div id="detailApiFields" style="display:none;">
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">API 地址</label><div style="color:#1e293b;font-size:14px;" id="detailApiUrl"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">请求方法</label><div style="color:#1e293b;font-size:14px;" id="detailApiMethod"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">请求头</label><div style="color:#1e293b;font-size:14px;white-space:pre-wrap;word-break:break-all;" id="detailApiHeaders"></div></div>
+            <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">请求参数</label><div style="color:#1e293b;font-size:14px;white-space:pre-wrap;word-break:break-all;" id="detailApiParams"></div></div>
+        </div>
+        <div class="detail-item" style="margin-bottom:12px;"><label style="font-weight:600;color:#475569;font-size:13px;display:block;">创建时间</label><div style="color:#1e293b;font-size:14px;" id="detailCreated"></div></div>
+    </div>
+</div>
+
+<!-- 测试结果弹窗 -->
+<div style="display:none;" id="testModal">
+    <div style="padding:20px;">
+        <div style="margin-bottom:15px;">
+            <label style="font-weight:600;color:#475569;font-size:13px;display:block;margin-bottom:5px;">测试消息</label>
+            <div style="color:#1e293b;font-size:14px;background:#f8fafc;padding:10px;border-radius:4px;border:1px solid #e2e8f0;" id="testMessage">-</div>
+        </div>
+        <div id="testLoading" style="text-align:center;padding:30px;display:none;">
+            <i class="layui-icon layui-icon-face-smile" style="font-size:30px;color:#2563eb;"></i>
+            <p style="color:#64748b;margin-top:10px;">正在测试中，请稍候...</p>
+        </div>
+        <div id="testResult" style="display:none;">
+            <label style="font-weight:600;color:#475569;font-size:13px;display:block;margin-bottom:5px;">测试结果</label>
+            <div style="color:#1e293b;font-size:14px;background:#f8fafc;padding:10px;border-radius:4px;border:1px solid #e2e8f0;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;" id="testReply">-</div>
+        </div>
+        <div id="testError" style="display:none;">
+            <label style="font-weight:600;color:#dc2626;font-size:13px;display:block;margin-bottom:5px;">测试失败</label>
+            <div style="color:#dc2626;font-size:14px;background:#fef2f2;padding:10px;border-radius:4px;border:1px solid #fecaca;" id="testErrorMessage">-</div>
+        </div>
+    </div>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+<script>
+layui.use(['form', 'layer', 'jquery'], function(){
+    var form = layui.form;
+    var layer = layui.layer;
+    var $ = layui.$;
+
+    window.showProfile = function() {
+        $.ajax({
+            url: '/api/profile', type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    var u = res.data;
+                    $('#profileUsername').text(u.username || '-');
+                    $('#profileRole').text(u.role_name || '-');
+                    $('#profileStatus').text(u.status == 1 ? '启用' : '禁用');
+                    $('#profileCreated').text(u.created_at || '-');
+                    layer.open({type:1,title:'个人信息',area:['500px'],content:$('#profileModal')});
+                }
+            }
+        });
+    };
+    window.showChangePwd = function() {
+        layer.open({
+            type:1,title:'修改密码',area:['500px'],content:$('#changePwdModal'),
+            btn:['保存','取消'],
+            yes:function(index) {
+                var oldPwd = $('input[name="old_password"]').val();
+                var newPwd = $('input[name="new_password"]').val();
+                var confirmPwd = $('input[name="confirm_password"]').val();
+                if (!oldPwd || !newPwd || !confirmPwd) { layer.msg('请填写完整',{icon:2}); return; }
+                if (newPwd !== confirmPwd) { layer.msg('两次密码输入不一致',{icon:2}); return; }
+                if (newPwd.length < 6) { layer.msg('新密码长度不能少于6位',{icon:2}); return; }
+                $.ajax({
+                    url:'/api/profile/change-password', type:'POST', dataType:'json',
+                    data:{old_password:oldPwd, new_password:newPwd},
+                    headers:{'X-XSRFToken':getXsrfToken()},
+                    success:function(res) {
+                        if (res.success) { layer.msg('密码修改成功，请重新登录',{icon:1},function(){document.getElementById('admin-logout-form').submit();}); layer.close(index); }
+                        else { layer.msg(res.message,{icon:2}); }
+                    }, error:function(){layer.msg('请求失败',{icon:2});}
+                });
+            },
+            end:function(){$('input[name="old_password"]').val('');$('input[name="new_password"]').val('');$('input[name="confirm_password"]').val('');}
+        });
+    };
+
+    var currentPage = 1;
+    var pageSize = 15;
+
+    function getXsrfToken() {
+        var match = document.cookie.match(/(_xsrf=([^;]*))/);
+        return match ? decodeURIComponent(match[2] || '') : '';
+    }
+
+    // 切换类型显示/隐藏
+    window.toggleEmployeeType = function() {
+        var type = $('input[name="type"]:checked').val();
+        if (type === 'llm') {
+            $('#llmConfigSection').show();
+            $('#apiConfigSection').hide();
+        } else {
+            $('#llmConfigSection').hide();
+            $('#apiConfigSection').show();
+        }
+    };
+
+    // 加载模型列表
+    function loadModels(selectedId) {
+        $.ajax({
+            url: '/api/digital-employees/models', type: 'GET', dataType: 'json',
+            success: function(res) {
+                var models = res.data || [];
+                var html = '<option value="">使用默认模型</option>';
+                models.forEach(function(m) {
+                    var sel = (selectedId && String(m.id) === String(selectedId)) ? 'selected' : '';
+                    html += '<option value="' + m.id + '" ' + sel + '>' + m.name + ' (' + m.model_name + ')</option>';
+                });
+                $('#modelSelect').html(html);
+                form.render('select');
+            }
+        });
+    }
+
+    // 加载数据
+    function loadData(page, search, typeFilter) {
+        $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>');
+        $.ajax({
+            url: '/api/digital-employees/list', type: 'GET', dataType: 'json',
+            data: {page: page||1, page_size: pageSize, search: search||'', type: typeFilter||''},
+            success: function(res) {
+                if (!res || !res.data) {
+                    $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:red;">数据格式错误</td></tr>');
+                    return;
+                }
+                if (res.data.length === 0) {
+                    $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">暂无数据</td></tr>');
+                    $('#pagination').html('');
+                    return;
+                }
+                var html = '';
+                res.data.forEach(function(item, index) {
+                    var rowNum = (res.page-1)*res.page_size + index + 1;
+                    var typeHtml = item.type === 'llm' ? '<span class="layui-badge type-badge-llm">LLM</span>' : '<span class="layui-badge type-badge-api">API</span>';
+                    var statusHtml = item.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    html += '<tr>' +
+                        '<td>' + rowNum + '</td>' +
+                        '<td>' + (item.name || '-') + '</td>' +
+                        '<td>' + typeHtml + '</td>' +
+                        '<td><div class="desc-cell" title="' + (item.description||'').replace(/"/g,'&quot;') + '">' + (item.description||'-') + '</div></td>' +
+                        '<td>' + (item.sort_order||0) + '</td>' +
+                        '<td>' + statusHtml + '</td>' +
+                        '<td>' + (item.created_at||'-') + '</td>' +
+                        '<td>' +
+                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button> ' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="testEmployee(' + item.id + ')"><i class="layui-icon layui-icon-util"></i> 测试</button> ' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="editEmployee(' + item.id + ')"><i class="layui-icon layui-icon-edit"></i> 编辑</button> ' +
+                            '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteEmployee(' + item.id + ',\'' + (item.name||'').replace(/'/g,"\\'") + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>' +
+                        '</td></tr>';
+                });
+                $('#employeeBody').html(html);
+                renderPagination(res.total, res.page, res.page_size);
+            },
+            error: function() {
+                $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:red;">加载失败</td></tr>');
+            }
+        });
+    }
+
+    // 分页
+    function renderPagination(total, current, size) {
+        var pages = Math.ceil(total / size);
+        var html = '<div class="layui-box layui-laypage layui-laypage-default">';
+        html += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
+        for (var i = 1; i <= pages; i++) {
+            html += '<a href="javascript:;" class="layui-laypage-em ' + (i == current ? 'current' : '') + '" data-page="' + i + '">' + i + '</a>';
+        }
+        html += '</div>';
+        $('#pagination').html(html);
+        $('#pagination a').on('click', function() {
+            currentPage = $(this).data('page');
+            loadData(currentPage, $('#searchInput').val(), $('#typeFilter').val());
+        });
+    }
+
+    // 搜索
+    $('#searchBtn').on('click', function() {
+        currentPage = 1;
+        loadData(1, $('#searchInput').val(), $('#typeFilter').val());
+        return false;
+    });
+    $('#resetBtn').on('click', function() {
+        $('#searchInput').val('');
+        $('#typeFilter').val('');
+        currentPage = 1;
+        loadData(1, '', '');
+        return false;
+    });
+
+    // 新增
+    $('#addBtn').on('click', function() {
+        $('#editId').val('');
+        $('#employeeForm')[0].reset();
+        uploadedMdFiles = [];
+        $('#mdFileList').hide().empty();
+        loadModels(null);
+        form.val('employeeForm', {type:'llm', status:'1', sort_order:'0'});
+        toggleEmployeeType();
+        form.render();
+        layer.open({
+            type:1, title:'新建数字员工', area:['650px', '85%'],
+            content:$('#employeeFormModal'),
+            cancel:function(idx){layer.close(idx);}
+        });
+    });
+    $('#cancelBtn').on('click', function() {
+        layer.closeAll();
+    });
+
+    // 保存
+    form.on('submit(saveBtn)', function(data) {
+        var field = data.field;
+        var id = field.id;
+        var isEdit = id && id !== '';
+        var url = isEdit ? '/api/digital-employees/update' : '/api/digital-employees/create';
+        
+        $.ajax({
+            url: url, type: 'POST', dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(field),
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    layer.msg(isEdit ? '更新成功' : '创建成功', {icon:1});
+                    layer.closeAll();
+                    loadData(currentPage, $('#searchInput').val(), $('#typeFilter').val());
+                } else {
+                    layer.msg(res.message, {icon:2});
+                }
+            },
+            error: function(xhr) {
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    layer.msg(resp.message || '操作失败', {icon:2});
+                } catch(e) { layer.msg('操作失败', {icon:2}); }
+            }
+        });
+        return false;
+    });
+
+    // ====== .md 文件上传功能 ======
+    var uploadedMdFiles = [];
+
+    // 点击上传按钮触发文件选择
+    $('#mdUploadBtn').on('click', function() {
+        $('#mdFileInput').click();
+    });
+
+    // 选择文件后自动上传
+    $('#mdFileInput').on('change', function() {
+        var files = this.files;
+        if (files.length === 0) return;
+
+        var name = $('input[name="name"]').val();
+        if (!name) {
+            layer.msg('请先填写数字员工名称', {icon:2});
+            $(this).val('');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('name', name);
+        formData.append('_xsrf', getXsrfToken());
+        for (var i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+
+        var btn = $('#mdUploadBtn');
+        btn.text('上传中...').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/digital-employees/upload-md',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    // 追加内容到提示词
+                    var ta = $('textarea[name="system_prompt"]');
+                    var currentVal = ta.val();
+                    var appendText = '\n\n--- 以下来自.md文件 ---\n' + res.content;
+                    ta.val(currentVal + appendText);
+
+                    // 记录已上传文件
+                    uploadedMdFiles = uploadedMdFiles.concat(res.files);
+                    renderMdFileList();
+                    layer.msg('已读取 ' + res.files.length + ' 个 .md 文件', {icon:1, time:1500});
+                } else {
+                    layer.msg(res.message, {icon:2});
+                }
+            },
+            error: function(xhr) {
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    layer.msg(resp.message || '上传失败', {icon:2});
+                } catch(e) {
+                    layer.msg('上传失败，请检查网络连接', {icon:2});
+                }
+            },
+            complete: function() {
+                btn.html('<i class="layui-icon layui-icon-upload"></i> 上传.md文件').prop('disabled', false);
+                $('#mdFileInput').val('');
+            }
+        });
+    });
+
+    // 渲染已上传文件列表
+    function renderMdFileList() {
+        var container = $('#mdFileList');
+        if (uploadedMdFiles.length === 0) {
+            container.hide();
+            return;
+        }
+        var html = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:8px 12px;">';
+        html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">已上传 .md 文件：</div>';
+        uploadedMdFiles.forEach(function(f) {
+            html += '<div style="font-size:13px;color:#1e293b;padding:2px 0;"><i class="layui-icon layui-icon-file" style="color:#2563eb;"></i> ' + f + '</div>';
+        });
+        html += '</div>';
+        container.html(html).show();
+    }
+
+    // 加载已存在的 .md 文件列表（编辑时使用）
+    function loadExistingMdFiles(name) {
+        if (!name) return;
+        $.ajax({
+            url: '/api/digital-employees/list-md',
+            type: 'GET',
+            data: {name: name},
+            dataType: 'json',
+            success: function(res) {
+                if (res.success && res.files && res.files.length > 0) {
+                    uploadedMdFiles = res.files.map(function(f) { return f.name; });
+                    // 自动将内容追加到提示词
+                    var ta = $('textarea[name="system_prompt"]');
+                    var currentVal = ta.val();
+                    var appendParts = [];
+                    res.files.forEach(function(f) {
+                        appendParts.push('\n\n--- ' + f.name + ' ---\n' + (f.content || ''));
+                    });
+                    if (appendParts.length > 0) {
+                        ta.val(currentVal + appendParts.join(''));
+                    }
+                    renderMdFileList();
+                }
+            }
+        });
+    }
+
+    // 编辑
+    window.editEmployee = function(id) {
+        $.ajax({
+            url: '/api/digital-employees/get', type: 'GET', dataType: 'json',
+            data: {id: id},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.message, {icon:2}); return; }
+                var d = res.data;
+                $('#editId').val(d.id);
+                loadModels(d.model_id);
+                form.val('employeeForm', {
+                    'name': d.name,
+                    'type': d.type,
+                    'description': d.description || '',
+                    'sort_order': d.sort_order || 0,
+                    'status': String(d.status),
+                    'model_id': String(d.model_id || ''),
+                    'system_prompt': d.system_prompt || '',
+                    'skills': d.skills || '',
+                    'card_config': d.card_config || '',
+                    'api_url': d.api_url || '',
+                    'api_method': d.api_method || 'GET',
+                    'api_headers': d.api_headers || '',
+                    'api_params': d.api_params || '',
+                    'api_response_template': d.api_response_template || ''
+                });
+                if (d.crawl4ai_enabled == 1) {
+                    $('input[name="crawl4ai_enabled"]').prop('checked', true);
+                } else {
+                    $('input[name="crawl4ai_enabled"]').prop('checked', false);
+                }
+                toggleEmployeeType();
+                form.render();
+                layer.open({
+                    type:1, title:'编辑数字员工', area:['650px', '85%'],
+                    content:$('#employeeFormModal'),
+                    cancel:function(idx){layer.close(idx);}
+                });
+                // 加载已存在的 .md 文件
+                uploadedMdFiles = [];
+                loadExistingMdFiles(d.name);
+            },
+            error: function() { layer.msg('获取数据失败', {icon:2}); }
+        });
+    };
+
+    // 删除
+    window.deleteEmployee = function(id, name) {
+        layer.confirm('确定要删除数字员工 "' + name + '" 吗？', function(index) {
+            $.ajax({
+                url: '/api/digital-employees/delete', type: 'POST', dataType: 'json',
+                data: {id: id},
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    if (res.success) {
+                        layer.msg('已删除', {icon:1});
+                        layer.close(index);
+                        loadData(currentPage, $('#searchInput').val(), $('#typeFilter').val());
+                    } else {
+                        layer.msg(res.message, {icon:2});
+                    }
+                },
+                error: function() { layer.msg('删除失败', {icon:2}); }
+            });
+        });
+    };
+
+    // 查看详情
+    window.viewDetail = function(id) {
+        $.ajax({
+            url: '/api/digital-employees/get', type: 'GET', dataType: 'json',
+            data: {id: id},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.message, {icon:2}); return; }
+                var d = res.data;
+                $('#detailName').text(d.name || '-');
+                $('#detailType').text(d.type === 'llm' ? 'LLM 数字员工' : 'API 数字员工');
+                $('#detailDesc').text(d.description || '-');
+                $('#detailStatus').text(d.status == 1 ? '启用' : '禁用');
+                $('#detailCreated').text(d.created_at || '-');
+                
+                if (d.type === 'llm') {
+                    $('#detailLlmFields').show();
+                    $('#detailApiFields').hide();
+                    $('#detailModel').text(d.model_id ? '模型ID: ' + d.model_id : '使用默认模型');
+                    $('#detailPrompt').text(d.system_prompt || '(未设置)');
+                    try {
+                        var skills = typeof d.skills === 'string' ? JSON.parse(d.skills) : d.skills;
+                        $('#detailSkills').text(Array.isArray(skills) && skills.length > 0 ? JSON.stringify(skills, null, 2) : '(未配置)');
+                    } catch(e) { $('#detailSkills').text(d.skills || '(未配置)'); }
+                    $('#detailCrawl4ai').text(d.crawl4ai_enabled == 1 ? '已启用' : '未启用');
+                } else {
+                    $('#detailLlmFields').hide();
+                    $('#detailApiFields').show();
+                    $('#detailApiUrl').text(d.api_url || '-');
+                    $('#detailApiMethod').text(d.api_method || 'GET');
+                    try {
+                        var hdrs = typeof d.api_headers === 'string' ? JSON.parse(d.api_headers) : d.api_headers;
+                        $('#detailApiHeaders').text(Object.keys(hdrs).length > 0 ? JSON.stringify(hdrs, null, 2) : '(无)');
+                    } catch(e) { $('#detailApiHeaders').text(d.api_headers || '(无)'); }
+                    try {
+                        var params = typeof d.api_params === 'string' ? JSON.parse(d.api_params) : d.api_params;
+                        $('#detailApiParams').text(Object.keys(params).length > 0 ? JSON.stringify(params, null, 2) : '(无)');
+                    } catch(e) { $('#detailApiParams').text(d.api_params || '(无)'); }
+                }
+                layer.open({type:1, title:'数字员工详情', area:['600px'], content:$('#detailModal')});
+            }
+        });
+    };
+
+    // 测试数字员工
+    window.testEmployee = function(id) {
+        // 先获取员工信息
+        $.ajax({
+            url: '/api/digital-employees/get', type: 'GET', dataType: 'json',
+            data: {id: id},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.message, {icon:2}); return; }
+                var d = res.data;
+                var testMsg = '你好，请回复一条测试消息。';
+                $('#testMessage').text(testMsg);
+                $('#testResult').hide();
+                $('#testError').hide();
+                $('#testLoading').show();
+                $('#testReply').text('');
+                $('#testErrorMessage').text('');
+                layer.open({
+                    type:1, title:'测试数字员工 - ' + (d.name || '未知'), area:['650px', '480px'],
+                    content:$('#testModal'),
+                    cancel:function(idx){layer.close(idx);}
+                });
+                // 发送测试请求
+                $.ajax({
+                    url: '/api/digital-employees/test', type: 'POST', dataType: 'json',
+                    contentType: 'application/json',
+                    data: JSON.stringify({id: id, test_message: testMsg}),
+                    headers: {'X-XSRFToken': getXsrfToken()},
+                    success: function(testRes) {
+                        $('#testLoading').hide();
+                        if (testRes.success) {
+                            $('#testReply').text(testRes.reply || '(空响应)');
+                            $('#testResult').show();
+                        } else {
+                            $('#testErrorMessage').text(testRes.message || '测试失败');
+                            $('#testError').show();
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#testLoading').hide();
+                        try {
+                            var errResp = JSON.parse(xhr.responseText);
+                            $('#testErrorMessage').text(errResp.message || '请求失败');
+                        } catch(e) {
+                            $('#testErrorMessage').text('请求失败，请检查网络连接');
+                        }
+                        $('#testError').show();
+                    }
+                });
+            },
+            error: function() { layer.msg('获取数据失败', {icon:2}); }
+        });
+    };
+
+    // 初始加载
+    loadData(1, '', '');
+});
+</script>
+{% end %}

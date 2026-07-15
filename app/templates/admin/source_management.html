@@ -134,27 +134,15 @@
         <div class="search-bar">
             <form class="layui-form" lay-filter="searchForm">
                 <div class="layui-row layui-col-space15">
-                    <div class="layui-col-md4">
+                    <div class="layui-col-md6">
                         <div class="layui-form-item">
-                            <label class="layui-form-label">用户名</label>
+                            <label class="layui-form-label">名称</label>
                             <div class="layui-input-block">
-                                <input type="text" name="search" placeholder="请输入用户名" class="layui-input">
+                                <input type="text" name="search" placeholder="请输入瞭源名称" class="layui-input">
                             </div>
                         </div>
                     </div>
-                    <div class="layui-col-md4">
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">角色</label>
-                            <div class="layui-input-block">
-                                <select name="role_id">
-                                    <option value="">全部角色</option>
-                                    <option value="1">系统管理员</option>
-                                    <option value="2">普通用户</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="layui-col-md4">
+                    <div class="layui-col-md6">
                         <div class="layui-form-item">
                             <label class="layui-form-label">状态</label>
                             <div class="layui-input-block">
@@ -171,26 +159,28 @@
                     <div class="layui-input-block">
                         <button class="layui-btn" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
                         <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
-                        <button class="layui-btn layui-btn-normal" id="addUserBtn"><i class="layui-icon layui-icon-addition"></i> 新增用户</button>
+                        <button class="layui-btn layui-btn-normal" id="addSourceBtn"><i class="layui-icon layui-icon-addition"></i> 新增瞭源</button>
                     </div>
                 </div>
             </form>
         </div>
 
         <div class="data-table">
-            <table class="layui-table" lay-skin="line" id="userTable">
+            <table class="layui-table" lay-skin="line" id="sourceTable">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>用户名</th>
-                        <th>角色</th>
+                        <th>名称</th>
+                        <th>URL模板</th>
+                        <th>关键词参数</th>
+                        <th>分页参数</th>
                         <th>状态</th>
                         <th>创建时间</th>
                         <th>操作</th>
                     </tr>
                 </thead>
-                <tbody id="userTableBody">
-                    <tr><td colspan="6" style="text-align: center;">加载中...</td></tr>
+                <tbody id="sourceTableBody">
+                    <tr><td colspan="8" style="text-align: center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -205,54 +195,78 @@
     </div>
 </div>
 
-<!-- 新增/编辑用户弹窗 -->
-    <div style="display: none;" id="userFormModal">
-        <form class="layui-form layui-form-pane" lay-filter="userForm" style="padding: 20px;">
-            <input type="hidden" name="user_id" id="userId">
-            <div class="layui-form-item">
-                <label class="layui-form-label">用户名</label>
-                <div class="layui-input-block">
-                    <input type="text" name="username" id="editUsername" lay-verify="required" placeholder="请输入用户名" class="layui-input">
-                </div>
+<!-- 新增/编辑瞭源弹窗 -->
+<div style="display: none;" id="sourceFormModal">
+    <form class="layui-form layui-form-pane" lay-filter="sourceForm" style="padding: 20px;">
+        <input type="hidden" name="source_id" id="sourceId">
+        <div class="layui-form-item">
+            <label class="layui-form-label">名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" lay-verify="required" placeholder="例如：百度新闻" class="layui-input">
             </div>
-            <div class="layui-form-item" id="passwordItem" style="display:none;">
-                <label class="layui-form-label">新密码</label>
-                <div class="layui-input-block">
-                    <input type="password" name="password" placeholder="留空则不修改密码" class="layui-input">
-                </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">URL模板</label>
+            <div class="layui-input-block">
+                <input type="text" name="url_template" lay-verify="required" placeholder="例如：https://www.baidu.com/s?rtt=1&bsst=1&cl=2&tn=news&rsv_dl=ns_pc&" class="layui-input">
             </div>
-            <div class="layui-form-item">
-                <label class="layui-form-label">角色</label>
-                <div class="layui-input-block">
-                    <select name="role_id" id="roleSelect" lay-verify="required">
-                        <option value="">请选择角色</option>
-                    </select>
-                </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">请求方法</label>
+            <div class="layui-input-block">
+                <select name="method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                </select>
             </div>
-            <div class="layui-form-item">
-                <label class="layui-form-label">状态</label>
-                <div class="layui-input-block">
-                    <input type="radio" name="status" value="1" title="启用" checked>
-                    <input type="radio" name="status" value="0" title="禁用">
-                </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">关键词参数</label>
+            <div class="layui-input-block">
+                <input type="text" name="keyword_param" value="word" placeholder="URL中关键词的参数名" class="layui-input">
             </div>
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button class="layui-btn" lay-submit lay-filter="saveUserBtn">保存</button>
-                    <button type="button" class="layui-btn layui-btn-primary" id="cancelUserBtn">取消</button>
-                </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">分页参数</label>
+            <div class="layui-input-block">
+                <input type="text" name="page_param" value="pn" placeholder="URL中分页的参数名" class="layui-input">
             </div>
-        </form>
-    </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">分页步长</label>
+            <div class="layui-input-block">
+                <input type="number" name="page_step" value="10" placeholder="每页步长，例如10" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Request Headers</label>
+            <div class="layui-input-block">
+                <textarea name="headers" placeholder='请输入JSON格式的Headers，例如：{"User-Agent": "Mozilla/5.0..."}' class="layui-textarea" style="min-height: 120px;"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" value="1" title="启用" checked>
+                <input type="radio" name="status" value="0" title="禁用">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="saveSourceBtn">保存</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="cancelSourceBtn">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
 
 {% include "profile_modals.html" %}
 {% end %}
 
 {% block script %}
 <script>
-layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
+layui.use(['form', 'layer', 'element', 'jquery'], function(){
     var form = layui.form;
-    var table = layui.table;
     var layer = layui.layer;
     var element = layui.element;
     var $ = layui.$;
@@ -284,7 +298,6 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
         });
     }
 
-    // 修改密码弹窗
     window.showChangePwd = function() {
         layer.open({
             type: 1,
@@ -341,94 +354,57 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
     var pageSize = 20;
     var openIndex = null;
 
-    // 获取XSRF token
     function getXsrfToken() {
         var match = document.cookie.match(/(_xsrf=([^;]*)|$)/);
         return match ? decodeURIComponent(match[2]) : '';
     }
-    
-    // 动态加载角色列表
-    function loadRolesDropdown(selectedRoleId) {
-        $.ajax({
-            url: '/api/roles/list',
-            type: 'GET',
-            dataType: 'json',
-            success: function(res) {
-                var roles = res && res.data ? res.data : [];
-                var html = '<option value="">请选择角色</option>';
-                roles.forEach(function(role) {
-                    var selected = (selectedRoleId && String(role.id) === String(selectedRoleId)) ? 'selected' : '';
-                    html += '<option value="' + role.id + '" ' + selected + '>' + role.name + '</option>';
-                });
-                $('#roleSelect').html(html);
-                form.render('select');
-            },
-            error: function() {
-                console.error('Failed to load roles');
-            }
-        });
-    }
 
-    // 加载用户列表
-    function loadUsers(page, search, roleId, status) {
-        console.log('Loading users with params:', {page: page, search: search, role_id: roleId, status: status});
+    function loadSources(page, search, status) {
         $.ajax({
-            url: '/api/users/list',
+            url: '/api/sources/list',
             type: 'GET',
             dataType: 'json',
             data: {
                 page: page || currentPage,
                 page_size: pageSize,
                 search: search || '',
-                role_id: roleId || '',
                 status: status || ''
             },
             success: function(res) {
-                console.log('API Response:', res);
                 if (!res || !res.data) {
-                    console.error('Invalid response format:', res);
-                    $('#userTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">数据格式错误</td></tr>');
+                    $('#sourceTableBody').html('<tr><td colspan="8" style="text-align: center; color: red;">数据格式错误</td></tr>');
                     return;
                 }
-                
                 var html = '';
                 if (res.data.length === 0) {
-                    html = '<tr><td colspan="6" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                    html = '<tr><td colspan="8" style="text-align: center; color: #999;">暂无数据</td></tr>';
                 } else {
-                    res.data.forEach(function(user) {
-                        console.log('User:', user);
-                        var statusHtml = user.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
-                        var isAdmin = (user.username === 'admin');
-                        var deleteBtn = isAdmin
-                            ? '<button class="layui-btn layui-btn-xs layui-btn-disabled" disabled><i class="layui-icon layui-icon-delete"></i> 删除</button>'
-                            : '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">删除</button>';
+                    res.data.forEach(function(source) {
+                        var statusHtml = source.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
                         html += '<tr>' +
-                            '<td>' + user.id + '</td>' +
-                            '<td>' + (isAdmin ? user.username + ' <span class="layui-badge layui-bg-red">超管</span>' : user.username) + '</td>' +
-                            '<td>' + (user.role_name || '-') + '</td>' +
+                            '<td>' + source.id + '</td>' +
+                            '<td>' + (source.name || '-') + '</td>' +
+                            '<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (source.url_template || '') + '">' + (source.url_template || '-') + '</td>' +
+                            '<td>' + (source.keyword_param || '-') + '</td>' +
+                            '<td>' + (source.page_param || '-') + ' (' + (source.page_step || 0) + ')</td>' +
                             '<td>' + statusHtml + '</td>' +
-                            '<td>' + user.created_at + '</td>' +
+                            '<td>' + source.created_at + '</td>' +
                             '<td>' +
-                                '<button class="layui-btn layui-btn-xs" onclick="editUser(' + user.id + ')">编辑</button> ' +
-                                deleteBtn +
+                                '<button class="layui-btn layui-btn-xs" onclick="editSource(' + source.id + ')">编辑</button> ' +
+                                '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteSource(' + source.id + ', \'' + source.name + '\')">删除</button>' +
                             '</td>' +
                         '</tr>';
                     });
                 }
-                $('#userTableBody').html(html);
-                
-                // 渲染分页
+                $('#sourceTableBody').html(html);
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function(xhr, status, error) {
-                console.error('Ajax Error:', status, error);
-                console.error('Response:', xhr.responseText);
-                $('#userTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
+                $('#sourceTableBody').html('<tr><td colspan="8" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
             }
         });
     }
 
-    // 渲染分页
     function renderPagination(total, current, size) {
         var pages = Math.ceil(total / size);
         var html = '<div class="layui-box layui-laypage layui-laypage-default">';
@@ -438,183 +414,135 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
         }
         html += '</div>';
         $('#pagination').html(html);
-        
         $('#pagination a').on('click', function() {
             currentPage = $(this).data('page');
-            loadUsers(currentPage);
+            loadSources(currentPage);
         });
     }
 
-    // 搜索
     form.on('submit(searchBtn)', function(data) {
         currentPage = 1;
-        loadUsers(1, data.field.search, data.field.role_id, data.field.status);
+        loadSources(1, data.field.search, data.field.status);
         return false;
     });
 
-    // 保存用户（新增/编辑）
-    form.on('submit(saveUserBtn)', function(data) {
+    form.on('submit(saveSourceBtn)', function(data) {
         var field = data.field;
-        var userId = field.user_id;
-        var isEdit = userId && userId !== '';
-        console.log('Saving user:', field, 'isEdit:', isEdit);
-        
-        var url = isEdit ? '/api/users/update' : '/api/users/create';
-        
+        var sourceId = field.source_id;
+        var isEdit = sourceId && sourceId !== '';
+        var url = isEdit ? '/api/sources/update' : '/api/sources/create';
         $.ajax({
             url: url,
             type: 'POST',
             dataType: 'json',
             data: field,
-            headers: {
-                'X-XSRFToken': getXsrfToken()
-            },
+            headers: {'X-XSRFToken': getXsrfToken()},
             success: function(res) {
-                console.log('Save response:', res);
                 if (res.success) {
-                    layer.msg(isEdit ? '用户更新成功' : '用户创建成功', {icon: 1});
+                    layer.msg(isEdit ? '瞭源更新成功' : '瞭源创建成功', {icon: 1});
                     if (openIndex) layer.close(openIndex);
-                    loadUsers(1);
+                    loadSources(1);
                 } else {
                     layer.msg(res.message, {icon: 2});
                 }
             },
-            error: function(xhr, status, error) {
-                console.error('Save error:', status, error);
+            error: function(xhr) {
                 try {
                     var resp = JSON.parse(xhr.responseText);
                     layer.msg(resp.message || '请求失败', {icon: 2});
                 } catch(e) {
-                    layer.msg('请求失败: ' + error, {icon: 2});
+                    layer.msg('请求失败', {icon: 2});
                 }
             }
         });
-        
         return false;
     });
 
-    // 新增用户
-    $('#addUserBtn').on('click', function() {
-        $('#userId').val('');
-        $('#passwordItem').show();
-        loadRolesDropdown(2);
-        form.val('userForm', {
-            'username': '',
-            'password': '',
-            'role_id': '2',
+    $('#addSourceBtn').on('click', function() {
+        $('#sourceId').val('');
+        form.val('sourceForm', {
+            'name': '',
+            'url_template': '',
+            'method': 'GET',
+            'headers': '',
+            'keyword_param': 'word',
+            'page_param': 'pn',
+            'page_step': '10',
             'status': '1'
         });
-        
         openIndex = layer.open({
             type: 1,
-            title: '新增用户',
-            area: ['500px'],
-            content: $('#userFormModal'),
-            cancel: function(index) {
-                openIndex = null;
-            }
+            title: '新增瞭源',
+            area: ['700px'],
+            content: $('#sourceFormModal'),
+            cancel: function(index) { openIndex = null; }
         });
         return false;
     });
 
-    // 取消按钮
-    $('#cancelUserBtn').on('click', function() {
-        if (openIndex) {
-            layer.close(openIndex);
-            openIndex = null;
-        }
+    $('#cancelSourceBtn').on('click', function() {
+        if (openIndex) { layer.close(openIndex); openIndex = null; }
     });
 
-    // 编辑用户
-    window.editUser = function(userId) {
+    window.editSource = function(sourceId) {
         $.ajax({
-            url: '/api/users/get',
+            url: '/api/sources/get',
             type: 'GET',
             dataType: 'json',
-            data: {user_id: userId},
+            data: {source_id: sourceId},
             success: function(res) {
                 if (res.success) {
-                    var user = res.data;
-                    var isAdmin = (user.username === 'admin');
-                    $('#userId').val(user.id);
-                    
-                    // 编辑时显示密码字段
-                    $('#passwordItem').show();
-                    
-                    loadRolesDropdown(user.role_id);
-                    form.val('userForm', {
-                        'username': user.username,
-                        'password': '',
-                        'role_id': String(user.role_id),
-                        'status': String(user.status)
+                    var s = res.data;
+                    $('#sourceId').val(s.id);
+                    form.val('sourceForm', {
+                        'name': s.name,
+                        'url_template': s.url_template,
+                        'method': s.method,
+                        'headers': s.headers,
+                        'keyword_param': s.keyword_param,
+                        'page_param': s.page_param || '',
+                        'page_step': String(s.page_step),
+                        'status': String(s.status)
                     });
-                    
-                    // 超级管理员不可修改用户名/角色/状态
-                    if (isAdmin) {
-                        $('#editUsername').prop('disabled', true);
-                        $('#roleSelect').prop('disabled', true);
-                        $('input[name="status"]').prop('disabled', true);
-                    } else {
-                        $('#editUsername').prop('disabled', false);
-                        $('#roleSelect').prop('disabled', false);
-                        $('input[name="status"]').prop('disabled', false);
-                    }
-                    
                     form.render();
-                    
                     openIndex = layer.open({
                         type: 1,
-                        title: isAdmin ? '超级管理员（部分信息不可修改）' : '编辑用户',
-                        area: ['500px'],
-                        content: $('#userFormModal'),
-                        cancel: function(index) {
-                            openIndex = null;
-                        }
+                        title: '编辑瞭源',
+                        area: ['700px'],
+                        content: $('#sourceFormModal'),
+                        cancel: function(index) { openIndex = null; }
                     });
                 } else {
-                    layer.msg(res.message || '获取用户信息失败', {icon: 2});
+                    layer.msg(res.message || '获取瞭源信息失败', {icon: 2});
                 }
             },
-            error: function(xhr, status, error) {
-                layer.msg('获取用户信息失败: ' + error, {icon: 2});
-            }
+            error: function() { layer.msg('获取瞭源信息失败', {icon: 2}); }
         });
     };
 
-    // 删除用户
-    window.deleteUser = function(userId, username) {
-        if (username === 'admin') {
-            layer.msg('超级管理员不允许删除', {icon: 2});
-            return;
-        }
-        layer.confirm('确定要删除用户 "' + username + '" 吗？', function(index) {
+    window.deleteSource = function(sourceId, name) {
+        layer.confirm('确定要删除瞭源 "' + name + '" 吗？同时会删除该瞭源下所有采集数据。', function(index) {
             $.ajax({
-                url: '/api/users/delete',
+                url: '/api/sources/delete',
                 type: 'POST',
                 dataType: 'json',
-                data: {user_id: userId},
-                headers: {
-                    'X-XSRFToken': getXsrfToken()
-                },
+                data: {source_id: sourceId},
+                headers: {'X-XSRFToken': getXsrfToken()},
                 success: function(res) {
                     if (res.success) {
-                        layer.msg('用户删除成功', {icon: 1});
+                        layer.msg('瞭源删除成功', {icon: 1});
                         layer.close(index);
-                        loadUsers(currentPage);
+                        loadSources(currentPage);
                     } else {
                         layer.msg(res.message, {icon: 2});
                     }
                 },
-                error: function(xhr, status, error) {
-                    layer.msg('删除失败: ' + error, {icon: 2});
-                }
+                error: function() { layer.msg('删除失败', {icon: 2}); }
             });
         });
     };
 
-    // 初始加载
-    console.log('Page loaded, loading users...');
-    loadUsers(1);
+    loadSources(1);
 });
 </script>
 {% end %}

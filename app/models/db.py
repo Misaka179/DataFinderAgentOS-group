@@ -100,6 +100,229 @@ def init_db():
             """
         )
         
+        # 瞭源管理表（采集源 + 采集规则）
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS watch_sources (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                url_template TEXT NOT NULL,
+                method TEXT NOT NULL DEFAULT 'GET',
+                headers TEXT NOT NULL DEFAULT '{}',
+                keyword_param TEXT NOT NULL DEFAULT 'word',
+                page_param TEXT DEFAULT 'pn',
+                page_step INTEGER NOT NULL DEFAULT 10,
+                status INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        
+        # 瞭望采集数据表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS watch_collected_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_id INTEGER NOT NULL,
+                keyword TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT,
+                summary TEXT,
+                source_name TEXT,
+                collected_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                FOREIGN KEY (source_id) REFERENCES watch_sources(id)
+            )
+            """
+        )
+        
+        # 数据仓库表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS data_warehouse (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                url TEXT,
+                summary TEXT,
+                source_name TEXT,
+                keyword TEXT,
+                source_id INTEGER DEFAULT 0,
+                is_deep_collected INTEGER NOT NULL DEFAULT 0,
+                collected_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        
+        # 模型引擎表（OpenAI API范式）
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ai_models (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                provider TEXT NOT NULL DEFAULT 'openai',
+                model_name TEXT NOT NULL,
+                api_base_url TEXT,
+                api_key TEXT,
+                max_tokens INTEGER NOT NULL DEFAULT 4096,
+                token_count INTEGER NOT NULL DEFAULT 0,
+                is_default INTEGER NOT NULL DEFAULT 0,
+                status INTEGER NOT NULL DEFAULT 1,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                category TEXT NOT NULL DEFAULT 'text',
+                system_prompt TEXT DEFAULT '',
+                temperature REAL NOT NULL DEFAULT 0.7,
+                top_p REAL NOT NULL DEFAULT 1.0,
+                context_length INTEGER NOT NULL DEFAULT 4096,
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        
+        # 模型表迁移：兼容已有表添加新字段
+        try:
+            conn.execute("ALTER TABLE ai_models ADD COLUMN category TEXT NOT NULL DEFAULT 'text'")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE ai_models ADD COLUMN system_prompt TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE ai_models ADD COLUMN temperature REAL NOT NULL DEFAULT 0.7")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE ai_models ADD COLUMN top_p REAL NOT NULL DEFAULT 1.0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE ai_models ADD COLUMN context_length INTEGER NOT NULL DEFAULT 4096")
+        except Exception:
+            pass
+        
+        # 数字员工表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS digital_employees (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'llm',
+                description TEXT DEFAULT '',
+                avatar TEXT DEFAULT '',
+                status INTEGER NOT NULL DEFAULT 1,
+                -- 类型1：LLM 相关字段
+                model_id INTEGER DEFAULT NULL,
+                system_prompt TEXT DEFAULT '',
+                skills TEXT DEFAULT '[]',
+                crawl4ai_enabled INTEGER NOT NULL DEFAULT 0,
+                -- 类型2：API 相关字段
+                api_url TEXT DEFAULT '',
+                api_method TEXT DEFAULT 'GET',
+                api_headers TEXT DEFAULT '{}',
+                api_params TEXT DEFAULT '{}',
+                api_response_template TEXT DEFAULT '',
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        
+        # 数字员工表兼容迁移：添加新字段（如果表已存在）
+        for mig_col, mig_def in [
+            ("sort_order", "INTEGER NOT NULL DEFAULT 0"),
+            ("avatar", "TEXT DEFAULT ''"),
+            ("system_prompt", "TEXT DEFAULT ''"),
+            ("skills", "TEXT DEFAULT '[]'"),
+            ("api_params", "TEXT DEFAULT '{}'"),
+            ("api_response_template", "TEXT DEFAULT ''"),
+            ("card_config", "TEXT DEFAULT '{}'"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE digital_employees ADD COLUMN {mig_col} {mig_def}")
+            except Exception:
+                pass
+        
+        # 数字员工表数据迁移：旧列 → 新列
+        try:
+            conn.execute("UPDATE digital_employees SET system_prompt = prompt WHERE system_prompt = '' AND prompt != ''")
+        except Exception:
+            pass
+        try:
+            conn.execute("UPDATE digital_employees SET skills = skill_config WHERE skills = '[]' AND skill_config != ''")
+        except Exception:
+            pass
+        try:
+            conn.execute("UPDATE digital_employees SET api_params = api_params_template WHERE api_params = '{}' AND api_params_template != ''")
+        except Exception:
+            pass
+        try:
+            conn.execute("UPDATE digital_employees SET api_response_template = response_format WHERE api_response_template = '' AND response_format != ''")
+        except Exception:
+            pass
+        
+        # 深度采集任务表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS deep_collect_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                warehouse_id INTEGER NOT NULL,
+                employee_id INTEGER DEFAULT NULL,
+                employee_name TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'pending',
+                progress INTEGER NOT NULL DEFAULT 0,
+                steps TEXT NOT NULL DEFAULT '[]',
+                logs TEXT NOT NULL DEFAULT '[]',
+                result_data TEXT DEFAULT '',
+                error_message TEXT DEFAULT '',
+                started_at TEXT,
+                completed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        # 深度采集任务表兼容迁移
+        try:
+            conn.execute("ALTER TABLE deep_collect_tasks ADD COLUMN employee_name TEXT DEFAULT ''")
+        except Exception:
+            pass
+        
+        # 深度采集数据表（存储实际采集到的详细数据）
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS deep_collect_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                warehouse_id INTEGER NOT NULL,
+                task_id INTEGER NOT NULL,
+                crawled_title TEXT DEFAULT '',
+                crawled_content TEXT DEFAULT '',
+                analysis_result TEXT DEFAULT '',
+                extra_data TEXT DEFAULT '{}',
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                FOREIGN KEY (warehouse_id) REFERENCES data_warehouse(id),
+                FOREIGN KEY (task_id) REFERENCES deep_collect_tasks(id)
+            )
+            """
+        )
+        
+        # 用户对话表（数据隔离：每个用户存储自己的对话记录）
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL DEFAULT '新对话',
+                messages TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+            """
+        )
+        
         # 插入默认角色（如果不存在）
         cursor = conn.execute("SELECT id FROM roles WHERE code = 'admin'")
         if not cursor.fetchone():
@@ -124,7 +347,12 @@ def init_db():
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 ("管理系统", "management", "layui-icon-set", "", 2, 0, 1)
             )
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("瞭望中心", "watch_center", "layui-icon-engine", "", 3, 0, 1)
+            )
             mgmt_id = conn.execute("SELECT id FROM functions WHERE code='management'").fetchone()["id"]
+            watch_center_id = conn.execute("SELECT id FROM functions WHERE code='watch_center'").fetchone()["id"]
             # 二级功能（管理系统下）
             conn.execute(
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -141,6 +369,30 @@ def init_db():
             conn.execute(
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 ("菜单管理", "menu_management", "layui-icon-auz", "/admin/menu-management", 4, mgmt_id, 1)
+            )
+            # 二级功能（瞭望中心下）
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("瞭源管理", "source_management", "layui-icon-website", "/admin/source-management", 1, watch_center_id, 1)
+            )
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("瞭望采集", "watch_management", "layui-icon-util", "/admin/watch-management", 2, watch_center_id, 1)
+            )
+            # 一级功能（智能中枢）
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("智能中枢", "intelligent_hub", "layui-icon-engine", "", 4, 0, 1)
+            )
+            hub_id = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()["id"]
+            # 二级功能（智能中枢下）
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("模型引擎", "model_engine", "layui-icon-senior", "/admin/model-engine", 1, hub_id, 1)
+            )
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("数字员工", "digital_employee", "layui-icon-user", "/admin/digital-employee", 2, hub_id, 1)
             )
         
         conn.commit()

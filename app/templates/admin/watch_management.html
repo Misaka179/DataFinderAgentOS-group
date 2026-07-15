@@ -1,0 +1,1171 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.layui-layout-admin .layui-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.layui-layout-admin .layui-logo {
+    color: #fff !important;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.layui-side {
+    background: #1e293b !important;
+    top: 60px;
+}
+.layui-side-scroll {
+    width: 220px;
+}
+.layui-nav-tree {
+    background: #1e293b !important;
+}
+.layui-nav-tree .layui-nav-item a {
+    color: rgba(255,255,255,.75);
+    height: 46px;
+    line-height: 46px;
+}
+.layui-nav-tree .layui-nav-item a:hover {
+    background: rgba(255,255,255,.08);
+    color: #fff;
+}
+.layui-nav-tree .layui-nav-item.layui-this a {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: #fff;
+}
+.layui-body {
+    top: 60px;
+    left: 220px;
+    background: #f1f5f9;
+    padding: 20px;
+    overflow-y: auto;
+}
+.layui-footer {
+    left: 220px;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
+    text-align: center;
+    line-height: 50px;
+}
+
+/* ===== 瞭望管理独立风格 ===== */
+.watch-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* A区 - 搜索输入区 */
+.zone-a {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 12px;
+    padding: 30px 40px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+}
+.zone-a .search-title {
+    color: #f1f5f9;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.zone-a .search-title i {
+    font-size: 24px;
+    color: #60a5fa;
+}
+.zone-a .search-box {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.zone-a .search-box .layui-input {
+    flex: 1;
+    height: 46px;
+    border-radius: 8px;
+    border: 2px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.1);
+    color: #fff;
+    font-size: 16px;
+    padding: 0 20px;
+    transition: all .3s;
+}
+.zone-a .search-box .layui-input::placeholder {
+    color: rgba(255,255,255,.4);
+}
+.zone-a .search-box .layui-input:focus {
+    border-color: #60a5fa;
+    background: rgba(255,255,255,.15);
+    box-shadow: 0 0 20px rgba(96,165,250,.2);
+}
+.zone-a .search-box .collect-btn {
+    height: 46px;
+    padding: 0 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.zone-a .search-box .collect-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(59,130,246,.4);
+}
+.zone-a .search-box .collect-btn:active {
+    transform: translateY(0);
+}
+
+/* B区 - 瞭源规则列表（增强参数可视版） */
+.zone-b {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.zone-b .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.zone-b .section-title i {
+    color: #3b82f6;
+}
+.source-switch-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+}
+.source-switch-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .2s;
+    user-select: none;
+    overflow: hidden;
+}
+.source-switch-item:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 2px 8px rgba(59,130,246,.08);
+}
+.source-switch-item.active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(59,130,246,.12);
+}
+.source-switch-item .switch-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+.source-switch-item .switch-indicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #94a3b8;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+    flex-shrink: 0;
+}
+.source-switch-item.active .switch-indicator {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+.source-switch-item.active .switch-indicator::after {
+    content: "✓";
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+.source-switch-item .source-name {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    flex: 1;
+}
+.source-switch-item .source-method {
+    font-size: 11px;
+    color: #3b82f6;
+    background: #dbeafe;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+.source-switch-item .source-params {
+    display: none;
+    padding: 0 16px 12px 16px;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: 0;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+}
+.source-switch-item.active .source-params {
+    display: grid;
+}
+.source-params .param-item {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.source-params .param-item .param-label {
+    color: #94a3b8;
+    min-width: 60px;
+}
+.source-params .param-item .param-value {
+    color: #334155;
+    font-weight: 500;
+    font-family: monospace;
+    font-size: 11px;
+    word-break: break-all;
+}
+.source-params .param-item.full-width {
+    grid-column: 1 / -1;
+}
+
+/* C区 - 橱窗列表 */
+.zone-c {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.zone-c .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.zone-c .section-title .title-left i {
+    color: #3b82f6;
+    margin-right: 8px;
+}
+.zone-c .section-title .title-right {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.showcase-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    transition: all .25s;
+    display: flex;
+    flex-direction: column;
+}
+.showcase-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 12px rgba(59,130,246,.1);
+    transform: translateY(-2px);
+}
+.showcase-card .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 10px;
+    min-height: 45px;
+}
+.showcase-card .card-title a {
+    color: #1e293b;
+    text-decoration: none;
+}
+.showcase-card .card-title a:hover {
+    color: #2563eb;
+}
+.showcase-card .card-summary {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+    margin-bottom: 12px;
+}
+.showcase-card {
+    cursor: pointer;
+    position: relative;
+}
+.showcase-card .card-link-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+.showcase-card .card-title a {
+    position: relative;
+    z-index: 2;
+}
+.showcase-card .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+}
+.showcase-card .card-meta .card-source {
+    background: #dbeafe;
+    color: #3b82f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+.showcase-card .card-meta .card-time {
+    color: #94a3b8;
+}
+.showcase-card .card-meta .card-open-btn {
+    background: #3b82f6;
+    color: #fff;
+    padding: 3px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    text-decoration: none;
+    position: relative;
+    z-index: 2;
+    transition: background .2s;
+}
+.showcase-card .card-meta .card-open-btn:hover {
+    background: #2563eb;
+}
+
+/* B区 - 采集参数控件 */
+.collect-params {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.collect-params .param-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.collect-params .param-group label {
+    font-size: 13px;
+    color: #64748b;
+    white-space: nowrap;
+}
+.collect-params .param-group input,
+.collect-params .param-group select {
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: 13px;
+    color: #334155;
+    background: #f8fafc;
+    outline: none;
+    transition: border-color .2s;
+}
+.collect-params .param-group input:focus,
+.collect-params .param-group select:focus {
+    border-color: #3b82f6;
+}
+.collect-params .param-group input[type=number] {
+    width: 72px;
+}
+.collect-params .param-tip {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* B区 - 全选按钮 */
+.select-all-btn {
+    margin-left: auto;
+    height: 28px;
+    padding: 0 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+    color: #475569;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.select-all-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+}
+.select-all-btn.all-selected {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: #fff;
+}
+
+/* B区 - 保存步长按钮 */
+.save-step-btn {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid #3b82f6;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+}
+.save-step-btn:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.showcase-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+}
+.showcase-empty i {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}
+.showcase-empty p {
+    font-size: 15px;
+}
+
+.showcase-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+}
+
+.pagination-bar {
+    text-align: center;
+    padding: 12px 0 0 0;
+}
+
+@media screen and (max-width: 992px) {
+    .showcase-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media screen and (max-width: 600px) {
+    .showcase-grid {
+        grid-template-columns: 1fr;
+    }
+    .zone-a .search-box {
+        flex-direction: column;
+    }
+    .zone-a .search-box .layui-input {
+        width: 100%;
+    }
+    .zone-a .search-box .collect-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <div class="watch-container">
+
+            <!-- A区：搜索输入区 -->
+            <div class="zone-a">
+                <div class="search-title">
+                    <i class="layui-icon layui-icon-search"></i>
+                    数据采集
+                </div>
+                <div class="search-box">
+                    <input type="text" class="layui-input" id="keywordInput" placeholder="请输入关键词，例如：四川、科技、经济..." autocomplete="off">
+                    <button class="collect-btn" id="collectBtn">
+                        <i class="layui-icon layui-icon-ok-circle"></i>
+                        开始采集
+                    </button>
+                </div>
+            </div>
+
+            <!-- B区：瞭源规则列表（参数可视化 + 采集参数配置） -->
+            <div class="zone-b">
+                <div class="section-title">
+                    <i class="layui-icon layui-icon-list"></i>
+                    可选瞭源
+                    <span style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-left: 8px;">点击选择要使用的瞭源（可多选），选中后展开查看参数详情</span>
+                    <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">
+                        <i class="layui-icon layui-icon-ok-circle"></i> 全选
+                    </button>
+                </div>
+                <div class="source-switch-list" id="sourceSwitchList">
+                    <div style="color: #94a3b8; padding: 10px;">加载中...</div>
+                </div>
+                <!-- 采集参数 -->
+                <div class="collect-params">
+                    <div class="param-group">
+                        <label><i class="layui-icon layui-icon-special"></i> 采集页数</label>
+                        <input type="number" id="collectPage" value="1" min="1" max="100">
+                        <span class="param-tip">第几页</span>
+                    </div>
+                    <div class="param-group">
+                        <label><i class="layui-icon layui-icon-note"></i> 每页步长</label>
+                        <input type="number" id="currentPageStep" value="10" min="1" max="999" style="width:72px;">
+                        <button class="save-step-btn" id="saveStepBtn" onclick="savePageStep()">保存</button>
+                        <span class="param-tip" id="pageStepSourceName">（从选中瞭源读取，修改后点保存同步到瞭源管理）</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C区：采集结果橱窗列表 -->
+            <div class="zone-c">
+                <div class="section-title">
+                    <span class="title-left">
+                        <i class="layui-icon layui-icon-app"></i>
+                        采集结果
+                    </span>
+                    <span class="title-right" id="resultCount">共 0 条</span>
+                    <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                        <label style="font-size:12px;color:#475569;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllShowcase(this)">
+                            全选
+                        </label>
+                        <button class="save-step-btn" onclick="saveSelectedToWarehouse()" style="height:28px;font-size:12px;padding:0 10px;">
+                            <i class="layui-icon layui-icon-ok"></i> 保存到数据仓库
+                        </button>
+                    </div>
+                </div>
+                <div class="showcase-grid" id="showcaseGrid">
+                    <div class="showcase-empty">
+                        <i class="layui-icon layui-icon-face-smile"></i>
+                        <p>暂无采集数据，请输入关键词并选择瞭源后开始采集</p>
+                    </div>
+                </div>
+                <div class="pagination-bar">
+                    <div id="pagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-footer">
+        © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
+    </div>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+<script>
+layui.use(['layer', 'element', 'jquery'], function(){
+    var layer = layui.layer;
+    var element = layui.element;
+    var $ = layui.$;
+
+    var currentPage = 1;
+    var pageSize = 12;
+    var selectedSourceIds = {};
+    var sourceDataMap = {}; // 瞭源数据缓存 {id: source}
+
+    // 个人信息弹窗
+    window.showProfile = function() {
+        $.ajax({
+            url: '/api/profile',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    var u = res.data;
+                    $('#profileUsername').text(u.username || '-');
+                    $('#profileRole').text(u.role_name || '-');
+                    $('#profileStatus').text(u.status == 1 ? '启用' : '禁用');
+                    $('#profileCreated').text(u.created_at || '-');
+                    layer.open({
+                        type: 1,
+                        title: '个人信息',
+                        area: ['500px'],
+                        content: $('#profileModal')
+                    });
+                }
+            },
+            error: function() {
+                layer.msg('获取个人信息失败', {icon: 2});
+            }
+        });
+    }
+
+    window.showChangePwd = function() {
+        layer.open({
+            type: 1,
+            title: '修改密码',
+            area: ['500px'],
+            content: $('#changePwdModal'),
+            btn: ['保存', '取消'],
+            yes: function(index) {
+                var oldPwd = $('input[name="old_password"]').val();
+                var newPwd = $('input[name="new_password"]').val();
+                var confirmPwd = $('input[name="confirm_password"]').val();
+                if (!oldPwd || !newPwd || !confirmPwd) {
+                    layer.msg('请填写完整', {icon: 2});
+                    return;
+                }
+                if (newPwd !== confirmPwd) {
+                    layer.msg('两次密码输入不一致', {icon: 2});
+                    return;
+                }
+                if (newPwd.length < 6) {
+                    layer.msg('新密码长度不能少于6位', {icon: 2});
+                    return;
+                }
+                $.ajax({
+                    url: '/api/profile/change-password',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {old_password: oldPwd, new_password: newPwd},
+                    headers: {'X-XSRFToken': getXsrfToken()},
+                    success: function(res) {
+                        if (res.success) {
+                            layer.msg('密码修改成功，请重新登录', {icon: 1}, function() {
+                                document.getElementById('admin-logout-form').submit();
+                            });
+                            layer.close(index);
+                        } else {
+                            layer.msg(res.message, {icon: 2});
+                        }
+                    },
+                    error: function() {
+                        layer.msg('请求失败', {icon: 2});
+                    }
+                });
+            },
+            end: function() {
+                $('input[name="old_password"]').val('');
+                $('input[name="new_password"]').val('');
+                $('input[name="confirm_password"]').val('');
+            }
+        });
+    }
+
+    function getXsrfToken() {
+        var match = document.cookie.match(/(_xsrf=([^;]*)|$)/);
+        return match ? decodeURIComponent(match[2]) : '';
+    }
+
+    // 加载瞭源列表（B区）- 参数可视化版
+    function loadSourceSwitches() {
+        $.ajax({
+            url: '/api/sources/active',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+                if (res.success && res.data) {
+                    // 缓存瞭源数据
+                    sourceDataMap = {};
+                    res.data.forEach(function(s) { sourceDataMap[s.id] = s; });
+                    
+                    // 清除已不存在的选中项
+                    Object.keys(selectedSourceIds).forEach(function(id) {
+                        if (!sourceDataMap[id]) delete selectedSourceIds[id];
+                    });
+
+                    var html = '';
+                    res.data.forEach(function(source) {
+                        var isActive = selectedSourceIds[source.id] || false;
+                        var urlTemplate = source.url_template || '';
+                        var keywordParam = source.keyword_param || 'word';
+                        var pageParam = source.page_param || '-';
+                        var pageStep = source.page_step || 0;
+                        var method = source.method || 'GET';
+                        
+                        html += '<div class="source-switch-item ' + (isActive ? 'active' : '') + '" data-id="' + source.id + '" onclick="toggleSource(' + source.id + ')">' +
+                            '<div class="switch-header">' +
+                                '<div class="switch-indicator"></div>' +
+                                '<span class="source-name">' + source.name + '</span>' +
+                                '<span class="source-method">' + method + '</span>' +
+                            '</div>' +
+                            '<div class="source-params">' +
+                                '<div class="param-item full-width">' +
+                                    '<span class="param-label">URL模板</span>' +
+                                    '<span class="param-value" title="' + urlTemplate.replace(/"/g, '&quot;') + '">' + urlTemplate + '</span>' +
+                                '</div>' +
+                                '<div class="param-item">' +
+                                    '<span class="param-label">关键词参数</span>' +
+                                    '<span class="param-value">' + keywordParam + '</span>' +
+                                '</div>' +
+                                '<div class="param-item">' +
+                                    '<span class="param-label">分页参数</span>' +
+                                    '<span class="param-value">' + pageParam + '</span>' +
+                                '</div>' +
+                                '<div class="param-item">' +
+                                    '<span class="param-label">分页步长</span>' +
+                                    '<span class="param-value">' + pageStep + '</span>' +
+                                '</div>' +
+                                '<div class="param-item">' +
+                                    '<span class="param-label">请求方式</span>' +
+                                    '<span class="param-value">' + method + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+                    });
+                    if (res.data.length === 0) {
+                        html = '<div style="color: #94a3b8; padding: 10px;">暂无可用的瞭源，请先在「瞭源管理」中添加</div>';
+                    }
+                    $('#sourceSwitchList').html(html);
+                    syncPageStep();
+                    updateSelectAllBtn();
+                }
+            },
+            error: function() {
+                $('#sourceSwitchList').html('<div style="color: #ef4444; padding: 10px;">加载瞭源列表失败</div>');
+            }
+        });
+    }
+
+    // 切换瞭源选择（同步步长参数）
+    window.toggleSource = function(id) {
+        if (selectedSourceIds[id]) {
+            delete selectedSourceIds[id];
+        } else {
+            selectedSourceIds[id] = true;
+        }
+        // 更新UI样式
+        $('.source-switch-item[data-id="' + id + '"]').toggleClass('active');
+        // 同步分页步长：取最近选中的瞭源的page_step
+        syncPageStep();
+        updateSelectAllBtn();
+    };
+
+    // 同步分页步长到输入框
+    function syncPageStep() {
+        var ids = Object.keys(selectedSourceIds);
+        if (ids.length === 0) {
+            $('#currentPageStep').val(10);
+            $('#pageStepSourceName').text('（未选择瞭源）');
+            return;
+        }
+        // 取第一个选中瞭源的步长
+        var firstId = ids[0];
+        var source = sourceDataMap[firstId];
+        if (source && source.page_step) {
+            $('#currentPageStep').val(source.page_step);
+        }
+        var name = source ? source.name : '选中瞭源';
+        var count = ids.length;
+        $('#pageStepSourceName').text('（来源: ' + name + (count > 1 ? ' 等' + count + '个瞭源' : '') + '，修改后点保存同步到瞭源管理）');
+    }
+
+    // 保存步长到瞭源管理（同步更新数据库）
+    window.savePageStep = function() {
+        var ids = Object.keys(selectedSourceIds);
+        if (ids.length === 0) {
+            layer.msg('请先选择瞭源', {icon: 2});
+            return;
+        }
+        var newStep = parseInt($('#currentPageStep').val());
+        if (!newStep || newStep < 1) {
+            layer.msg('请输入有效步长值（≥1）', {icon: 2});
+            return;
+        }
+
+        var btn = $('#saveStepBtn');
+        btn.prop('disabled', true);
+        btn.text('保存中...');
+
+        var completed = 0;
+        var total = ids.length;
+        var hasError = false;
+
+        ids.forEach(function(id) {
+            $.ajax({
+                url: '/api/sources/update',
+                type: 'POST',
+                dataType: 'json',
+                data: {source_id: id, page_step: newStep},
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    completed++;
+                    if (res.success) {
+                        // 更新本地缓存
+                        if (sourceDataMap[id]) sourceDataMap[id].page_step = newStep;
+                        // 更新卡片上的显示
+                        $('.source-switch-item[data-id="' + id + '"]')
+                            .find('.param-item .param-value').filter(function() {
+                                return $(this).text().match(/^\d+$/);
+                            }).first().text(newStep);
+                    } else {
+                        hasError = true;
+                    }
+                    if (completed === total) {
+                        btn.prop('disabled', false);
+                        btn.text('保存');
+                        if (hasError) {
+                            layer.msg('部分瞭源更新成功，请检查', {icon: 2});
+                        } else {
+                            layer.msg('步长已同步到瞭源管理（' + total + '个瞭源）', {icon: 1});
+                        }
+                    }
+                },
+                error: function() {
+                    completed++;
+                    hasError = true;
+                    if (completed === total) {
+                        btn.prop('disabled', false);
+                        btn.text('保存');
+                        layer.msg('部分瞭源更新失败', {icon: 2});
+                    }
+                }
+            });
+        });
+    }
+
+    // 全选/全不选
+    window.toggleSelectAll = function() {
+        var sourceIds = Object.keys(sourceDataMap);
+        if (sourceIds.length === 0) return;
+        
+        var allSelected = true;
+        sourceIds.forEach(function(id) {
+            if (!selectedSourceIds[id]) allSelected = false;
+        });
+
+        if (allSelected) {
+            // 全不选
+            sourceIds.forEach(function(id) {
+                delete selectedSourceIds[id];
+                $('.source-switch-item[data-id="' + id + '"]').removeClass('active');
+            });
+            $('#selectAllBtn').html('<i class="layui-icon layui-icon-ok-circle"></i> 全选');
+            $('#selectAllBtn').removeClass('all-selected');
+        } else {
+            // 全选
+            sourceIds.forEach(function(id) {
+                selectedSourceIds[id] = true;
+                $('.source-switch-item[data-id="' + id + '"]').addClass('active');
+            });
+            $('#selectAllBtn').html('<i class="layui-icon layui-icon-ok-circle"></i> 全不选');
+            $('#selectAllBtn').addClass('all-selected');
+        }
+        syncPageStep();
+    }
+
+    // 更新全选按钮状态
+    function updateSelectAllBtn() {
+        var sourceIds = Object.keys(sourceDataMap);
+        if (sourceIds.length === 0) return;
+        var allSelected = sourceIds.every(function(id) { return selectedSourceIds[id]; });
+        if (allSelected) {
+            $('#selectAllBtn').html('<i class="layui-icon layui-icon-ok-circle"></i> 全不选');
+            $('#selectAllBtn').addClass('all-selected');
+        } else {
+            $('#selectAllBtn').html('<i class="layui-icon layui-icon-ok-circle"></i> 全选');
+            $('#selectAllBtn').removeClass('all-selected');
+        }
+    }
+
+    // 加载采集数据（C区）
+    function loadCollectedData(page, keyword) {
+        $.ajax({
+            url: '/api/watch/data',
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                page: page || currentPage,
+                page_size: pageSize,
+                keyword: keyword || ''
+            },
+            success: function(res) {
+                if (res && res.data) {
+                    renderShowcase(res.data, res.total, res.page, res.page_size);
+                } else {
+                    renderShowcase([], 0, 1, pageSize);
+                }
+            },
+            error: function() {
+                $('#showcaseGrid').html('<div class="showcase-empty"><i class="layui-icon layui-icon-face-cry"></i><p>加载数据失败</p></div>');
+            }
+        });
+    }
+
+    // 打开原文链接
+    window.openOriginalUrl = function(url) {
+        if (url && url !== '#' && url !== 'javascript:;') {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    }
+
+    // 渲染橱窗（含查看原文按钮 + 选择框 + 整卡可点击）
+    function renderShowcase(data, total, page, size) {
+        $('#resultCount').text('共 ' + (total || 0) + ' 条');
+
+        if (!data || data.length === 0) {
+            $('#showcaseGrid').html('<div class="showcase-empty"><i class="layui-icon layui-icon-face-smile"></i><p>暂无采集数据</p></div>');
+            $('#pagination').html('');
+            return;
+        }
+
+        var html = '';
+        data.forEach(function(item) {
+            var safeUrl = item.url && item.url !== '#' ? item.url : 'javascript:;';
+            var title = item.title || '无标题';
+            var sourceName = item.source_name || '未知源';
+            var keyword = item.keyword || '';
+            // 摘要区域只显示关键词（无真实发布时间，已删除时间显示）
+            var summaryInfo = keyword ? '关键词: ' + keyword : '暂无信息';
+            // 转义 safeUrl 用于 onclick
+            var escapedUrl = safeUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            html += '<div class="showcase-card">' +
+                '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+                    '<input type="checkbox" class="showcase-checkbox" data-id="' + item.id + '" data-title="' + (title).replace(/"/g,'&quot;') + '" data-url="' + (safeUrl).replace(/"/g,'&quot;') + '" data-summary="" data-source="' + (sourceName).replace(/"/g,'&quot;') + '" data-keyword="' + (keyword || '').replace(/"/g,'&quot;') + '" onclick="event.stopPropagation();" style="margin-top:3px;flex-shrink:0;">' +
+                    '<div style="flex:1;cursor:pointer;" onclick="openOriginalUrl(\'' + escapedUrl + '\')">' +
+                        '<div class="card-title"><a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">' + title + '</a></div>' +
+                        '<div class="card-summary">' + summaryInfo + '</div>' +
+                        '<div class="card-meta">' +
+                            '<span class="card-source">' + sourceName + '</span>' +
+                            '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" class="card-open-btn" onclick="event.stopPropagation();">查看原文</a>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        });
+
+        $('#showcaseGrid').html(html);
+        $('#selectAllCheckbox').prop('checked', false);
+        renderPagination(total, page, size);
+    }
+
+    // 全选/全不选橱窗数据
+    window.toggleSelectAllShowcase = function(el) {
+        var checked = el.checked;
+        $('.showcase-checkbox').each(function() {
+            $(this).prop('checked', checked);
+        });
+    };
+
+    // 保存选中数据到数据仓库
+    window.saveSelectedToWarehouse = function() {
+        var items = [];
+        $('.showcase-checkbox:checked').each(function() {
+            var $cb = $(this);
+            items.push({
+                title: $cb.data('title'),
+                url: $cb.data('url'),
+                summary: $cb.data('summary'),
+                source_name: $cb.data('source'),
+                keyword: $cb.data('keyword')
+            });
+        });
+
+        if (items.length === 0) {
+            layer.msg('请先选择要保存的数据', {icon: 2});
+            return;
+        }
+
+        var btn = $('button:contains("保存到数据仓库")');
+        btn.text('保存中...').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/watch/save-to-warehouse',
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify({items: items}),
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    layer.msg(res.message || '保存成功', {icon: 1, time: 2000});
+                    // 取消全选
+                    $('#selectAllCheckbox').prop('checked', false);
+                    $('.showcase-checkbox').prop('checked', false);
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            },
+            error: function(xhr) {
+                try { var r = JSON.parse(xhr.responseText); layer.msg(r.message || '保存失败', {icon: 2}); }
+                catch(e) { layer.msg('保存失败', {icon: 2}); }
+            },
+            complete: function() {
+                btn.html('<i class="layui-icon layui-icon-ok"></i> 保存到数据仓库').prop('disabled', false);
+            }
+        });
+    };
+
+    // 分页
+    function renderPagination(total, current, size) {
+        var pages = Math.ceil(total / size);
+        if (pages <= 1) {
+            $('#pagination').html('');
+            return;
+        }
+        var html = '<div class="layui-box layui-laypage layui-laypage-default">';
+        html += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
+        for (var i = 1; i <= pages; i++) {
+            html += '<a href="javascript:;" class="layui-laypage-em ' + (i == current ? 'current' : '') + '" data-page="' + i + '">' + i + '</a>';
+        }
+        html += '</div>';
+        $('#pagination').html(html);
+        $('#pagination a').on('click', function() {
+            currentPage = $(this).data('page');
+            var keyword = $('#keywordInput').val();
+            loadCollectedData(currentPage, keyword);
+        });
+    }
+
+    // 点击采集按钮（含分页参数）
+    $('#collectBtn').on('click', function() {
+        var keyword = $('#keywordInput').val().trim();
+        if (!keyword) {
+            layer.msg('请输入关键词', {icon: 2});
+            return;
+        }
+
+        var sourceIds = Object.keys(selectedSourceIds);
+        if (sourceIds.length === 0) {
+            layer.msg('请至少选择一个瞭源', {icon: 2});
+            return;
+        }
+
+        var collectPage = parseInt($('#collectPage').val()) || 1;
+        if (collectPage < 1) collectPage = 1;
+
+        var btn = $(this);
+        btn.prop('disabled', true);
+        btn.html('<i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> 采集中...（第' + collectPage + '页）');
+
+        $.ajax({
+            url: '/api/watch/collect',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                keyword: keyword,
+                source_ids: sourceIds.join(','),
+                page: collectPage
+            },
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    layer.msg(res.message, {icon: 1});
+                    currentPage = 1;
+                    loadCollectedData(1, keyword);
+                } else {
+                    layer.msg(res.message, {icon: 2});
+                }
+            },
+            error: function() {
+                layer.msg('采集请求失败', {icon: 2});
+            },
+            complete: function() {
+                btn.prop('disabled', false);
+                btn.html('<i class="layui-icon layui-icon-ok-circle"></i> 开始采集');
+            }
+        });
+    });
+
+    // 回车触发采集
+    $('#keywordInput').on('keydown', function(e) {
+        if (e.keyCode === 13) {
+            $('#collectBtn').click();
+        }
+    });
+
+    // 初始加载
+    loadSourceSwitches();
+    loadCollectedData(1);
+});
+</script>
+{% end %}

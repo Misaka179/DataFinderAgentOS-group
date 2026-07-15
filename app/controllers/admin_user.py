@@ -74,13 +74,36 @@ class UserUpdateApiHandler(BaseHandler):
         username = self.get_argument("username", "")
         role_id = self.get_argument("role_id", "")
         status = self.get_argument("status", "")
+        password = self.get_argument("password", "")
         
-        # 超级管理员不允许禁用自己
-        if username == "admin" and status == "0":
-            self.set_status(403)
-            self.write(json.dumps({"success": False, "message": "超级管理员不允许禁用"}))
+        # 获取被编辑用户的信息
+        target_user = UserRepository.get_user_by_id(int(user_id))
+        if not target_user:
+            self.set_status(404)
+            self.write(json.dumps({"success": False, "message": "用户不存在"}))
             return
         
+        is_target_admin = (target_user.get("username") == "admin")
+        current_user = self.current_user  # 当前登录用户名
+        
+        # 超级管理员保护：不允许任何人修改admin的资料（用户名、角色、状态）
+        if is_target_admin:
+            # 不允许修改admin的用户名、角色、状态
+            if (username and username != "admin") or (role_id and str(role_id) != str(target_user.get("role_id"))) or (status and str(status) != str(target_user.get("status"))):
+                self.set_status(403)
+                self.write(json.dumps({"success": False, "message": "超级管理员信息不允许修改"}))
+                return
+            # 只有admin自己可以修改自己的密码
+            if password:
+                if current_user != "admin":
+                    self.set_status(403)
+                    self.write(json.dumps({"success": False, "message": "只有超级管理员本人可以修改密码"}))
+                    return
+                UserRepository.update_password(int(user_id), password)
+                self.write(json.dumps({"success": True, "message": "密码修改成功"}))
+                return
+        
+        # 非admin用户的正常编辑流程
         updates = {}
         if username:
             updates["username"] = username
@@ -88,6 +111,10 @@ class UserUpdateApiHandler(BaseHandler):
             updates["role_id"] = int(role_id)
         if status:
             updates["status"] = int(status)
+        
+        # 如果传入了新密码
+        if password:
+            UserRepository.update_password(int(user_id), password)
         
         if UserRepository.update_user(int(user_id), **updates):
             self.write(json.dumps({"success": True, "message": "用户更新成功"}))

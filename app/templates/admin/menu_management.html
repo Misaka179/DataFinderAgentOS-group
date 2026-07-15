@@ -156,16 +156,17 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th>排序</th>
+                        <th style="width:50px;">排序</th>
                         <th>功能名称</th>
+                        <th style="width:60px;">层级</th>
                         <th>图标</th>
                         <th>路由</th>
-                        <th>状态</th>
-                        <th>操作</th>
+                        <th style="width:50px;">状态</th>
+                        <th style="width:60px;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="menuTableBody">
-                    <tr><td colspan="6" style="text-align: center; color: #999;">请选择角色并点击"加载菜单"</td></tr>
+                    <tr><td colspan="7" style="text-align: center; color: #999;">请选择角色并点击"加载菜单"</td></tr>
                 </tbody>
             </table>
         </div>
@@ -319,13 +320,15 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var data = res && res.data ? res.data : [];
                 var html = '';
                 if (data.length === 0) {
-                    html = '<tr><td colspan="6" style="text-align: center; color: #999;">暂无菜单</td></tr>';
+                    html = '<tr><td colspan="7" style="text-align: center; color: #999;">暂无菜单</td></tr>';
                 } else {
                     data.forEach(function(menu) {
                         var statusHtml = menu.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                        var levelHtml = menu.func_parent_id == 0 ? '<span class="layui-badge layui-bg-blue">一级</span>' : '<span class="layui-badge layui-bg-cyan">二级</span>';
                         html += '<tr>' +
                             '<td>' + menu.sort_order + '</td>' +
                             '<td>' + menu.func_name + '</td>' +
+                            '<td>' + levelHtml + '</td>' +
                             '<td>' + (menu.func_icon || '-') + '</td>' +
                             '<td>' + (menu.func_route || '-') + '</td>' +
                             '<td>' + statusHtml + '</td>' +
@@ -339,7 +342,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Menus API Error:', status, error);
-                $('#menuTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#menuTableBody').html('<tr><td colspan="7" style="text-align: center; color: red;">加载失败</td></tr>');
             }
         });
     }
