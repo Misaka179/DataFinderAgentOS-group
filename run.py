@@ -12,6 +12,7 @@ from app.controllers.user_chat import (
     UserConversationsApiHandler,
     UserChatApiHandler
 )
+from app.controllers.user_export import UserExportPdfApiHandler
 from app.controllers.home import IndexHandler, AdminIndexHandler, DashboardStatsApiHandler
 from app.controllers.admin_user import (
     UserManagementHandler,
@@ -228,6 +229,7 @@ def webapp():
         (r"/api/user/digital-employees", UserDigitalEmployeesApiHandler),
         (r"/api/user/conversations", UserConversationsApiHandler),
         (r"/api/user/chat", UserChatApiHandler),
+        (r"/api/user/export/pdf", UserExportPdfApiHandler),
     ],
     **settings
     )

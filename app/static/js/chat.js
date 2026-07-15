@@ -19,6 +19,9 @@
     convCounter: 0,         // 本地对话ID计数器
     quickMenuType: null,    // '/' 或 '@' 或 null
     welcomeHTML: '',        // 欢迎区域HTML模板
+    selectedConvIds: new Set(),  // 导出选中的对话ID集合
+    isExporting: false,     // 是否正在导出
+    isExportMode: false,    // 是否在选择导出模式
   };
 
   // ---- DOM 引用 ----
@@ -33,6 +36,7 @@
     els.sendBtn = $('#sendBtn');
     els.modelSelect = $('#modelSelect');
     els.taskList = $('#taskList');
+    els.sidebarTasks = $('#sidebarTasks');
     els.quickMenu = $('#quickMenu');
     els.quickMenuItems = $('#quickMenuItems');
     els.inputTag = $('#inputTag');
@@ -46,6 +50,11 @@
     els.newChatBtn = $('#newChatBtn');
     els.clearHistoryBtn = $('#clearHistoryBtn');
     els.welcomeArea = $('#welcomeArea');
+    els.exportModeBtn = $('#exportModeBtn');
+    els.exportActions = $('#exportActions');
+    els.exportConfirmBtn = $('#exportConfirmBtn');
+    els.exportCancelBtn = $('#exportCancelBtn');
+    els.selectAllCheckbox = $('#selectAllCheckbox');
   }
 
   // ---- 通用工具 ----
@@ -124,6 +133,9 @@
   }
 
   async function newConversation() {
+    // 如果正在选择导出模式，先退出
+    if (state.isExportMode) { exitExportMode(); }
+
     state.convCounter++;
     const conv = {
       id: null,
@@ -192,8 +204,138 @@
       }
     });
     state.conversations = [];
+    state.selectedConvIds.clear();
     newConversation();
   }
+
+  // ========== PDF 导出相关函数 ==========
+
+  function enterExportMode() {
+    state.isExportMode = true;
+    state.selectedConvIds.clear();
+    els.sidebarTasks.classList.add('export-mode');
+    els.exportActions.classList.add('visible');
+    els.exportModeBtn.style.display = 'none';
+    els.selectAllCheckbox.checked = false;
+    renderTaskList();
+  }
+
+  function exitExportMode() {
+    state.isExportMode = false;
+    state.selectedConvIds.clear();
+    els.sidebarTasks.classList.remove('export-mode');
+    els.exportActions.classList.remove('visible');
+    els.exportModeBtn.style.display = '';
+    els.selectAllCheckbox.checked = false;
+    renderTaskList();
+  }
+
+  function toggleConvSelection(convId, checked) {
+    if (checked) {
+      state.selectedConvIds.add(convId);
+    } else {
+      state.selectedConvIds.delete(convId);
+    }
+    updateSelectAllCheckbox();
+  }
+
+  function updateSelectAllCheckbox() {
+    const total = state.conversations.length;
+    const selected = state.selectedConvIds.size;
+    const cb = els.selectAllCheckbox;
+    if (selected === 0) {
+      cb.checked = false;
+      cb.indeterminate = false;
+    } else if (selected === total && total > 0) {
+      cb.checked = true;
+      cb.indeterminate = false;
+    } else {
+      cb.checked = false;
+      cb.indeterminate = true;
+    }
+  }
+
+  function selectAllConversations(checked) {
+    state.selectedConvIds.clear();
+    if (checked) {
+      state.conversations.forEach(c => state.selectedConvIds.add(c.id));
+    }
+    renderTaskList();
+  }
+
+  async function handleExportConfirm() {
+    if (state.isExporting) return;
+    if (state.selectedConvIds.size === 0) {
+      alert('请至少选择一个对话进行导出');
+      return;
+    }
+
+    // 将本地 id 转换为 server_id
+    const serverIds = [];
+    state.selectedConvIds.forEach(localId => {
+      const conv = state.conversations.find(c => c.id === localId);
+      if (conv && conv.server_id) {
+        serverIds.push(conv.server_id);
+      }
+    });
+
+    if (serverIds.length === 0) {
+      alert('选中的对话尚未保存到服务器，请先发送消息后再导出');
+      return;
+    }
+
+    await exportConversations(serverIds);
+  }
+
+  async function exportConversations(convIds) {
+    state.isExporting = true;
+    const confirmBtn = els.exportConfirmBtn;
+    const originalText = confirmBtn.textContent;
+    confirmBtn.textContent = '生成中...';
+    confirmBtn.disabled = true;
+
+    try {
+      const resp = await fetch(getXsrfUrl('/api/user/export/pdf'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_ids: convIds }),
+      });
+
+      if (!resp.ok) {
+        // 尝试读取错误消息
+        const ct = resp.headers.get('Content-Type') || '';
+        if (ct.includes('application/json')) {
+          const errData = await resp.json();
+          throw new Error(errData.message || `请求失败 (${resp.status})`);
+        }
+        throw new Error(`导出失败 (HTTP ${resp.status})`);
+      }
+
+      // 下载 PDF
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = resp.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?(.+?)"?$/);
+      a.download = match ? match[1] : `chat_export_${new Date().toISOString().slice(0,10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // 成功后退出选择模式
+      exitExportMode();
+    } catch (e) {
+      alert('PDF 导出失败: ' + e.message);
+    } finally {
+      state.isExporting = false;
+      confirmBtn.textContent = originalText;
+      confirmBtn.disabled = false;
+    }
+  }
+
+  // ========== 原有函数继续 ==========
 
   function updateConvTitle(convId, title) {
     const conv = state.conversations.find(c => c.id === convId || c.server_id === convId);
@@ -448,6 +590,17 @@
       item.className = `task-item${conv.id === state.currentConvId ? ' active' : ''}`;
       item.dataset.convId = conv.id;
 
+      // 导出复选框
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'task-checkbox';
+      checkbox.dataset.convId = conv.id;
+      checkbox.checked = state.selectedConvIds.has(conv.id);
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleConvSelection(conv.id, checkbox.checked);
+      });
+
       const icon = document.createElement('div');
       icon.className = 'task-icon';
       icon.textContent = '💬';
@@ -471,13 +624,22 @@
       delBtn.title = '删除对话';
       delBtn.addEventListener('click', (e) => deleteConversation(conv.id, e));
 
+      item.appendChild(checkbox);
       item.appendChild(icon);
       item.appendChild(info);
       item.appendChild(delBtn);
-      item.addEventListener('click', () => switchConversation(conv.id));
+      item.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        switchConversation(conv.id);
+      });
 
       els.taskList.appendChild(item);
     });
+
+    // 更新选择模式下的控件状态
+    if (state.isExportMode) {
+      updateSelectAllCheckbox();
+    }
   }
 
   // ---- 发送消息 ----
@@ -849,6 +1011,14 @@
 
     // 清空历史
     els.clearHistoryBtn.addEventListener('click', clearAllHistory);
+
+    // PDF 导出
+    els.exportModeBtn?.addEventListener('click', enterExportMode);
+    els.exportConfirmBtn?.addEventListener('click', handleExportConfirm);
+    els.exportCancelBtn?.addEventListener('click', exitExportMode);
+    els.selectAllCheckbox?.addEventListener('change', () => {
+      selectAllConversations(els.selectAllCheckbox.checked);
+    });
 
     // @标签关闭
     els.tagClose.addEventListener('click', clearActiveEmployee);
