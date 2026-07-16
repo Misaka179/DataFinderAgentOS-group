@@ -20,7 +20,7 @@ from app.controllers.home import (IndexHandler, GestureHandler, AdminIndexHandle
     DataScreenTrendsApiHandler, DataScreenSourceApiHandler, DataScreenSankeyApiHandler,
     OpinionScreenHandler, OpinionWarningsApiHandler, OpinionStatsApiHandler,
     OpinionAIAnalyzeApiHandler, OpinionAcknowledgeApiHandler, OpinionFeedbackApiHandler,
-    OpinionScanApiHandler, SensitiveWordsApiHandler, SensitiveWordsCreateApiHandler,
+    OpinionScanApiHandler, OpinionBatchReviewApiHandler, SensitiveWordsApiHandler, SensitiveWordsCreateApiHandler,
     SensitiveWordsUpdateApiHandler, SensitiveWordsDeleteApiHandler)
 from app.controllers.auth import FaceLoginHandler
 from app.controllers.admin_user import (
@@ -163,6 +163,7 @@ def webapp():
         (r"/api/opinion/acknowledge", OpinionAcknowledgeApiHandler),
         (r"/api/opinion/feedback", OpinionFeedbackApiHandler),
         (r"/api/opinion/scan", OpinionScanApiHandler),
+        (r"/api/opinion/batch-review", OpinionBatchReviewApiHandler),
         (r"/api/opinion/sensitive-words", SensitiveWordsApiHandler),
         (r"/api/opinion/sensitive-words/create", SensitiveWordsCreateApiHandler),
         (r"/api/opinion/sensitive-words/update", SensitiveWordsUpdateApiHandler),
