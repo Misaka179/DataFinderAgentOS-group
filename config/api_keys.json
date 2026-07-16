@@ -1,18 +1,19 @@
 {
-  "_说明": "外部API密钥配置文件。未配置时自动降级为免费API或网页抓取",
+  "_说明": "外部API密钥配置文件。供 ApiGateway 和数字员工调用。后续「接口管理」模块可统一管理。",
   "juhe_news": {
-    "enabled": false,
-    "key": "",
-    "说明": "聚合数据新闻头条API (https://www.juhe.cn/docs/api/id/235)，免费100次/天。未配置时用百度新闻抓取兜底"
+    "enabled": true,
+    "key": "7eb1ec877934110a5fada4024bd027c7",
+    "param_name": "key",
+    "说明": "聚合数据新闻头条API (https://www.juhe.cn/docs/api/id/235)"
+  },
+  "tmdb": {
+    "enabled": true,
+    "key": "7db612d4425ec6e821f2f42311621b3a",
+    "param_name": "api_key",
+    "说明": "TMDB电影数据库API (https://www.themoviedb.org/settings/api)，使用api_key查询参数认证"
   },
   "_已内置的免费API（无需密钥）": {
-    "新闻": "百度实时抓取（无需密钥）+ 聚合数据（可选）",
     "随机音乐": "iTunes Search API（免费，无需密钥）+ 本地精选兜底",
-    "电影": "豆瓣搜索 suggest API（免费，无需密钥）+ 本地详情库补充",
     "天气": "wttr.in（免费，无需密钥）"
-  },
-  "_如需获取API密钥的渠道": {
-    "聚合数据新闻": "https://www.juhe.cn/docs/api/id/235（注册即可免费使用100次/天）",
-    "TMDB电影": "https://www.themoviedb.org/settings/api（注册即可免费获取key）"
   }
 }

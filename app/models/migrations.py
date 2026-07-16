@@ -512,7 +512,7 @@ def _migrate_digital_employees_initial(conn):
             (
                 "新闻",
                 "api",
-                "返回实时热门新闻（百度实时抓取，含标题、来源、时间、摘要、链接）",
+                "返回实时热门新闻（聚合数据新闻头条API，含标题、来源、时间、链接）",
                 "http://localhost:10010/api/mock/news",
                 "GET",
                 json.dumps({}, ensure_ascii=False),
@@ -550,7 +550,7 @@ def _migrate_digital_employees_initial(conn):
             (
                 "电影",
                 "api",
-                "搜索电影信息，豆瓣API匹配+本地详情，含导演、演员、简介、评分、年份、豆瓣链接",
+                "搜索电影信息，TMDB API匹配+本地详情，含评分、年份、海报、TMDB链接",
                 "http://localhost:10010/api/mock/movie?keyword={query}",
                 "GET",
                 json.dumps({}, ensure_ascii=False),

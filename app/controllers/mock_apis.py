@@ -1,40 +1,30 @@
-"""内置数字员工 API（新闻实时抓取 / 音乐 iTunes / 电影豆瓣搜索 / 本地详情库互补）
-    
+"""内置数字员工 API（新闻聚合数据 / 音乐 iTunes / 电影 TMDB）
+
 返回带 self-describing 格式的统一 JSON 结构：
     {"success": true, "data": {"content": "...", "responseFormat": "...", "extraData": {...}}}
+
+实现架构（利于后续「接口管理」模块）：
+  - 外部 API 调用统一走 app/services/api_gateway.py（ApiGateway.call）
+  - 本地兜底数据仅作为 API 不可用时的降级方案
+  - 新增第三方 API 只需：① 在 api_gateway.py 注册 Provider ② 在此文件添加调用逻辑
 """
 
 import json
 import os
 import random
-import re
 import urllib.parse
 import requests
+
+from app.services.api_gateway import api_gateway
+
 from .base import BaseHandler
 
 
 # ==============================
-#  配置加载（外部API密钥）
+#  新闻模块（聚合数据 API + 模拟兜底）
 # ==============================
 
-_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "api_keys.json")
-
-def _load_api_keys():
-    """加载 config/api_keys.json 中的外部 API 密钥"""
-    try:
-        if os.path.exists(_CONFIG_PATH):
-            with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except Exception:
-        pass
-    return {}
-
-
-# ==============================
-#  新闻模块（实时 + 模拟兜底）
-# ==============================
-
-NEWS_MOCK = [
+_NEWS_MOCK = [
     {
         "title": "国务院印发《数字中国建设整体布局规划》",
         "source": "新华社",
@@ -121,185 +111,52 @@ NEWS_MOCK = [
     }
 ]
 
-# Baidu News 请求头（模拟浏览器）
-_BAIDU_HEADERS = {
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-    "sec-ch-ua": '"Not)A;Brand";v="8", "Chromium";v="138"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-}
-
-
-def _fetch_baidu_news():
-    """从百度新闻抓取实时热门新闻（搜索'热点'）
-
-    返回: list[dict] 或 None（失败时返回 None）
-    """
-    try:
-        url = "https://www.baidu.com/s?rtt=1&bsst=1&cl=2&tn=news&rsv_dl=ns_pc&" + \
-              urllib.parse.urlencode({"word": "热点"})
-        resp = requests.get(url, headers=_BAIDU_HEADERS, timeout=10)
-        if resp.status_code != 200:
-            return None
-
-        html = resp.text
-        items = []
-
-        # 匹配百度新闻标题和链接
-        title_links = re.findall(
-            r'<h3[^>]*>.*?<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>',
-            html, re.DOTALL
-        )
-        if not title_links:
-            title_links = re.findall(
-                r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>',
-                html, re.DOTALL
-            )
-
-        # 匹配摘要
-        summaries = re.findall(
-            r'<span[^>]*class="[^"]*content-right[^"]*"[^>]*>(.*?)</span>',
-            html, re.DOTALL
-        )
-        if not summaries:
-            summaries = re.findall(
-                r'<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>(.*?)</div>',
-                html, re.DOTALL
-            )
-
-        # 匹配来源和时间（百度新闻来源格式）
-        sources = re.findall(
-            r'<span[^>]*class="[^"]*c-color-gray[^"]*"[^>]*>(.*?)</span>',
-            html, re.DOTALL
-        )
-
-        seen_titles = set()
-        for i, (url_link, raw_title) in enumerate(title_links):
-            title = re.sub(r'<[^>]+>', '', raw_title).strip()
-            if not title or len(title) < 4 or title in seen_titles:
-                continue
-            seen_titles.add(title)
-
-            # 提取来源
-            source = "百度新闻"
-            time_str = ""
-            source_text = sources[i] if i < len(sources) else ""
-            # 来源通常格式如 "新华网 1小时前" 或 "央视新闻"
-            parts = re.split(r'\s+', source_text.strip()) if source_text else []
-            if parts:
-                source = re.sub(r'<[^>]+>', '', parts[0]).strip()
-                if len(parts) > 1:
-                    time_str = re.sub(r'<[^>]+>', '', parts[1]).strip()
-
-            # 摘要
-            summary = ""
-            if i < len(summaries):
-                summary = re.sub(r'<[^>]+>', '', summaries[i]).strip()
-            summary = re.sub(r'\s+', ' ', summary)[:200]
-
-            items.append({
-                "title": title,
-                "source": source,
-                "time": time_str,
-                "summary": summary,
-                "link": url_link.strip()
-            })
-
-            if len(items) >= 15:
-                break
-
-        if len(items) >= 5:
-            return items
-        return None
-    except Exception:
-        return None
-
 
 def _fetch_juhe_news():
-    """从聚合数据新闻头条API获取实时新闻
+    """通过聚合数据新闻头条 API 获取实时新闻
 
     返回: list[dict] 或 None（失败时返回 None）
     """
-    config = _load_api_keys()
-    juhe = config.get("juhe_news", {})
-    if not juhe.get("enabled") or not juhe.get("key"):
-        return None
-
-    try:
-        resp = requests.get(
-            "http://v.juhe.cn/toutiao/index",
-            params={"type": "top", "key": juhe["key"]},
-            timeout=10
-        )
-        if resp.status_code != 200:
-            return None
-
-        data = resp.json()
-        if data.get("error_code") != 0:
-            return None
-
-        result_list = data.get("result", {}).get("data", [])
-        items = []
-        for item in result_list:
-            items.append({
-                "title": item.get("title", ""),
-                "source": item.get("author_name", ""),
-                "time": item.get("date", ""),
-                "summary": item.get("title", ""),
-                "link": item.get("url", "")
-            })
-            if len(items) >= 15:
-                break
-
-        if len(items) >= 5:
+    result = api_gateway.call("juhe_news", "top_news")
+    if result.get("success") and result.get("data"):
+        items = result["data"]
+        if len(items) >= 3:
             return items
-        return None
-    except Exception:
-        return None
+    return None
 
 
 def _get_live_news():
-    """实时新闻获取（三层兜底）
+    """实时新闻获取（聚合数据 API → 模拟数据兜底）
 
-    优先级：聚合数据API → 百度新闻抓取 → 模拟数据
-    返回: list[dict]
+    返回: (list[dict], fetch_time_str)
     """
-    now = __import__("datetime").datetime.now().strftime("%Y年%m月%d日 %H:%M")
+    from datetime import datetime
+    now = datetime.now().strftime("%Y年%m月%d日 %H:%M")
 
-    # 第1层：聚合数据API
+    # 聚合数据新闻头条 API
     items = _fetch_juhe_news()
     if items:
         print(f"[新闻] 聚合数据API获取成功 ({len(items)}条)")
         return items, now
 
-    # 第2层：百度新闻抓取
-    items = _fetch_baidu_news()
-    if items:
-        print(f"[新闻] 百度新闻抓取成功 ({len(items)}条)")
-        return items, now
-
-    # 第3层：模拟数据兜底
-    fallback = random.sample(NEWS_MOCK, min(len(NEWS_MOCK), random.randint(10, 12)))
+    # 兜底：模拟数据
+    fallback = random.sample(_NEWS_MOCK, min(len(_NEWS_MOCK), random.randint(10, 12)))
     fallback.sort(key=lambda x: x["time"], reverse=True)
     print(f"[新闻] 使用模拟数据兜底 ({len(fallback)}条)")
     return fallback, now
 
 
 class MockNewsHandler(BaseHandler):
-    """返回热门新闻（实时优先，模拟数据兜底）"""
+    """返回热门新闻（聚合数据 API 优先，模拟数据兜底）"""
     def get(self):
         items, fetch_time = _get_live_news()
 
         text_lines = [f"📰 **热门新闻速递**（{fetch_time}）\n"]
         for i, item in enumerate(items, 1):
             text_lines.append(
-                f"{i}. **[{item['title']}]({item['link']})**\n"
-                f"   📍 {item['source']}{'  🕐 ' + item['time'] if item.get('time') else ''}\n"
-                f"   {item['summary']}"
+                f"{i}. **[{item['title']}]({item.get('link', '')})**\n"
+                f"   📍 {item.get('source', '')}{'  🕐 ' + item.get('time', '') if item.get('time') else ''}\n"
+                f"   {item.get('summary', '')}"
             )
 
         self.set_header("Content-Type", "application/json")
@@ -316,38 +173,38 @@ class MockNewsHandler(BaseHandler):
 
 # ====== 随机音乐（iTunes API + 本地精选兜底） ======
 
-# 本地精选曲库（iTunes API 不可用时的兜底数据，含真实 Apple Music 预览链接）
-MUSIC_FALLBACK = [
+# 本地精选曲库（iTunes API 不可用时的兜底数据）
+_MUSIC_FALLBACK = [
     {"song": "七里香", "artist": "周杰伦",
      "cover": "https://picsum.photos/seed/qilixiang/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/1e/8b/1e8b1e8b-1e8b-1e8b-1e8b-1e8b1e8b1e8b/mzaf_1234567890123456789.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "起风了", "artist": "买辣椒也用券",
      "cover": "https://picsum.photos/seed/qifengle/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/2f/9c/2f9c2f9c-2f9c-2f9c-2f9c-2f9c2f9c2f9c/mzaf_9876543210987654321.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "平凡之路", "artist": "朴树",
      "cover": "https://picsum.photos/seed/pfzl/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/3a/0d/3a0d3a0d-3a0d-3a0d-3a0d-3a0d3a0d3a0d/mzaf_1111111111111111111.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "光年之外", "artist": "G.E.M. 邓紫棋",
      "cover": "https://picsum.photos/seed/gnzw/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/4b/1e/4b1e4b1e-4b1e-4b1e-4b1e-4b1e4b1e4b1e/mzaf_2222222222222222222.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "演员", "artist": "薛之谦",
      "cover": "https://picsum.photos/seed/yanyuan/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/5c/2f/5c2f5c2f-5c2f-5c2f-5c2f-5c2f5c2f5c2f/mzaf_3333333333333333333.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "稻香", "artist": "周杰伦",
      "cover": "https://picsum.photos/seed/daoxiang/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/6d/3a/6d3a6d3a-6d3a-6d3a-6d3a-6d3a6d3a6d3a/mzaf_4444444444444444444.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "成都", "artist": "赵雷",
      "cover": "https://picsum.photos/seed/chengdu/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/7e/4b/7e4b7e4b-7e4b-7e4b-7e4b-7e4b7e4b7e4b/mzaf_5555555555555555555.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "大鱼", "artist": "周深",
      "cover": "https://picsum.photos/seed/dayu/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/8f/5c/8f5c8f5c-8f5c-8f5c-8f5c-8f5c8f5c8f5c/mzaf_6666666666666666666.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "消愁", "artist": "毛不易",
      "cover": "https://picsum.photos/seed/xiaochou/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/90/6d/906d906d-906d-906d-906d-906d906d906d/mzaf_7777777777777777777.plus.aac.p.m4a"},
+     "url": ""},
     {"song": "孤勇者", "artist": "陈奕迅",
      "cover": "https://picsum.photos/seed/guyongzhe/300/300",
-     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/a1/7e/a17ea17e-a17e-a17e-a17e-a17ea17ea17e/mzaf_8888888888888888888.plus.aac.p.m4a"},
+     "url": ""},
 ]
 
 _ITUNES_HEADERS = {
@@ -355,7 +212,6 @@ _ITUNES_HEADERS = {
     "Accept-Language": "zh-CN,zh;q=0.9",
 }
 
-# 用于 iTunes 随机搜索的热门华语关键词
 _RANDOM_SEARCH_TERMS = [
     "周杰伦", "陈奕迅", "邓紫棋", "薛之谦", "林俊杰",
     "赵雷", "李荣浩", "毛不易", "周深", "张杰",
@@ -364,13 +220,7 @@ _RANDOM_SEARCH_TERMS = [
 
 
 def _fetch_itunes_music(search_term=None):
-    """从 iTunes API 获取真实歌曲信息
-
-    Args:
-        search_term: 搜索关键词，None 则随机选择
-    Returns:
-        dict 或 None（失败时返回 None）
-    """
+    """从 iTunes API 获取真实歌曲信息"""
     try:
         if search_term is None:
             search_term = random.choice(_RANDOM_SEARCH_TERMS)
@@ -386,13 +236,10 @@ def _fetch_itunes_music(search_term=None):
         if not results:
             return None
 
-        # 随机选一首有 previewUrl 的
         has_preview = [r for r in results if r.get("previewUrl")]
         if not has_preview:
             has_preview = results
         item = random.choice(has_preview)
-
-        # 封面 URL 放大到 300x300
         cover = item.get("artworkUrl100", "").replace("100x100", "300x300")
 
         return {
@@ -406,24 +253,19 @@ def _fetch_itunes_music(search_term=None):
 
 
 def _get_random_music():
-    """随机音乐：iTunes API 优先，本地精选兜底
-
-    返回: dict with song, artist, cover, url
-    """
-    # iTunes API 优先
+    """随机音乐：iTunes API 优先，本地精选兜底"""
     result = _fetch_itunes_music()
     if result and result.get("url"):
         print(f"[音乐] iTunes API 获取成功: {result['song']} - {result['artist']}")
         return result
 
-    # 本地精选兜底
-    item = random.choice(MUSIC_FALLBACK)
+    item = random.choice(_MUSIC_FALLBACK)
     print(f"[音乐] 使用本地精选: {item['song']} - {item['artist']}")
     return item
 
 
-# 兼容旧函数名
 def _get_random_music_song():
+    """兼容旧函数名"""
     return _get_random_music()
 
 
@@ -493,15 +335,13 @@ class MockWeatherHandler(BaseHandler):
         self.finish()
 
 
-# ====== 电影（豆瓣API搜索 + 本地详情库补充） ======
+# ====== 电影（TMDB API + 本地详情库兜底） ======
 
-DOUBAN_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-    "Referer": "https://movie.douban.com/",
-}
+# TMDB 图片基础 URL
+_TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
-# 本地电影详情库（豆瓣API只返回标题+链接，详细数据由此库补充）
-MOVIE_DB = {
+# 本地电影详情库（TMDB 返回数据不足时的补充）
+_MOVIE_LOCAL_DB = {
     "哪吒": {
         "title": "哪吒之魔童降世",
         "director": "饺子",
@@ -509,225 +349,163 @@ MOVIE_DB = {
         "summary": "天地灵气孕育出一颗混元珠，元始天尊将混元珠提炼成灵珠和魔丸。太乙真人受命将灵珠托生于陈塘关李靖家，却因申公豹的调包，灵珠和魔丸被掉包。本应是灵珠转世的哪吒成了魔丸转世。三年后，哪吒将面临天劫…",
         "rating": "8.4",
         "year": "2019",
-        "poster": "https://picsum.photos/seed/nz/400/600",
-        "url": "https://movie.douban.com/subject/26266085/"
     },
     "流浪地球": {
         "title": "流浪地球3",
         "director": "郭帆",
         "actors": ["吴京", "刘德华", "李雪健", "王智"],
-        "summary": "太阳即将毁灭，人类在地球表面建造了巨大的推进器，开启'流浪地球'计划。面对前所未有的挑战，人类团结一致，守护共同的家园。",
+        "summary": "太阳即将毁灭，人类在地球表面建造了巨大的推进器，开启'流浪地球'计划。",
         "rating": "9.2",
         "year": "2026",
-        "poster": "https://picsum.photos/seed/liulang/400/600",
-        "url": "https://movie.douban.com/subject/35361237/"
     },
-    "满江红": {
-        "title": "满江红",
-        "director": "张艺谋",
-        "actors": ["沈腾", "易烊千玺", "张译", "雷佳音"],
-        "summary": "南宋绍兴年间，岳飞死后四年，秦桧率兵与金国会谈。一桩离奇的命案在会谈前夜发生，引发了各方势力的暗中博弈。",
-        "rating": "7.6",
-        "year": "2023",
-        "poster": "https://picsum.photos/seed/mjh/400/600",
-        "url": "https://movie.douban.com/subject/35769079/"
-    },
-    "长津湖": {
-        "title": "长津湖",
-        "director": "陈凯歌 / 徐克 / 林超贤",
-        "actors": ["吴京", "易烊千玺", "段奕宏", "朱亚文"],
-        "summary": "以抗美援朝战争第二次战役中的长津湖战役为背景，讲述中国人民志愿军在极寒严酷环境下，凭借钢铁意志和英勇无畏的战斗精神奋勇杀敌的故事。",
-        "rating": "7.6",
-        "year": "2021",
-        "poster": "https://picsum.photos/seed/cjh/400/600",
-        "url": "https://movie.douban.com/subject/35051132/"
-    },
-    "战狼2": {
-        "title": "战狼2",
-        "director": "吴京",
-        "actors": ["吴京", "弗兰克·格里罗", "吴刚", "张翰"],
-        "summary": "原特种兵冷锋遭遇人生滑铁卢，被开除军籍。在非洲某国发生政变时，他本可安全撤离，却因无法忘记曾经为军人的使命，孤身犯险冲回沦陷区，带领被困民众展开生死逃亡。",
-        "rating": "7.1",
-        "year": "2017",
-        "poster": "https://picsum.photos/seed/zl2/400/600",
-        "url": "https://movie.douban.com/subject/26363254/"
-    },
-    "你好李焕英": {
-        "title": "你好，李焕英",
-        "director": "贾玲",
-        "actors": ["贾玲", "张小斐", "沈腾", "陈赫"],
-        "summary": "2001年的某一天，刚考上大学的贾晓玲经历了人生中的一次大起大落。她意外穿越到1981年，与年轻时的母亲李焕英相遇，二人成为好朋友。",
+    "封神": {
+        "title": "封神第一部",
+        "director": "乌尔善",
+        "actors": ["黄渤", "费翔", "李雪健", "娜然"],
+        "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政。",
         "rating": "7.8",
-        "year": "2021",
-        "poster": "https://picsum.photos/seed/lhy/400/600",
-        "url": "https://movie.douban.com/subject/34841067/"
-    },
-    "红海行动": {
-        "title": "红海行动",
-        "director": "林超贤",
-        "actors": ["张译", "黄景瑜", "海清", "杜江"],
-        "summary": "中国海军蛟龙突击队8人小组奉命执行撤侨任务，在恶劣环境下一路护送侨民撤离，同时与恐怖分子展开激烈交锋。",
-        "rating": "8.3",
-        "year": "2018",
-        "poster": "https://picsum.photos/seed/hhxd/400/600",
-        "url": "https://movie.douban.com/subject/26924357/"
-    },
-    "我不是药神": {
-        "title": "我不是药神",
-        "director": "文牧野",
-        "actors": ["徐峥", "王传君", "周一围", "谭卓"],
-        "summary": "一位保健品店主从印度代购廉价的仿制药来治疗白血病，被病友封为'药神'。随着利益和法律的冲突加剧，他的道德困境也逐渐显现。",
-        "rating": "9.0",
-        "year": "2018",
-        "poster": "https://picsum.photos/seed/yys/400/600",
-        "url": "https://movie.douban.com/subject/26752088/"
-    },
-    "深海": {
-        "title": "深海",
-        "director": "田晓鹏",
-        "actors": ["苏鑫", "王亭文"],
-        "summary": "小女孩参宿误入奇幻的深海世界，在神秘男孩南河的陪伴下，展开了一段独特而治愈的心灵之旅。",
-        "rating": "8.7",
         "year": "2023",
-        "poster": "https://picsum.photos/seed/shenhai/400/600",
-        "url": "https://movie.douban.com/subject/35376910/"
     },
-    "刺杀小说家": {
-        "title": "刺杀小说家",
-        "director": "路阳",
-        "actors": ["雷佳音", "杨幂", "董子健", "于和伟"],
-        "summary": "一位父亲为寻找失踪的女儿，接下刺杀小说家的任务。与此同时，小说家笔下的奇幻世界正悄然影响着现实世界的走向。",
-        "rating": "6.6",
-        "year": "2021",
-        "poster": "https://picsum.photos/seed/csxsj/400/600",
-        "url": "https://movie.douban.com/subject/35264930/"
-    },
-    "白蛇缘起": {
-        "title": "白蛇：缘起",
-        "director": "黄家康 / 赵霁",
-        "actors": ["张喆", "杨天翔", "唐小喜"],
-        "summary": "晚唐年间，国师发动民众捕蛇。白蛇失去记忆被少年阿宣救下，两人在寻找记忆的过程中逐渐萌生爱意，共同对抗国师的阴谋。",
-        "rating": "8.5",
-        "year": "2019",
-        "poster": "https://picsum.photos/seed/baishe/400/600",
-        "url": "https://movie.douban.com/subject/30331149/"
-    }
 }
 
-ADDITIONAL_MOVIES = [
-    {"title": "唐人街探案3", "director": "陈思诚", "actors": ["王宝强", "刘昊然", "妻夫木聪"], "summary": "唐仁和秦风受邀前往东京，调查一桩离奇的谋杀案，在错综复杂的线索中揭开真相。", "rating": "5.3", "year": "2021", "poster": "https://picsum.photos/seed/trj3/400/600", "url": "https://movie.douban.com/subject/26808892/"},
-    {"title": "孤注一掷", "director": "申奥", "actors": ["张艺兴", "金晨", "咏梅", "王传君"], "summary": "程序员潘生和模特安娜被骗至海外诈骗工厂，在生死边缘挣扎求生，最终配合警方捣毁犯罪团伙。", "rating": "7.3", "year": "2023", "poster": "https://picsum.photos/seed/gzyz/400/600", "url": "https://movie.douban.com/subject/35267224/"},
-    {"title": "飞驰人生2", "director": "韩寒", "actors": ["沈腾", "范丞丞", "尹正", "张本煜"], "summary": "曾经的赛车冠军张驰重返赛道，带领新人车手共同追逐梦想，在巴音布鲁克赛道上书写传奇。", "rating": "7.8", "year": "2024", "poster": "https://picsum.photos/seed/fcrs2/400/600", "url": "https://movie.douban.com/subject/36354886/"},
-    {"title": "封神第一部", "director": "乌尔善", "actors": ["黄渤", "费翔", "李雪健", "娜然"], "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政，揭开封神榜的传奇序幕。", "rating": "7.8", "year": "2023", "poster": "https://picsum.photos/seed/fengshen/400/600", "url": "https://movie.douban.com/subject/10604086/"},
-]
 
-ALL_MOVIES = {}
-ALL_MOVIES.update(MOVIE_DB)
-for m in ADDITIONAL_MOVIES:
-    ALL_MOVIES[m["title"]] = m
+def _search_tmdb_movie(keyword):
+    """通过 TMDB API 搜索电影
 
-
-# 对外暴露的辅助函数（供 _call_builtin_mock_api 直接调用）
-
-def _search_douban_movie(keyword):
-    """通过豆瓣 suggest API 搜索电影
-
-    Returns: list[dict] 匹配的电影列表（含 title, year, poster, douban_url），失败返回空列表
+    Returns: (tmdb_results: list[dict], douban_urls: dict)
+        tmdb_results 含 tmdb_id, title, poster_url, overview, year, rating 等
     """
-    try:
-        url = (f"https://movie.douban.com/j/subject_suggest?"
-               f"q={urllib.parse.quote(keyword)}")
-        resp = requests.get(url, headers=DOUBAN_HEADERS, timeout=8)
-        if resp.status_code != 200:
-            return []
+    result = api_gateway.call("tmdb", "search_movie", {"query": keyword})
+    if not result.get("success") or not result.get("data"):
+        return [], {}
 
-        suggestions = resp.json()
-        results = []
-        for item in suggestions:
-            if item.get("type") == "movie" and item.get("year"):
-                results.append({
-                    "douban_title": item["title"],
-                    "year": item["year"],
-                    "poster": item.get("img", ""),
-                    "url": item["url"],
-                })
-        return results
-    except Exception:
-        return []
+    raw = result.get("raw", {})
+    tmdb_results = []
+    for item in result["data"]:
+        poster_path = item.get("poster_path", "")
+        tmdb_results.append({
+            "tmdb_id": item.get("tmdb_id"),
+            "title": item.get("title", ""),
+            "original_title": item.get("original_title", ""),
+            "overview": item.get("overview", ""),
+            "year": (item.get("release_date", "") or "")[:4],
+            "poster": f"{_TMDB_IMAGE_BASE}{poster_path}" if poster_path else "",
+            "rating": round(item.get("vote_average", 0), 1),
+            "vote_count": item.get("vote_count", 0),
+        })
+
+    return tmdb_results, {}
+
+
+def _get_movie_detail(tmdb_id):
+    """通过 TMDB 获取电影详情
+
+    Returns: dict 或 None
+    """
+    result = api_gateway.call("tmdb", "movie_detail", {"movie_id": str(tmdb_id)})
+    if result.get("success") and result.get("data"):
+        detail = result["data"]
+        poster_path = detail.get("poster_path", "")
+        return {
+            "tmdb_id": detail.get("tmdb_id"),
+            "title": detail.get("title", ""),
+            "overview": detail.get("overview", ""),
+            "year": (detail.get("release_date", "") or "")[:4],
+            "poster": f"{_TMDB_IMAGE_BASE}{poster_path}" if poster_path else "",
+            "rating": round(detail.get("vote_average", 0), 1),
+            "runtime": detail.get("runtime", ""),
+            "genres": [g.get("name", "") for g in detail.get("genres", [])],
+            "tagline": detail.get("tagline", ""),
+            "homepage": detail.get("homepage", ""),
+        }
+    return None
+
+
+def _enrich_with_local_db(movie, keyword_lower):
+    """用本地详情库补充 TMDB 结果（导演、演员、中文剧情等）"""
+    for local_key, local_info in _MOVIE_LOCAL_DB.items():
+        title = movie.get("title", "")
+        if local_key.lower() in title.lower() or title.lower() in local_key.lower():
+            movie["director"] = local_info.get("director", "")
+            movie["actors"] = local_info.get("actors", [])
+            if not movie.get("overview"):
+                movie["overview"] = local_info.get("summary", "")
+            if not movie.get("year"):
+                movie["year"] = local_info.get("year", "")
+            rating_val = movie.get("rating", 0)
+            if isinstance(rating_val, (int, float)) and rating_val <= 0:
+                movie["rating"] = local_info.get("rating", "?")
+            return
+    # 本地库未匹配，使用默认值
+    if not movie.get("director"):
+        movie["director"] = "请前往TMDB页面查看"
+    if not movie.get("actors"):
+        movie["actors"] = []
 
 
 def _search_movie(keyword):
-    """按关键词搜索电影
+    """按关键词搜索电影（TMDB API + 本地库丰富）
 
-    优先使用豆瓣API匹配，然后用本地详情库补充完整数据
-    Returns: list[dict] 匹配的电影信息列表
+    Returns: list[dict]
     """
     keyword_lower = keyword.lower().strip()
+    tmdb_results, _ = _search_tmdb_movie(keyword)
+
+    if not tmdb_results:
+        # TMDB 无结果，尝试本地库兜底
+        matched = []
+        for local_key, local_info in _MOVIE_LOCAL_DB.items():
+            if keyword_lower in local_key.lower() or local_key.lower() in keyword_lower:
+                matched.append({
+                    "title": local_info["title"],
+                    "director": local_info["director"],
+                    "actors": local_info["actors"],
+                    "summary": local_info["summary"],
+                    "rating": local_info["rating"],
+                    "year": local_info["year"],
+                    "poster": "",
+                    "url": f"https://www.themoviedb.org/search?query={urllib.parse.quote(keyword)}",
+                })
+        return matched
+
+    # 丰富 TMDB 结果
     matched = []
-
-    # 第1步：豆瓣API搜索
-    douban_results = _search_douban_movie(keyword)
-    if douban_results:
-        for dr in douban_results[:5]:
-            # 尝试从本地库匹配详细信息
-            db_title = dr["douban_title"]
-            full_info = None
-            for name, info in ALL_MOVIES.items():
-                if name[:3] in db_title or db_title[:3] in name:
-                    full_info = info.copy()
-                    full_info["title"] = db_title  # 使用豆瓣真实标题
-                    full_info["year"] = dr.get("year", full_info.get("year", ""))
-                    full_info["poster"] = dr.get("poster") or full_info.get("poster", "")
-                    full_info["url"] = dr["url"]  # 豆瓣真实链接
-                    break
-            if not full_info:
-                # 本地库未匹配，构造基本信息
-                full_info = {
-                    "title": db_title,
-                    "director": "请前往豆瓣页面查看",
-                    "actors": [],
-                    "summary": "请前往豆瓣页面查看详情",
-                    "rating": "?",
-                    "year": dr.get("year", ""),
-                    "poster": dr.get("poster", ""),
-                    "url": dr["url"],
-                }
-            matched.append(full_info)
-
-    # 第2步：本地库搜索（补充豆瓣未覆盖的）
-    for name, info in ALL_MOVIES.items():
-        if (keyword_lower in name.lower()
-                or any(keyword_lower in a.lower() for a in info.get("actors", []))):
-            # 如果已通过豆瓣添加，跳过（用豆瓣数据更准）
-            if any(m.get("title") == info.get("title") for m in matched):
-                continue
-            matched.append(info.copy())
-
+    for movie in tmdb_results[:8]:
+        _enrich_with_local_db(movie, keyword_lower)
+        movie["url"] = f"https://www.themoviedb.org/movie/{movie.get('tmdb_id', '')}"
+        movie["summary"] = movie.get("overview", "")
+        matched.append(movie)
     return matched
 
 
 def _get_random_movie():
-    """随机返回一部电影信息"""
-    return random.choice(list(ALL_MOVIES.values()))
+    """随机返回本地库中的一部电影"""
+    movie = random.choice(list(_MOVIE_LOCAL_DB.values()))
+    return {
+        "title": movie["title"],
+        "director": movie["director"],
+        "actors": movie["actors"],
+        "summary": movie["summary"],
+        "rating": movie["rating"],
+        "year": movie["year"],
+        "poster": "",
+        "url": f"https://www.themoviedb.org/search?query={urllib.parse.quote(movie['title'])}",
+    }
 
 
 class MockMovieHandler(BaseHandler):
-    """支持按片名搜索和随机推荐"""
+    """支持按片名搜索（TMDB API）和随机推荐（本地库）"""
     def get(self):
         keyword = self.get_argument("keyword", "").strip()
 
         if keyword:
-            # 按关键词搜索
-            matched = []
-            for name, info in ALL_MOVIES.items():
-                if keyword in name or any(keyword in a for a in info["actors"]):
-                    matched.append(info)
+            matched = _search_movie(keyword)
             if not matched:
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps({
                     "success": True,
                     "data": {
-                        "content": f"😅 未找到与「{keyword}」相关的电影信息，试试其他关键词吧！",
+                        "content": f"😅 未找到与「{keyword}」相关的电影信息，换个关键词试试吧！",
                         "responseFormat": "text",
                         "extraData": {}
                     }
@@ -736,17 +514,18 @@ class MockMovieHandler(BaseHandler):
                 return
             selected = random.choice(matched)
         else:
-            # 随机推荐
-            selected = random.choice(list(ALL_MOVIES.values()))
+            selected = _get_random_movie()
 
+        actors_text = " / ".join(selected.get("actors", [])[:5])
         text = (
-            f"🎬 **{selected['title']}** ({selected['year']})\n\n"
-            f"⭐ 评分：**{selected['rating']}**\n"
-            f"🎥 导演：{selected['director']}\n"
-            f"👥 演员：{' / '.join(selected['actors'])}\n\n"
-            f"📖 **剧情简介**\n{selected['summary']}\n\n"
-            f"🔗 [观看链接]({selected['url']})"
+            f"🎬 **{selected['title']}** ({selected.get('year', '')})\n\n"
+            f"⭐ 评分：**{selected.get('rating', '?')}**\n"
+            f"🎥 导演：{selected.get('director', '')}\n"
         )
+        if actors_text:
+            text += f"👥 演员：{actors_text}\n"
+        text += f"\n📖 **剧情简介**\n{selected.get('summary', '')}\n\n"
+        text += f"🔗 [查看详情]({selected.get('url', '')})"
 
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps({
@@ -756,13 +535,13 @@ class MockMovieHandler(BaseHandler):
                 "responseFormat": "movie_detail",
                 "extraData": {
                     "title": selected["title"],
-                    "director": selected["director"],
-                    "actors": selected["actors"],
-                    "summary": selected["summary"],
-                    "rating": selected["rating"],
-                    "year": selected["year"],
-                    "poster": selected["poster"],
-                    "url": selected["url"]
+                    "director": selected.get("director", ""),
+                    "actors": selected.get("actors", []),
+                    "summary": selected.get("summary", ""),
+                    "rating": str(selected.get("rating", "?")),
+                    "year": selected.get("year", ""),
+                    "poster": selected.get("poster", ""),
+                    "url": selected.get("url", "")
                 }
             }
         }, ensure_ascii=False))
