@@ -7,7 +7,6 @@ from app.models.db import get_connection
 from app.models.ai_model import AiModelRepository
 from datetime import datetime, timedelta
 import time
-from tornado.ioloop import IOLoop
 
 
 LLM_REVIEW_PROMPT = """你是一个安全审核专家，请判断以下对话内容是否属于真实的安全攻击。
@@ -38,10 +37,11 @@ def llm_classify_warning(source_content, matched_word, category):
         if not api_base or not api_key:
             return {"classification": "suspicious", "reason": "模型未配置完整，保留预警", "risk_score": 50}
 
+        esc = lambda s: s.replace('{', '{{').replace('}', '}}')
         prompt = LLM_REVIEW_PROMPT.format(
-            matched_word=matched_word,
-            category=category,
-            source_content=(source_content or "")[:500]
+            matched_word=esc(matched_word),
+            category=esc(category),
+            source_content=esc((source_content or "")[:500])
         )
 
         resp = requests.post(
@@ -433,6 +433,13 @@ class OpinionAcknowledgeApiHandler(AdminBaseHandler):
                 self.write(json.dumps({"success": False, "message": "缺少id参数"}))
                 return
 
+            with get_connection() as conn:
+                if body.get("action") == "false_positive":
+                    conn.execute("DELETE FROM public_opinion_warnings WHERE id=?", (warning_id,))
+                    conn.commit()
+                    self.write(json.dumps({"success": True}))
+                    return
+
             fields = {}
             if "status" in body:
                 fields["status"] = body["status"]
@@ -453,6 +460,7 @@ class OpinionAcknowledgeApiHandler(AdminBaseHandler):
                     f"UPDATE public_opinion_warnings SET {set_clause} WHERE id=?",
                     values
                 )
+                conn.commit()
 
             self.write(json.dumps({"success": True}))
         except Exception as e:
@@ -484,17 +492,9 @@ class OpinionFeedbackApiHandler(AdminBaseHandler):
 
 
 class OpinionScanApiHandler(AdminBaseHandler):
-    """扫描采集数据+用户对话中的攻击性敏感词（带数量限制与防重入保护）"""
-    _last_scan_time = 0
-
+    """扫描采集数据+用户对话中的攻击性敏感词"""
     @tornado.web.authenticated
     def post(self):
-        now = time.time()
-        if now - OpinionScanApiHandler._last_scan_time < 10:
-            self.write(json.dumps({"success": False, "message": "操作过于频繁，请10秒后再试"}))
-            return
-        OpinionScanApiHandler._last_scan_time = now
-
         try:
             limit = int(self.get_argument("limit", 50))
             with get_connection() as conn:
@@ -574,8 +574,6 @@ class OpinionScanApiHandler(AdminBaseHandler):
                             new_count += 1
 
             self.write(json.dumps({"success": True, "new_count": new_count}))
-            # 扫描完成后后台触发 AI 审核
-            IOLoop.current().spawn_callback(batch_review_pending_warnings)
         except Exception as e:
             self.write(json.dumps({"success": False, "message": str(e)}))
 

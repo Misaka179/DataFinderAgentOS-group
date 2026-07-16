@@ -18,21 +18,12 @@ var DashboardCharts = (function () {
 
     function renderDonut(data) {
         if (!donutChart) return;
-        var total = data.reduce(function (s, d) { return s + d.value; }, 0);
-        var ratio = total > 0 ? (data[0] ? (data[0].value / total * 100).toFixed(1) : 0) : 0;
         donutChart.setOption({
             tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-            graphic: [{
-                type: 'text', left: 'center', top: '38%',
-                style: { text: ratio + '%', fill: '#1e293b', fontSize: 26, fontWeight: 700, textAlign: 'center' }
-            }, {
-                type: 'text', left: 'center', top: '54%',
-                style: { text: '深度采集率', fill: '#94a3b8', fontSize: 12, textAlign: 'center' }
-            }],
             series: [{
-                type: 'pie', radius: ['52%', '75%'], center: ['50%', '45%'],
-                avoidLabelOverlap: true, label: { show: true, position: 'outside', formatter: '{b}\n{d}%', fontSize: 11, color: '#64748b', lineHeight: 16 },
-                labelLine: { length: 8, length2: 6 },
+                type: 'pie',                 radius: ['30%', '62%'], center: ['50%', '42%'],
+                avoidLabelOverlap: true, label: { show: true, position: 'outside', formatter: '{b}\n{d}%', fontSize: 11, color: '#64748b', lineHeight: 14 },
+                labelLine: { length: 6, length2: 4 },
                 emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
                 data: data,
                 color: ['#22c55e', '#e2e8f0']

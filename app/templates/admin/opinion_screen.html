@@ -182,6 +182,19 @@
 .tool-btn:hover { border-color:#60a5fa; color:#e2e8f0; background:rgba(96,165,250,.08); }
 .tool-btn.scan-btn:hover { border-color:#34d399; color:#34d399; background:rgba(52,211,153,.08); }
 .tool-btn i { font-size:11px; }
+#scan-btn.scanning {
+    position: relative; overflow: hidden;
+    background: linear-gradient(90deg, #e65100, #ffb300, #e65100) !important;
+    background-size: 200% 100% !important;
+    animation: scanSweep 1.2s linear infinite !important;
+    border-color: #e65100 !important;
+    color: #fff !important;
+    pointer-events: none;
+}
+@keyframes scanSweep {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
 </style>
 
 <div class="layui-layout layui-layout-admin">
@@ -344,6 +357,7 @@
                         <button class="layui-btn layui-btn-sm layui-btn-primary" id="btn-ai-analyze" onclick="aiAnalyze()"><i class="layui-icon">&#xe667;</i> AI分析</button>
                         <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-mark-read" onclick="markRead()"><i class="layui-icon">&#xe642;</i> 标为已读</button>
                         <button class="layui-btn layui-btn-sm" id="btn-ack-feedback" onclick="ackWithFeedback()"><i class="layui-icon">&#xe618;</i> 确认反馈</button>
+                        <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="markFalsePositive()"><i class="layui-icon">&#xe640;</i> 误报</button>
                         <input type="text" class="feedback-input" id="feedback-input" placeholder="输入反馈意见（选填）" style="width:160px;display:none;" />
                     </div>
                 </div>
@@ -422,14 +436,14 @@ var warnData = [];
 
 function formatTime(ts) {
     if (!ts) return '--';
-    var d = new Date(ts);
+    var d = new Date(ts.replace(' ', 'T') + 'Z');
     var pad = function(n){return n<10?'0'+n:n;};
     return pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
 function severityBadge(s) {
     var cls = 'badge-low';
-    var label = s||'low';
+    var label = '低危';
     if (s === 'high' || s === '高危') { cls = 'badge-high'; label = '高危'; }
     else if (s === 'medium' || s === '中危') { cls = 'badge-medium'; label = '中危'; }
     else if (s === 'pending') { cls = 'badge-medium'; label = '待审'; }
@@ -630,6 +644,16 @@ function ackWithFeedback() {
     }).catch(function(){alert('请求失败');});
 }
 
+function markFalsePositive() {
+    if (!selectedWarnId) return;
+    if (!confirm('确认将该预警标记为误报并移除？')) return;
+    postJSON('/api/opinion/acknowledge', {id:selectedWarnId, action:'false_positive'})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) { document.getElementById('detail-panel').style.display = 'none'; loadAll(); }
+        else alert(res.message || '操作失败');
+    }).catch(function(){alert('请求失败');});
+}
+
 function resetSeverityEdit() {
     var badge = document.getElementById('detail-severity-badge');
     var sel = document.getElementById('detail-severity-select');
@@ -685,7 +709,10 @@ function postJSON(url, body) {
 }
 function triggerScan(quiet) {
     var btn = document.getElementById('scan-btn');
-    if (!quiet) { btn.disabled = true; btn.innerHTML = '<i class="layui-icon">&#xe63d;</i> 扫描中...'; }
+    if (!quiet) {
+        btn.classList.add('scanning');
+        btn.innerHTML = '<i class="layui-icon">&#xe63d;</i> 扫描中..';
+    }
     postJSON('/api/opinion/scan', {})
     .then(function(r){return r.json()}).then(function(res){
         if (res.success) {
@@ -695,9 +722,20 @@ function triggerScan(quiet) {
                 el.textContent = res.new_count ? '✓ 新增 '+res.new_count+' 条预警' : '✓ 无新增预警';
                 setTimeout(function(){ el.textContent = ''; }, 2000);
             }
-        } else if (!quiet) { alert(res.message || '扫描失败'); }
-    }).catch(function(){if(!quiet)alert('请求失败');}).finally(function(){
-        if (!quiet) { btn.disabled = false; btn.innerHTML = '<i class="layui-icon">&#xe669;</i> 扫描对话'; }
+        } else if (!quiet) {
+            var el = document.getElementById('scan-msg');
+            el.textContent = '⚠ ' + (res.message || '扫描失败');
+            setTimeout(function(){ el.textContent = ''; }, 3000);
+        }
+    }).catch(function(){if(!quiet){
+        var el = document.getElementById('scan-msg');
+        el.textContent = '⚠ 请求失败';
+        setTimeout(function(){ el.textContent = ''; }, 3000);
+    }}).finally(function(){
+        if (!quiet) {
+            btn.classList.remove('scanning');
+            btn.innerHTML = '<i class="layui-icon layui-icon-util"></i> 扫描';
+        }
     });
 }
 
@@ -798,6 +836,5 @@ setInterval(function(){ triggerScan(true); }, 30000);
 setInterval(loadAll, 30000);
 loadAll();
 triggerScan(true);
-setTimeout(function(){ batchReview(); }, 2000);
 </script>
 {% end %}
