@@ -487,7 +487,7 @@
       bubble.appendChild(card);
     }
 
-    // 渲染ECharts图表（如适用）
+    // 渲染ECharts图表（支持 line / pie / bar）
     if (role === 'ai' && extra.responseFormat === 'chart_card' && extra.extraData?.chart) {
       const chartContainer = document.createElement('div');
       chartContainer.className = 'chart-container';
@@ -495,45 +495,77 @@
       bubble.appendChild(chartContainer);
 
       const chart = extra.extraData.chart;
-      const chartId = 'chart_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
 
       // 初始化ECharts（DOM挂载后）
       requestAnimationFrame(() => {
         if (typeof echarts !== 'undefined') {
           const myChart = echarts.init(chartContainer);
-          const option = {
-            title: { text: chart.title || '', left: 'center', textStyle: { fontSize: 14 } },
-            tooltip: { trigger: 'axis' },
-            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-            xAxis: { type: 'category', data: chart.categories || [], axisLabel: { rotate: 30, fontSize: 11 } },
-            yAxis: { type: 'value' },
-            series: [{
-              name: chart.value_label || '',
-              type: chart.chart_type === 'pie' ? 'pie' : 'bar',
-              data: chart.chart_type === 'pie'
-                ? (chart.categories || []).map((name, i) => ({ name, value: (chart.values || [])[i] || 0 }))
-                : (chart.values || []),
-              radius: chart.chart_type === 'pie' ? '50%' : undefined,
-              center: chart.chart_type === 'pie' ? ['50%', '55%'] : undefined,
-              itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: '#667eea' },
-                  { offset: 1, color: '#764ba2' }
-                ])
-              }
-            }]
-          };
-          if (chart.chart_type === 'pie') {
-            delete option.xAxis;
-            delete option.yAxis;
-            option.tooltip = { trigger: 'item', formatter: '{b}: {c} ({d}%)' };
+          let option = {};
+
+          if (chart.chart_type === 'line') {
+            // 折线图
+            option = {
+              title: { text: chart.title || '', left: 'center', textStyle: { fontSize: 14 } },
+              tooltip: { trigger: 'axis' },
+              legend: { data: (chart.series || []).map(function(s) { return s.name; }), bottom: 0 },
+              grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
+              xAxis: { type: 'category', data: chart.x_data || [], axisLabel: { rotate: 30, fontSize: 11 } },
+              yAxis: { type: 'value' },
+              series: (chart.series || []).map(function(s) {
+                return {
+                  name: s.name, type: 'line', data: s.data,
+                  smooth: true,
+                  areaStyle: { opacity: 0.15 },
+                  itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                      { offset: 0, color: '#667eea' }, { offset: 1, color: '#22c55e' }
+                    ])
+                  }
+                };
+              })
+            };
+          } else if (chart.chart_type === 'pie') {
+            // 饼图
+            option = {
+              title: { text: chart.title || '', left: 'center', textStyle: { fontSize: 14 } },
+              tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+              series: [{
+                name: chart.value_label || '',
+                type: 'pie',
+                radius: '55%',
+                center: ['50%', '55%'],
+                data: (chart.categories || []).map(function(name, i) {
+                  return { name: name, value: (chart.values || [])[i] || 0 };
+                }),
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 }
+              }]
+            };
+          } else {
+            // 柱状图（默认）
+            option = {
+              title: { text: chart.title || '', left: 'center', textStyle: { fontSize: 14 } },
+              tooltip: { trigger: 'axis' },
+              grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+              xAxis: { type: 'category', data: chart.categories || [], axisLabel: { rotate: 30, fontSize: 11 } },
+              yAxis: { type: 'value' },
+              series: [{
+                name: chart.value_label || '',
+                type: 'bar',
+                data: (chart.values || []),
+                itemStyle: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#667eea' }, { offset: 1, color: '#764ba2' }
+                  ])
+                }
+              }]
+            };
           }
           myChart.setOption(option);
           // 窗口resize时自适应
-          const resizeHandler = () => myChart.resize();
+          const resizeHandler = function() { myChart.resize(); };
           window.addEventListener('resize', resizeHandler);
           // 清理监听器
-          const observer = new MutationObserver(() => {
+          const observer = new MutationObserver(function() {
             if (!document.contains(chartContainer)) {
               window.removeEventListener('resize', resizeHandler);
               myChart.dispose();
@@ -543,6 +575,40 @@
           observer.observe(document.body, { childList: true, subtree: true });
         }
       });
+    }
+
+    // 渲染数据表格
+    if (role === 'ai' && extra.responseFormat === 'table' && extra.extraData?.table) {
+      const table = extra.extraData.table;
+      const columns = table.columns || [];
+      const rows = table.rows || [];
+      const totalRows = table.total_rows || rows.length;
+
+      const tableWrapper = document.createElement('div');
+      tableWrapper.className = 'data-table-wrapper';
+
+      // 表头
+      let html = '<div class="data-table-header">查询结果（共 ' + totalRows + ' 条记录）</div>';
+      html += '<div class="table-scroll"><table class="data-result-table"><thead><tr>';
+      columns.forEach(function(col) {
+        html += '<th>' + col + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+      rows.forEach(function(row) {
+        html += '<tr>';
+        columns.forEach(function(col) {
+          var val = row[col];
+          html += '<td>' + (val !== null && val !== undefined ? String(val) : '') + '</td>';
+        });
+        html += '</tr>';
+      });
+      if (totalRows > rows.length) {
+        html += '<tr><td colspan="' + columns.length + '" style="text-align:center;color:#94a3b8;">... 共 ' + totalRows + ' 条，仅展示前 ' + rows.length + ' 条</td></tr>';
+      }
+      html += '</tbody></table></div>';
+
+      tableWrapper.innerHTML = html;
+      bubble.appendChild(tableWrapper);
     }
 
     // 渲染Markdown
@@ -784,7 +850,7 @@
       if (fullContent) {
         // 重建AI消息DOM，加入卡片和元数据
         const msgObj = {
-          role: 'assistant',
+          role: 'ai',
           content: fullContent,
           employee_name: employeeName,
           employee_response_format: responseFormat,
@@ -795,7 +861,7 @@
         state.messages.push(msgObj);
         // 替换占位消息为完整消息（含卡片和元数据）
         placeholder.container.remove();
-        appendMessageDOM('assistant', fullContent, employeeName, true, {
+        appendMessageDOM('ai', fullContent, employeeName, true, {
           responseFormat: responseFormat,
           extraData: extraData,
           tokens: lastTokenCount,
