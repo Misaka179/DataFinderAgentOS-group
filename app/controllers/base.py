@@ -3,6 +3,7 @@ import tornado.web
 from app.models.user import UserRepository
 from app.models.menu import MenuRepository
 from app.models.function import FunctionRepository
+from app.models.db import get_connection
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -12,13 +13,40 @@ class BaseHandler(tornado.web.RequestHandler):
             return None
         return username.decode("utf-8")
 
+    @staticmethod
+    def get_base_stats():
+        """提取公共统计查询 - 被 DashboardStatsApiHandler 和 AdminIndexHandler 共用"""
+        stats = {}
+        try:
+            with get_connection() as conn:
+                stats["user_count"] = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
+                stats["data_count"] = conn.execute("SELECT COUNT(*) FROM data_warehouse").fetchone()[0] or 0
+                stats["task_count"] = conn.execute("SELECT COUNT(*) FROM deep_collect_tasks").fetchone()[0] or 0
+                stats["model_count"] = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0] or 0
+                stats["watch_count"] = conn.execute("SELECT COUNT(*) FROM watch_sources").fetchone()[0] or 0
+                stats["de_count"] = conn.execute("SELECT COUNT(*) FROM digital_employees").fetchone()[0] or 0
+                stats["today_task_count"] = conn.execute(
+                    "SELECT COUNT(*) FROM deep_collect_tasks WHERE date(started_at)=date('now')"
+                ).fetchone()[0] or 0
+                stats["deep_count"] = conn.execute(
+                    "SELECT COUNT(*) FROM data_warehouse WHERE is_deep_collected=1"
+                ).fetchone()[0] or 0
+        except Exception:
+            stats = {"user_count":0, "data_count":0, "task_count":0, "model_count":0,
+                     "watch_count":0, "de_count":0, "today_task_count":0, "deep_count":0}
+        return stats
+
     def get_user_info(self):
-        """获取当前登录用户的完整信息（含角色和菜单权限）"""
+        """获取当前登录用户的完整信息（含角色和菜单权限），同次请求结果缓存在 _user_info 中"""
+        if hasattr(self, '_user_info'):
+            return self._user_info
         username = self.current_user
         if not username:
+            self._user_info = None
             return None
         user_row = UserRepository.get_user_by_username(username)
         if not user_row:
+            self._user_info = None
             return None
         user_info = dict(user_row)
         # 查询该角色对应的菜单（含功能信息），构建树形结构
@@ -52,6 +80,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
         user_info["menus"] = menu_list
         user_info["menu_tree"] = MenuRepository.build_menu_tree(menu_list, self.request.path)
+        self._user_info = user_info
         return user_info
 
     def render(self, template_name, **kwargs):

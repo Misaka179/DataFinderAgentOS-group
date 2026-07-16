@@ -4,6 +4,7 @@ import tornado.web
 from app.controllers.base import BaseHandler
 from app.models.db import get_connection
 from datetime import datetime, timedelta
+import time
 
 
 class IndexHandler(BaseHandler):
@@ -16,22 +17,13 @@ class DashboardStatsApiHandler(BaseHandler):
     """控制台统计数据API（用于前端实时刷新）"""
     @tornado.web.authenticated
     def get(self):
-        stats = {}
+        stats = self.get_base_stats()
+        stats.setdefault("task_status_bar", [])
+        stats.setdefault("daily_trend", [])
+        stats.setdefault("deep_coverage", [])
+        stats.setdefault("table_details", {})
         try:
             with get_connection() as conn:
-                stats["user_count"] = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
-                stats["data_count"] = conn.execute("SELECT COUNT(*) FROM data_warehouse").fetchone()[0] or 0
-                stats["task_count"] = conn.execute("SELECT COUNT(*) FROM deep_collect_tasks").fetchone()[0] or 0
-                stats["model_count"] = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0] or 0
-                stats["watch_count"] = conn.execute("SELECT COUNT(*) FROM watch_sources").fetchone()[0] or 0
-                stats["de_count"] = conn.execute("SELECT COUNT(*) FROM digital_employees").fetchone()[0] or 0
-                stats["today_task_count"] = conn.execute(
-                    "SELECT COUNT(*) FROM deep_collect_tasks WHERE date(started_at)=date('now')"
-                ).fetchone()[0] or 0
-                stats["deep_count"] = conn.execute(
-                    "SELECT COUNT(*) FROM data_warehouse WHERE is_deep_collected=1"
-                ).fetchone()[0] or 0
-
                 status_rows = conn.execute("""
                     SELECT COALESCE(NULLIF(status,''), 'unknown') as name, COUNT(*) as value
                     FROM deep_collect_tasks GROUP BY status ORDER BY value DESC
@@ -67,9 +59,7 @@ class DashboardStatsApiHandler(BaseHandler):
                     "digital_employees": stats["de_count"],
                 }
         except Exception:
-            stats = {"user_count":0, "data_count":0, "task_count":0, "model_count":0,
-                     "watch_count":0, "de_count":0, "today_task_count":0, "deep_count":0,
-                     "task_status_bar":[], "daily_trend":[], "deep_coverage":[], "table_details":{}}
+            pass
         self.write(json.dumps({"success": True, "data": stats}))
 
 
@@ -82,26 +72,7 @@ class GestureHandler(BaseHandler):
 class AdminIndexHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        # 从数据库查询实时统计数据
-        stats = {}
-        try:
-            with get_connection() as conn:
-                stats["user_count"] = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
-                stats["data_count"] = conn.execute("SELECT COUNT(*) FROM data_warehouse").fetchone()[0] or 0
-                stats["task_count"] = conn.execute("SELECT COUNT(*) FROM deep_collect_tasks").fetchone()[0] or 0
-                stats["model_count"] = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0] or 0
-                stats["watch_count"] = conn.execute("SELECT COUNT(*) FROM watch_sources").fetchone()[0] or 0
-                stats["de_count"] = conn.execute("SELECT COUNT(*) FROM digital_employees").fetchone()[0] or 0
-                stats["today_task_count"] = conn.execute(
-                    "SELECT COUNT(*) FROM deep_collect_tasks WHERE date(started_at)=date('now')"
-                ).fetchone()[0] or 0
-                stats["deep_count"] = conn.execute(
-                    "SELECT COUNT(*) FROM data_warehouse WHERE is_deep_collected=1"
-                ).fetchone()[0] or 0
-        except Exception:
-            stats = {"user_count":0, "data_count":0, "task_count":0, "model_count":0,
-                     "watch_count":0, "de_count":0, "today_task_count":0, "deep_count":0}
-
+        stats = self.get_base_stats()
         self.render("admin/index.html", title="后台管理", username=self.current_user, stats=stats)
 
 
@@ -405,13 +376,23 @@ class OpinionFeedbackApiHandler(BaseHandler):
 
 
 class OpinionScanApiHandler(BaseHandler):
-    """扫描采集数据+用户对话中的攻击性敏感词"""
+    """扫描采集数据+用户对话中的攻击性敏感词（带数量限制与防重入保护）"""
+    _last_scan_time = 0
+
     @tornado.web.authenticated
     def post(self):
+        now = time.time()
+        if now - OpinionScanApiHandler._last_scan_time < 10:
+            self.write(json.dumps({"success": False, "message": "操作过于频繁，请10秒后再试"}))
+            return
+        OpinionScanApiHandler._last_scan_time = now
+
         try:
+            limit = int(self.get_argument("limit", 50))
             with get_connection() as conn:
                 words = conn.execute(
-                    "SELECT id, word, category, severity FROM sensitive_words WHERE is_active=1"
+                    "SELECT id, word, category, severity FROM sensitive_words WHERE is_active=1 ORDER BY id LIMIT ?",
+                    (limit,)
                 ).fetchall()
 
                 new_count = 0
@@ -441,25 +422,25 @@ class OpinionScanApiHandler(BaseHandler):
                             )
                             new_count += 1
 
-                    # 扫描 conversations
+                    # 扫描 conversations（使用 SQL LIKE 避免全表加载到内存）
                     conv_rows = conn.execute(
-                        "SELECT id, messages, title FROM conversations"
+                        "SELECT id, messages, title FROM conversations WHERE messages LIKE ? OR title LIKE ?",
+                        (f'%{word_text}%', f'%{word_text}%')
                     ).fetchall()
                     for conv in conv_rows:
                         msg_text = (conv["messages"] or "") + " " + (conv["title"] or "")
-                        if word_text in msg_text:
-                            exists = conn.execute(
-                                "SELECT id FROM public_opinion_warnings WHERE source_type='user_chat' AND source_id=? AND matched_word=?",
-                                (str(conv["id"]), word_text)
-                            ).fetchone()
-                            if not exists:
-                                conn.execute(
-                                    """INSERT INTO public_opinion_warnings
-                                       (source_type, source_id, source_content, matched_word, word_category, severity)
-                                       VALUES (?, ?, ?, ?, ?, ?)""",
-                                    ("user_chat", str(conv["id"]), msg_text[:500], word_text, cat, sev)
-                                )
-                                new_count += 1
+                        exists = conn.execute(
+                            "SELECT id FROM public_opinion_warnings WHERE source_type='user_chat' AND source_id=? AND matched_word=?",
+                            (str(conv["id"]), word_text)
+                        ).fetchone()
+                        if not exists:
+                            conn.execute(
+                                """INSERT INTO public_opinion_warnings
+                                   (source_type, source_id, source_content, matched_word, word_category, severity)
+                                   VALUES (?, ?, ?, ?, ?, ?)""",
+                                ("user_chat", str(conv["id"]), msg_text[:500], word_text, cat, sev)
+                            )
+                            new_count += 1
 
             self.write(json.dumps({"success": True, "new_count": new_count}))
         except Exception as e:
@@ -467,7 +448,7 @@ class OpinionScanApiHandler(BaseHandler):
 
 
 class SensitiveWordsApiHandler(BaseHandler):
-    """敏感词列表/详情"""
+    """敏感词列表/详情（支持分页）"""
     @tornado.web.authenticated
     def get(self):
         try:
@@ -477,8 +458,21 @@ class SensitiveWordsApiHandler(BaseHandler):
                     row = conn.execute("SELECT * FROM sensitive_words WHERE id=?", (int(word_id),)).fetchone()
                     self.write(json.dumps({"success": True, "data": dict(row) if row else None}))
                 else:
-                    rows = conn.execute("SELECT * FROM sensitive_words ORDER BY id").fetchall()
-                    self.write(json.dumps({"success": True, "data": [dict(r) for r in rows]}))
+                    page = int(self.get_argument("page", 1))
+                    page_size = int(self.get_argument("page_size", 50))
+                    offset = (page - 1) * page_size
+                    total = conn.execute("SELECT COUNT(*) FROM sensitive_words").fetchone()[0] or 0
+                    rows = conn.execute(
+                        "SELECT * FROM sensitive_words ORDER BY id LIMIT ? OFFSET ?",
+                        (page_size, offset)
+                    ).fetchall()
+                    self.write(json.dumps({
+                        "success": True,
+                        "data": [dict(r) for r in rows],
+                        "total": total,
+                        "page": page,
+                        "page_size": page_size
+                    }))
         except Exception as e:
             self.write(json.dumps({"success": False, "message": str(e)}))
 
