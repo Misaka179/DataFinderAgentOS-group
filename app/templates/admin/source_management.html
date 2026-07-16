@@ -307,14 +307,14 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                     res.data.forEach(function(source) {
                         var statusHtml = source.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                         html += '<tr>' +
-                            '<td>' + source.id + '</td>' +
+                            '<td class="col-id">' + source.id + '</td>' +
                             '<td>' + (source.name || '<span class="cell-empty">-</span>') + '</td>' +
-                            '<td><span class="cell-url" title="' + (source.url_template || '') + '">' + (source.url_template || '<span class="cell-empty">-</span>') + '</span></td>' +
+                            '<td class="col-url" title="' + (source.url_template || '') + '"><span class="cell-url">' + (source.url_template || '<span class="cell-empty">-</span>') + '</span></td>' +
                             '<td>' + (source.keyword_param || '<span class="cell-empty">-</span>') + '</td>' +
                             '<td>' + (source.page_param || '-') + ' (' + (source.page_step || 0) + ')</td>' +
-                            '<td>' + statusHtml + '</td>' +
+                            '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + source.created_at + '</td>' +
-                            '<td><div class="action-btns">' +
+                            '<td class="col-actions"><div class="action-btns">' +
                                 '<button class="layui-btn layui-btn-xs" onclick="editSource(' + source.id + ')">编辑</button>' +
                                 '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteSource(' + source.id + ', \'' + source.name + '\')">删除</button>' +
                             '</div></td>' +

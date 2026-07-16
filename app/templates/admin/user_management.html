@@ -332,12 +332,12 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
                             actionHtml += '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>';
                         }
                         html += '<tr>' +
-                            '<td>' + user.id + '</td>' +
+                            '<td class="col-id">' + user.id + '</td>' +
                             '<td>' + (isAdmin ? user.username + ' <span class="badge-active" style="background:#fee2e2;color:#dc2626;">超管</span>' : user.username) + '</td>' +
                             '<td>' + (user.role_name || '<span class="cell-empty">-</span>') + '</td>' +
-                            '<td>' + statusHtml + '</td>' +
+                            '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + user.created_at + '</td>' +
-                            '<td><div class="action-btns">' + actionHtml + '</div></td>' +
+                            '<td class="col-actions"><div class="action-btns">' + actionHtml + '</div></td>' +
                         '</tr>';
                     });
                 }

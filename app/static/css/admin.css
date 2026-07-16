@@ -26,7 +26,11 @@
 
 /* ===== 侧边栏 ===== */
 .layui-side {
-    background: linear-gradient(180deg, #0f172a 0%, #1a2332 100%) !important;
+    overflow: hidden;
+    background:
+        repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,.02) 19px, rgba(255,255,255,.02) 20px),
+        repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,.02) 19px, rgba(255,255,255,.02) 20px),
+        linear-gradient(180deg, #0f172a 0%, #1a2332 100%) !important;
     top: 60px;
     box-shadow: 2px 0 12px rgba(0,0,0,.06);
 }
@@ -45,10 +49,9 @@
     gap: 8px;
     color: rgba(255,255,255,.65);
     height: 42px;
-    border-radius: 6px;
     padding: 0 12px;
     margin: 1px 0;
-    transition: all .2s ease;
+    transition: all .15s ease;
     font-size: 14px;
 }
 .layui-nav-tree .layui-nav-item a:hover {
@@ -58,7 +61,6 @@
 .layui-nav-tree .layui-nav-item.layui-this > a {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
     color: #fff !important;
-    box-shadow: 0 2px 8px rgba(37,99,235,.3);
 }
 .layui-nav-tree .layui-nav-item.layui-this > a::after {
     display: none !important;
@@ -75,11 +77,14 @@
     height: 36px;
     padding-left: 28px !important;
     font-size: 13px;
-    border-radius: 4px;
 }
 .layui-nav-tree .layui-nav-child a:hover {
     color: #fff;
     background: rgba(255,255,255,.06);
+}
+.layui-nav-tree .layui-nav-child dd.layui-this > a {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: #fff !important;
 }
 .layui-nav-tree .layui-nav-item a i {
     display: inline-flex;
@@ -111,12 +116,24 @@
 
 /* ===== Dashboard 仪表盘 ===== */
 .dashboard-header {
-    background: #fff;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 28px 32px;
     border-radius: 10px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     border: 1px solid rgba(226,232,240,.5);
+}
+.dashboard-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, transparent 50%, rgba(59,130,246,.04) 50%);
+    pointer-events: none;
 }
 .dashboard-header h2 {
     font-size: 22px;
@@ -136,10 +153,10 @@
     margin-bottom: 24px;
 }
 .dashboard-card {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 24px;
     border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     display: flex;
     align-items: center;
     gap: 16px;
@@ -149,12 +166,12 @@
 }
 .dashboard-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0,0,0,.08), 0 4px 10px rgba(0,0,0,.04);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08), 0 4px 15px rgba(59,130,246,.1);
 }
 .card-icon {
     width: 52px;
     height: 52px;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -196,11 +213,16 @@
     margin-bottom: 24px;
 }
 .dashboard-chart-box {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     padding: 20px;
     border: 1px solid rgba(226,232,240,.5);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.dashboard-chart-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08), 0 4px 15px rgba(59,130,246,.1);
 }
 .dashboard-chart-box h4 {
     font-size: 14px;
@@ -216,11 +238,16 @@
     height: 240px;
 }
 .dashboard-panel {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 24px 28px;
     border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     border: 1px solid rgba(226,232,240,.5);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.dashboard-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08), 0 4px 15px rgba(59,130,246,.1);
 }
 .dashboard-panel h3 {
     font-size: 16px;
@@ -245,18 +272,18 @@
 
 /* ===== 管理页面组件 ===== */
 .search-bar {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 24px;
     border-radius: 10px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     border: 1px solid rgba(226,232,240,.5);
 }
 .data-table {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 24px;
     border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     border: 1px solid rgba(226,232,240,.5);
 }
 .data-table table.layui-table {
@@ -267,11 +294,11 @@
     border-color: #f1f5f9;
 }
 .pagination-bar {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     padding: 16px 24px;
     border-radius: 10px;
     margin-top: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
     border: 1px solid rgba(226,232,240,.5);
     text-align: center;
 }
@@ -281,7 +308,7 @@
     color: #334155;
 }
 .layui-table thead tr {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
 }
 .layui-table thead th {
     font-weight: 600;
@@ -290,7 +317,7 @@
     border-color: #e2e8f0;
 }
 .layui-table tbody tr:hover {
-    background: #f8fafc;
+    background: linear-gradient(90deg, #f8fafc, #f1f5f9);
 }
 .layui-table tbody td {
     border-color: #f1f5f9;
@@ -313,13 +340,27 @@
     border-color: #2563eb;
     color: #2563eb;
 }
+.layui-btn-normal {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    border-color: transparent !important;
+}
+.layui-btn-normal:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+}
+.layui-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    border-color: transparent !important;
+}
+.layui-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+}
 .search-bar .btn-search {
-    background: #22c55e;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
     color: #fff;
-    border-color: #22c55e;
+    border-color: transparent;
 }
 .search-bar .btn-search:hover {
-    background: #16a34a;
+    background: linear-gradient(135deg, #16a34a, #15803d);
 }
 .search-bar .search-actions .layui-btn-sm {
     height: 36px;
@@ -369,6 +410,13 @@
 }
 
 /* ===== Layui 弹窗 ===== */
+.layui-layer {
+    animation: layerFadeIn .25s ease;
+}
+@keyframes layerFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 .layui-layer-title {
     font-size: 15px;
     font-weight: 600;
@@ -450,7 +498,7 @@
     font-weight: 500;
 }
 .badge-active {
-    background: #dcfce7;
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
     color: #16a34a;
 }
 .badge-inactive {
@@ -468,11 +516,11 @@
     font-weight: 500;
 }
 .tag-success {
-    background: #dcfce7;
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
     color: #16a34a;
 }
 .tag-primary {
-    background: #dbeafe;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
     color: #2563eb;
 }
 
@@ -492,7 +540,7 @@
     font-weight: 600;
     color: #475569;
     font-size: 13px;
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     border-bottom: 1px solid #e2e8f0;
     white-space: nowrap;
 }
@@ -501,10 +549,10 @@
     color: #334155;
 }
 .data-table .layui-table tbody tr:hover {
-    background: #f8fafc;
+    background: linear-gradient(90deg, #f8fafc, #f1f5f9);
 }
 .data-table .layui-table thead tr {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
 }
 .cell-text {
     max-width: 260px;
@@ -528,14 +576,35 @@
     white-space: nowrap;
     display: block;
 }
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.empty-state::before {
+    content: '';
+    display: block;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect x='16' y='8' width='32' height='48' rx='4' fill='%23e2e8f0'/%3E%3Crect x='22' y='20' width='20' height='2.5' rx='1.25' fill='%23cbd5e1'/%3E%3Crect x='22' y='28' width='14' height='2.5' rx='1.25' fill='%23cbd5e1'/%3E%3Crect x='22' y='36' width='10' height='2.5' rx='1.25' fill='%23cbd5e1'/%3E%3C/svg%3E") center/contain no-repeat;
+    opacity: .5;
+}
 .cell-empty {
     color: #cbd5e1;
     font-style: normal;
 }
-.col-id { width: 50px; }
+.col-id { width: 50px; text-align: center; }
+.col-center { text-align: center; }
+.col-url { max-width: 180px; }
 .col-checkbox { width: 36px; }
-.col-actions { width: 200px; white-space: nowrap; }
-.col-status { width: 80px; }
+.col-actions { width: 200px; white-space: nowrap; text-align: right; }
+.col-status { width: 80px; text-align: center; }
 .col-time { width: 150px; }
 
 /* ===== 统一分页 ===== */
@@ -600,7 +669,7 @@
     flex-shrink: 0;
 }
 .data-table .layui-table td.icon-cell {
-    padding: 10px 24px;
+    padding: 12px 16px;
     text-align: center;
     vertical-align: middle;
 }
@@ -613,12 +682,12 @@
 .text-muted { color: #94a3b8; }
 
 /* ===== 语义按钮 ===== */
-.btn-view { background: #22c55e !important; color: #fff !important; border-color: #22c55e !important; }
-.btn-view:hover { background: #16a34a !important; }
-.btn-test { background: #f59e0b !important; color: #fff !important; border-color: #f59e0b !important; }
-.btn-test:hover { background: #d97706 !important; }
-.btn-assign { background: #6366f1 !important; color: #fff !important; border-color: #6366f1 !important; }
-.btn-assign:hover { background: #4f46e5 !important; }
+.btn-view { background: linear-gradient(135deg, #22c55e, #16a34a) !important; color: #fff !important; border-color: transparent !important; }
+.btn-view:hover { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
+.btn-test { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff !important; border-color: transparent !important; }
+.btn-test:hover { background: linear-gradient(135deg, #d97706, #b45309) !important; }
+.btn-assign { background: linear-gradient(135deg, #6366f1, #4f46e5) !important; color: #fff !important; border-color: transparent !important; }
+.btn-assign:hover { background: linear-gradient(135deg, #4f46e5, #4338ca) !important; }
 
 /* ===== 响应式 ===== */
 @media screen and (max-width: 1024px) {

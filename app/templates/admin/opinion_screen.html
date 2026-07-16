@@ -11,18 +11,19 @@
     background: #f0f4f8;
 }
 .chart-panel {
-    background: #fff;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
     border: 1px solid rgba(226,232,240,.5);
     border-radius: 10px;
     padding: 16px;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
-    transition: box-shadow .2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 12px rgba(59,130,246,.06);
+    transition: transform .2s ease, box-shadow .2s ease;
 }
 .chart-panel:hover {
-    box-shadow: 0 10px 25px rgba(0,0,0,.08), 0 4px 10px rgba(0,0,0,.04);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.08), 0 4px 15px rgba(59,130,246,.1);
 }
 .chart-panel .panel-title {
     font-size: 14px;
@@ -160,6 +161,7 @@
 .feedback-item .fb-text { color:#334155; margin-top:2px; }
 .empty-state {
     display:flex;
+    flex-direction:column;
     align-items:center;
     justify-content:center;
     height:100%;
@@ -366,6 +368,15 @@
 var pieChart = echarts.init(document.getElementById('chart-category-pie'));
 var trendChart = echarts.init(document.getElementById('chart-trend'));
 
+var GC = [
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#3b82f6'},{offset:1,color:'#2563eb'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#22c55e'},{offset:1,color:'#16a34a'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#f97316'},{offset:1,color:'#ea580c'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#8b5cf6'},{offset:1,color:'#7c3aed'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#ef4444'},{offset:1,color:'#dc2626'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#14b8a6'},{offset:1,color:'#0d9488'}]),
+    new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#ec4899'},{offset:1,color:'#db2777'}])
+];
 window.addEventListener('resize', function() {
     pieChart.resize(); trendChart.resize();
 });
@@ -459,7 +470,7 @@ function loadAll() {
                     type: 'pie', radius: ['30%', '55%'], center: ['50%', '48%'],
                     itemStyle: { borderRadius: 4 },
                     label: { color: '#475569', fontSize: 11 },
-                    data: d.by_category
+                    data: d.by_category.map(function(d,i){ d.itemStyle = {color:GC[i%GC.length]}; return d; })
                 }]
             });
         } else { pieChart.clear(); }
@@ -474,7 +485,8 @@ function loadAll() {
                 yAxis: { type: 'value', minInterval: 1, axisLabel: { color:'#64748b', fontSize:10 }, splitLine: { lineStyle: { color:'rgba(148,163,184,.3)' } } },
                 series: [{
                     type: 'line', smooth: true, data: d.trend.map(function(x){return x.count;}),
-                    lineStyle: { width: 2, color: '#ef4444' }, areaStyle: { color: 'rgba(239,68,68,.15)' },
+                    lineStyle: { width: 2, color: '#ef4444' },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(239,68,68,.35)'},{offset:1,color:'rgba(239,68,68,.02)'}]) },
                     itemStyle: { color: '#ef4444' }
                 }]
             });
