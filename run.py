@@ -38,6 +38,15 @@ from app.controllers.admin_user import (
     UserUpdateApiHandler,
     UserDeleteApiHandler
 )
+from app.controllers.admin_conversation import (
+    ConversationManagementHandler,
+    MessageManagementHandler,
+    ConversationListApiHandler,
+    ConversationMessagesApiHandler,
+    ConversationDeleteApiHandler,
+    ConversationDeleteMessageApiHandler,
+    ConversationMessagesAllApiHandler
+)
 from app.controllers.admin_role import (
     RoleManagementHandler,
     RoleListApiHandler,
@@ -195,6 +204,15 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/users/create", UserCreateApiHandler),
         (r"/api/users/update", UserUpdateApiHandler),
         (r"/api/users/delete", UserDeleteApiHandler),
+        # 会话管理 & 对话管理
+        (r"/admin/conversation-management", ConversationManagementHandler),
+        (r"/admin/message-management", MessageManagementHandler),
+        (r"/api/admin/conversations/list", ConversationListApiHandler),
+        (r"/api/admin/conversations/messages", ConversationMessagesApiHandler),
+        (r"/api/admin/conversations/delete", ConversationDeleteApiHandler),
+        (r"/api/admin/conversations/messages/delete", ConversationDeleteMessageApiHandler),
+        (r"/api/admin/conversations/messages-all", ConversationMessagesAllApiHandler),
+        # 角色管理
         (r"/admin/role-management", RoleManagementHandler),
         (r"/api/roles/list", RoleListApiHandler),
         (r"/api/roles/get", RoleGetApiHandler),

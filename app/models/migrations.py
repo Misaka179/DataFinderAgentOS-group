@@ -60,6 +60,7 @@ def run_migrations():
             _migrate_skill_table,
             _migrate_skill_function,
             _migrate_skill_seed,
+            _migrate_conversation_management_function,
         ]
         
         for migration in migrations:
@@ -1104,3 +1105,36 @@ def _migrate_skill_seed(conn):
             )
         )
         logger.info("已预置技能：今日热点摘要")
+
+
+def _migrate_conversation_management_function(conn):
+    """添加会话管理和对话管理功能菜单（管理系统下）"""
+    mgmt_func = conn.execute("SELECT id FROM functions WHERE code='management'").fetchone()
+    parent_id = mgmt_func["id"] if mgmt_func else 0
+    admin_role = conn.execute("SELECT id FROM roles WHERE code='admin'").fetchone()
+
+    for name, code, icon, route, sort_order in [
+        ("会话管理", "conversation_management", "layui-icon-dialogue", "/admin/conversation-management", 5),
+        ("对话管理", "message_management", "layui-icon-chat", "/admin/message-management", 6),
+    ]:
+        func = conn.execute("SELECT id FROM functions WHERE code=?", (code,)).fetchone()
+        if not func:
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (name, code, icon, route, sort_order, parent_id, 1)
+            )
+            func = conn.execute("SELECT id FROM functions WHERE code=?", (code,)).fetchone()
+
+            if admin_role and func:
+                conn.execute(
+                    "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
+                    (admin_role["id"], func["id"])
+                )
+                max_order = conn.execute(
+                    "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role["id"],)
+                ).fetchone()[0] or 0
+                conn.execute(
+                    "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
+                    (admin_role["id"], func["id"], max_order + 1)
+                )
+            logger.info(f"{name}功能菜单已添加")

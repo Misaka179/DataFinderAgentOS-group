@@ -294,6 +294,7 @@ def run_runtime_checks():
     conn = get_connection()
     try:
         _ensure_all_funcs_in_menus(conn)
+        _recover_stalled_deep_collect_tasks(conn)
         conn.commit()
     except Exception as e:
         logger.error(f"运行时检查出错: {e}")
@@ -330,3 +331,18 @@ def _ensure_all_funcs_in_menus(conn):
             added_count += 1
     if added_count > 0:
         logger.info(f"已为管理员补充 {added_count} 个功能菜单")
+
+
+def _recover_stalled_deep_collect_tasks(conn):
+    """服务重启后，将中断的 running/pending 深度采集任务标记为 failed"""
+    import datetime
+    stalled = conn.execute(
+        "SELECT COUNT(*) FROM deep_collect_tasks WHERE status IN ('running', 'pending')"
+    ).fetchone()[0]
+    if stalled > 0:
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "UPDATE deep_collect_tasks SET status='failed', error_message=?, updated_at=? WHERE status IN ('running', 'pending')",
+            (f"服务器重启，任务中断（{now}）", now)
+        )
+        logger.info(f"已恢复 {stalled} 个中断的深度采集任务（标记为 failed）")
