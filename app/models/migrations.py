@@ -49,8 +49,17 @@ def run_migrations():
             _migrate_watch_sources_source_type,
             _create_hackernews_watch_source,
             _create_36kr_watch_source,
-            _migrate_ai_models_image_video,
             _migrate_encrypt_api_keys,
+            _migrate_digital_employees_update_descs,
+            _migrate_ai_models_replace_static,
+            _migrate_api_interface_table,
+            _migrate_api_interface_function,
+            _migrate_api_interface_seed,
+            _migrate_api_interface_reorder,
+            _migrate_digital_employees_api_config,
+            _migrate_skill_table,
+            _migrate_skill_function,
+            _migrate_skill_seed,
         ]
         
         for migration in migrations:
@@ -365,6 +374,7 @@ def _migrate_model_engine_function(conn):
 
 
 def _migrate_ai_models_initial(conn):
+    """内置4个AI模型（agnes-2.0-flash、qwen3.5-flash、DALL-E 3、Sora/视频生成）"""
     model_count = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0]
     if model_count == 0:
         conn.execute(
@@ -372,7 +382,7 @@ def _migrate_ai_models_initial(conn):
                max_tokens, token_count, is_default, status, sort_order, category,
                system_prompt, temperature, top_p, context_length)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("GPT-4o", "openai", "gpt-4o", "https://api.openai.com/v1", "sk-your-key-here",
+            ("agnes-2.0-flash", "openai", "agnes-2.0-flash", "https://api.openai.com/v1", "",
              128000, 0, 1, 1, 1, "text", "You are a helpful assistant.", 0.7, 1.0, 128000)
         )
         conn.execute(
@@ -380,7 +390,7 @@ def _migrate_ai_models_initial(conn):
                max_tokens, token_count, is_default, status, sort_order, category,
                system_prompt, temperature, top_p, context_length)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("GPT-4 Turbo", "openai", "gpt-4-turbo", "https://api.openai.com/v1", "sk-your-key-here",
+            ("qwen3.5-flash", "openai", "qwen3.5-flash", "https://api.openai.com/v1", "",
              128000, 0, 0, 1, 2, "text", "You are a helpful assistant.", 0.7, 1.0, 128000)
         )
         conn.execute(
@@ -388,8 +398,16 @@ def _migrate_ai_models_initial(conn):
                max_tokens, token_count, is_default, status, sort_order, category,
                system_prompt, temperature, top_p, context_length)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("Claude 3.5 Sonnet", "anthropic", "claude-3-5-sonnet-latest", "https://api.anthropic.com/v1", "sk-ant-your-key-here",
-             200000, 0, 0, 1, 3, "text", "You are a helpful assistant.", 0.7, 1.0, 200000)
+            ("DALL-E 3", "openai", "dall-e-3", "https://aigc.aitoolcore.com/v1", "",
+             0, 0, 0, 1, 3, "image", "", 0.7, 1.0, 4096)
+        )
+        conn.execute(
+            """INSERT INTO ai_models (name, provider, model_name, api_base_url, api_key,
+               max_tokens, token_count, is_default, status, sort_order, category,
+               system_prompt, temperature, top_p, context_length)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ("Sora/视频生成", "openai", "video-gen", "https://aigc.aitoolcore.com/v1", "",
+             0, 0, 0, 1, 4, "video", "", 0.7, 1.0, 4096)
         )
 
 
@@ -512,7 +530,7 @@ def _migrate_digital_employees_initial(conn):
             (
                 "新闻",
                 "api",
-                "返回实时热门新闻（百度实时抓取，含标题、来源、时间、摘要、链接）",
+                "返回实时热门新闻（聚合数据API+百度兜底，含标题、来源、时间、摘要、链接）",
                 "http://localhost:10010/api/mock/news",
                 "GET",
                 json.dumps({}, ensure_ascii=False),
@@ -550,7 +568,7 @@ def _migrate_digital_employees_initial(conn):
             (
                 "电影",
                 "api",
-                "搜索电影信息，豆瓣API匹配+本地详情，含导演、演员、简介、评分、年份、豆瓣链接",
+                "搜索电影信息，TMDB API+豆瓣补充+本地详情，含导演、演员、简介、评分、年份",
                 "http://localhost:10010/api/mock/movie?keyword={query}",
                 "GET",
                 json.dumps({}, ensure_ascii=False),
@@ -576,6 +594,23 @@ def _migrate_digital_employees_initial(conn):
                 0,
                 6, 1
             )
+        )
+
+
+def _migrate_digital_employees_update_descs(conn):
+    """更新数字员工描述，与当前API实现同步"""
+    news_emp = conn.execute("SELECT id, description FROM digital_employees WHERE name='新闻'").fetchone()
+    if news_emp and "聚合数据" not in (news_emp["description"] or ""):
+        conn.execute(
+            "UPDATE digital_employees SET description=? WHERE id=?",
+            ("返回实时热门新闻（聚合数据API+百度兜底，含标题、来源、时间、摘要、链接）", news_emp["id"])
+        )
+
+    movie_emp = conn.execute("SELECT id, description FROM digital_employees WHERE name='电影'").fetchone()
+    if movie_emp and "TMDB" not in (movie_emp["description"] or ""):
+        conn.execute(
+            "UPDATE digital_employees SET description=? WHERE id=?",
+            ("搜索电影信息，TMDB API+豆瓣补充+本地详情，含导演、演员、简介、评分、年份", movie_emp["id"])
         )
 
 
@@ -646,7 +681,7 @@ def _migrate_data_screen_function(conn):
         parent_id = hub_func["id"] if hub_func else 0
         conn.execute(
             "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("数智大屏", "data_screen", "layui-icon-chart-screen", "/admin/data-screen", 3, parent_id, 1)
+            ("数智大屏", "data_screen", "layui-icon-chart-screen", "/admin/data-screen", 4, parent_id, 1)
         )
 
 
@@ -657,7 +692,7 @@ def _migrate_opinion_screen_function(conn):
         parent_id = hub_func["id"] if hub_func else 0
         conn.execute(
             "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("舆情大屏", "opinion_screen", "layui-icon-flag", "/admin/opinion-screen", 4, parent_id, 1)
+            ("舆情大屏", "opinion_screen", "layui-icon-flag", "/admin/opinion-screen", 5, parent_id, 1)
         )
     else:
         conn.execute("UPDATE functions SET icon='layui-icon-flag' WHERE code='opinion_screen' AND icon!='layui-icon-flag'")
@@ -759,32 +794,6 @@ def _create_36kr_watch_source(conn):
         logger.info("已初始化「36氪 RSS」瞭源规则 (rss)")
 
 
-def _migrate_ai_models_image_video(conn):
-    has_dalle = conn.execute("SELECT id FROM ai_models WHERE name='DALL-E 3'").fetchone()
-    if not has_dalle:
-        conn.execute(
-            """INSERT INTO ai_models (name, provider, model_name, api_base_url, api_key,
-               max_tokens, token_count, is_default, status, sort_order, category,
-               system_prompt, temperature, top_p, context_length)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("DALL-E 3", "openai", "dall-e-3", "https://aigc.aitoolcore.com/v1", "",
-             0, 0, 0, 1, 4, "image", "", 0.7, 1.0, 4096)
-        )
-        logger.info("已添加AI模型：DALL-E 3")
-    
-    has_sora = conn.execute("SELECT id FROM ai_models WHERE name='Sora/视频生成'").fetchone()
-    if not has_sora:
-        conn.execute(
-            """INSERT INTO ai_models (name, provider, model_name, api_base_url, api_key,
-               max_tokens, token_count, is_default, status, sort_order, category,
-               system_prompt, temperature, top_p, context_length)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("Sora/视频生成", "openai", "video-gen", "https://aigc.aitoolcore.com/v1", "",
-             0, 0, 0, 1, 5, "video", "", 0.7, 1.0, 4096)
-        )
-        logger.info("已添加AI模型：Sora/视频生成")
-
-
 def _migrate_encrypt_api_keys(conn):
     if not config.ENCRYPTION_KEY:
         logger.warning("未配置 ENCRYPTION_KEY，跳过 API Key 加密迁移")
@@ -816,3 +825,282 @@ def _migrate_encrypt_api_keys(conn):
 
     if encrypted_count > 0:
         logger.info(f"已加密 {encrypted_count} 个模型的 API Key")
+
+
+def _migrate_ai_models_replace_static(conn):
+    """替换旧的GPT/Claude静态模型为agnes-2.0-flash和qwen3.5-flash"""
+    # 删除旧的3个静态模型
+    old_models = ["GPT-4o", "GPT-4 Turbo", "Claude 3.5 Sonnet"]
+    for name in old_models:
+        conn.execute("DELETE FROM ai_models WHERE name=?", (name,))
+
+    # 确保 agnes-2.0-flash 存在
+    if not conn.execute("SELECT id FROM ai_models WHERE name='agnes-2.0-flash'").fetchone():
+        model_count = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0]
+        conn.execute(
+            """INSERT INTO ai_models (name, provider, model_name, api_base_url, api_key,
+               max_tokens, token_count, is_default, status, sort_order, category,
+               system_prompt, temperature, top_p, context_length)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ("agnes-2.0-flash", "openai", "agnes-2.0-flash", "https://api.openai.com/v1", "",
+             128000, 0, 1 if model_count == 0 else 0, 1, 1, "text",
+             "You are a helpful assistant.", 0.7, 1.0, 128000)
+        )
+
+    # 确保 qwen3.5-flash 存在
+    if not conn.execute("SELECT id FROM ai_models WHERE name='qwen3.5-flash'").fetchone():
+        conn.execute(
+            """INSERT INTO ai_models (name, provider, model_name, api_base_url, api_key,
+               max_tokens, token_count, is_default, status, sort_order, category,
+               system_prompt, temperature, top_p, context_length)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ("qwen3.5-flash", "openai", "qwen3.5-flash", "https://api.openai.com/v1", "",
+             128000, 0, 0, 1, 2, "text", "You are a helpful assistant.", 0.7, 1.0, 128000)
+        )
+
+    # 确保没有默认模型时设置一个
+    has_default = conn.execute("SELECT id FROM ai_models WHERE is_default=1").fetchone()
+    if not has_default:
+        conn.execute("UPDATE ai_models SET is_default=1 WHERE name='agnes-2.0-flash'")
+
+    logger.info("已将静态模型替换为agnes-2.0-flash、qwen3.5-flash")
+
+
+def _migrate_api_interface_table(conn):
+    """创建 api_interfaces 表"""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS api_interfaces (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            code TEXT NOT NULL UNIQUE,
+            description TEXT DEFAULT '',
+            method TEXT NOT NULL DEFAULT 'GET',
+            url TEXT NOT NULL DEFAULT '',
+            headers TEXT DEFAULT '{}',
+            params TEXT DEFAULT '{}',
+            status INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    logger.info("api_interfaces 表已创建")
+
+
+def _migrate_api_interface_function(conn):
+    """添加接口管理功能菜单（智能中枢下）"""
+    func = conn.execute("SELECT id FROM functions WHERE code='api_interface'").fetchone()
+    if not func:
+        hub_func = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()
+        parent_id = hub_func["id"] if hub_func else 0
+        conn.execute(
+            "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("接口管理", "api_interface", "layui-icon-link", "/admin/api-interface", 3, parent_id, 1)
+        )
+        func = conn.execute("SELECT id FROM functions WHERE code='api_interface'").fetchone()
+
+        admin_role = conn.execute("SELECT id FROM roles WHERE code='admin'").fetchone()
+        if admin_role and func:
+            conn.execute(
+                "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
+                (admin_role["id"], func["id"])
+            )
+            max_order = conn.execute(
+                "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role["id"],)
+            ).fetchone()[0] or 0
+            conn.execute(
+                "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
+                (admin_role["id"], func["id"], max_order + 1)
+            )
+        logger.info("接口管理功能菜单已添加")
+
+
+def _migrate_api_interface_seed(conn):
+    """同步数字员工已有的API接口到接口管理列表（跳过已存在的编码）"""
+    interfaces = [
+        {
+            "name": "wttr.in 天气查询",
+            "code": "wttr_weather",
+            "description": "通过 wttr.in 获取城市实时天气数据（温度/湿度/风速/能见度）",
+            "method": "GET",
+            "url": "https://wttr.in/{city}",
+            "headers": json.dumps({}, ensure_ascii=False),
+            "params": json.dumps({"format": "j1", "lang": "zh"}, ensure_ascii=False),
+        },
+        {
+            "name": "聚合数据新闻头条",
+            "code": "juhe_news",
+            "description": "通过聚合数据API获取实时热门新闻（含标题、来源、时间、摘要）",
+            "method": "GET",
+            "url": "https://v.juhe.cn/toutiao/index",
+            "headers": json.dumps({}, ensure_ascii=False),
+            "params": json.dumps({"type": "top"}, ensure_ascii=False),
+        },
+        {
+            "name": "iTunes 随机音乐",
+            "code": "itunes_music",
+            "description": "通过 iTunes Search API 随机推荐歌曲（含歌名、歌手、封面、试听链接）",
+            "method": "GET",
+            "url": "https://itunes.apple.com/search",
+            "headers": json.dumps({}, ensure_ascii=False),
+            "params": json.dumps({"term": "random", "media": "music", "limit": "50"}, ensure_ascii=False),
+        },
+        {
+            "name": "TMDB 电影搜索",
+            "code": "tmdb_movie_search",
+            "description": "通过 TMDB API 搜索电影信息（含评分、海报、年份、简介），豆瓣+本地库补充",
+            "method": "GET",
+            "url": "https://api.themoviedb.org/3/search/movie",
+            "headers": json.dumps({}, ensure_ascii=False),
+            "params": json.dumps({"language": "zh-CN", "page": "1"}, ensure_ascii=False),
+        },
+    ]
+
+    inserted = 0
+    for iface in interfaces:
+        exist = conn.execute(
+            "SELECT id FROM api_interfaces WHERE code=?", (iface["code"],)
+        ).fetchone()
+        if not exist:
+            conn.execute(
+                """INSERT INTO api_interfaces (name, code, description, method, url, headers, params, status)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (iface["name"], iface["code"], iface["description"],
+                 iface["method"], iface["url"], iface["headers"], iface["params"], 1)
+            )
+            inserted += 1
+
+    if inserted > 0:
+        logger.info(f"已同步 {inserted} 个数字员工API到接口管理列表")
+
+
+def _migrate_api_interface_reorder(conn):
+    """调整智能中枢下模块排序：数字员工(2) → 接口管理(3) → 数智大屏(4) → 舆情大屏(5)"""
+    ordering = [
+        ("model_engine", 1),
+        ("digital_employee", 2),
+        ("api_interface", 3),
+        ("data_screen", 4),
+        ("opinion_screen", 5),
+    ]
+    for code, order in ordering:
+        conn.execute(
+            "UPDATE functions SET sort_order=? WHERE code=? AND sort_order!=?",
+            (order, code, order)
+        )
+    logger.info("智能中枢模块排序已调整：数字员工→接口管理→数智大屏→舆情大屏")
+
+
+def _migrate_digital_employees_api_config(conn):
+    """修复新闻和电影数字员工的API配置——强制恢复为localhost mock（内部集成真实API+格式化），真实API源通过描述和关联接口展示
+
+    修复后不再检查旧URL特征，只要 api_url 不含 /mock/ 就强制恢复。
+    这解决了迁移标记为"已完成"但数据未被实际更新的时序竞争问题。
+    """
+    news_emp = conn.execute("SELECT id, api_url FROM digital_employees WHERE name='新闻'").fetchone()
+    if news_emp and "/mock/" not in (news_emp["api_url"] or ""):
+        conn.execute(
+            """UPDATE digital_employees SET 
+               api_url=?, api_method=?, api_headers=?, api_params=?, api_response_template=?
+               WHERE id=?""",
+            (
+                "http://localhost:10010/api/mock/news",
+                "GET",
+                json.dumps({}, ensure_ascii=False),
+                json.dumps({}, ensure_ascii=False),
+                "",
+                news_emp["id"]
+            )
+        )
+        logger.info("新闻数字员工API配置已恢复为内置mock（聚合数据+百度兜底）")
+
+    movie_emp = conn.execute("SELECT id, api_url FROM digital_employees WHERE name='电影'").fetchone()
+    if movie_emp and "/mock/" not in (movie_emp["api_url"] or ""):
+        conn.execute(
+            """UPDATE digital_employees SET 
+               api_url=?, api_method=?, api_headers=?, api_params=?, api_response_template=?
+               WHERE id=?""",
+            (
+                "http://localhost:10010/api/mock/movie?keyword={query}",
+                "GET",
+                json.dumps({}, ensure_ascii=False),
+                json.dumps({}, ensure_ascii=False),
+                "",
+                movie_emp["id"]
+            )
+        )
+        logger.info("电影数字员工API配置已恢复为内置mock（TMDB+豆瓣+本地库）")
+
+
+def _migrate_skill_table(conn):
+    """创建 skills 表"""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS skills (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            code TEXT NOT NULL UNIQUE,
+            type TEXT NOT NULL DEFAULT 'custom',
+            impl_type TEXT NOT NULL DEFAULT 'api_call',
+            impl_config TEXT DEFAULT '{}',
+            input_schema TEXT DEFAULT '{}',
+            output_schema TEXT DEFAULT '{}',
+            status INTEGER NOT NULL DEFAULT 1,
+            description TEXT DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    logger.info("skills 表已创建")
+
+
+def _migrate_skill_function(conn):
+    """添加技能管理功能菜单（智能中枢下）"""
+    func = conn.execute("SELECT id FROM functions WHERE code='skill_management'").fetchone()
+    if not func:
+        hub_func = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()
+        parent_id = hub_func["id"] if hub_func else 0
+        conn.execute(
+            "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("技能管理", "skill_management", "layui-icon-util", "/admin/skill-management", 6, parent_id, 1)
+        )
+        func = conn.execute("SELECT id FROM functions WHERE code='skill_management'").fetchone()
+
+        admin_role = conn.execute("SELECT id FROM roles WHERE code='admin'").fetchone()
+        if admin_role and func:
+            conn.execute(
+                "INSERT OR IGNORE INTO role_functions (role_id, func_id) VALUES (?, ?)",
+                (admin_role["id"], func["id"])
+            )
+            max_order = conn.execute(
+                "SELECT MAX(sort_order) FROM menus WHERE role_id=?", (admin_role["id"],)
+            ).fetchone()[0] or 0
+            conn.execute(
+                "INSERT INTO menus (role_id, func_id, sort_order) VALUES (?, ?, ?)",
+                (admin_role["id"], func["id"], max_order + 1)
+            )
+        logger.info("技能管理功能菜单已添加")
+
+
+def _migrate_skill_seed(conn):
+    """预置一个自定义技能：今日热点摘要（调用新闻API获取头条并生成摘要）"""
+    if not conn.execute("SELECT id FROM skills WHERE code='hot_news_summary'").fetchone():
+        conn.execute(
+            """INSERT INTO skills (name, code, type, impl_type, impl_config, input_schema, output_schema, status, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                "今日热点摘要",
+                "hot_news_summary",
+                "custom",
+                "api_call",
+                json.dumps({
+                    "url": "https://v.juhe.cn/toutiao/index",
+                    "method": "GET",
+                    "headers": {},
+                    "params": {"type": "top", "key": "7eb1ec877934110a5fada4024bd027c7"}
+                }, ensure_ascii=False),
+                json.dumps({"type": "object", "properties": {}}, ensure_ascii=False),
+                json.dumps({"type": "object"}, ensure_ascii=False),
+                1,
+                "调用聚合数据新闻头条API获取最新热点新闻，可链式传递给LLM生成摘要"
+            )
+        )
+        logger.info("已预置技能：今日热点摘要")

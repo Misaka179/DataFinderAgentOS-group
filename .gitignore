@@ -14,6 +14,7 @@ Thumbs.db
 
 # 本地临时文件
 app.db
+data.db
 
 # 环境变量（可能含密钥）
 .env

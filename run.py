@@ -78,6 +78,26 @@ from app.controllers.admin_source import (
     SourceDeleteApiHandler,
     SourceActiveListApiHandler
 )
+from app.controllers.admin_api_interface import (
+    ApiInterfaceManagementHandler,
+    ApiInterfaceListApiHandler,
+    ApiInterfaceGetApiHandler,
+    ApiInterfaceEnabledListApiHandler,
+    ApiInterfaceCreateApiHandler,
+    ApiInterfaceUpdateApiHandler,
+    ApiInterfaceDeleteApiHandler,
+    ApiInterfaceToggleApiHandler
+)
+from app.controllers.admin_skill import (
+    SkillManagementHandler,
+    SkillListApiHandler,
+    SkillGetApiHandler,
+    SkillEnabledListApiHandler,
+    SkillCreateApiHandler,
+    SkillUpdateApiHandler,
+    SkillDeleteApiHandler,
+    SkillToggleApiHandler
+)
 from app.controllers.admin_watch import (
     WatchManagementHandler,
     WatchCollectApiHandler,
@@ -117,6 +137,7 @@ from app.controllers.admin_digital_employee import (
     DigitalEmployeeUploadMdHandler,
     DigitalEmployeeListMdHandler,
     DigitalEmployeeModelsApiHandler,
+    DigitalEmployeeSkillsApiHandler,
     DigitalEmployeeTestApiHandler
 )
 from app.models.db import init_db, run_runtime_checks
@@ -136,6 +157,7 @@ cookie_secret=config.COOKIE_SECRET,
         autoreload=config.AUTORELOAD,
     )
     return tornado.web.Application([
+        (r"/favicon.ico", tornado.web.StaticFileHandler, {"path": os.path.join(base_dir, "app", "static", "favicon.ico")}),
         (r"/", LoginHandler),
         (r"/login", LoginHandler),
         (r"/register", RegisterHandler),
@@ -202,6 +224,23 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/sources/update", SourceUpdateApiHandler),
         (r"/api/sources/delete", SourceDeleteApiHandler),
         (r"/api/sources/active", SourceActiveListApiHandler),
+        (r"/admin/api-interface", ApiInterfaceManagementHandler),
+        (r"/api/api-interfaces/list", ApiInterfaceListApiHandler),
+        (r"/api/api-interfaces/get", ApiInterfaceGetApiHandler),
+        (r"/api/api-interfaces/enabled", ApiInterfaceEnabledListApiHandler),
+        (r"/api/api-interfaces/create", ApiInterfaceCreateApiHandler),
+        (r"/api/api-interfaces/update", ApiInterfaceUpdateApiHandler),
+        (r"/api/api-interfaces/delete", ApiInterfaceDeleteApiHandler),
+        (r"/api/api-interfaces/toggle", ApiInterfaceToggleApiHandler),
+        # 技能管理
+        (r"/admin/skill-management", SkillManagementHandler),
+        (r"/api/skills/list", SkillListApiHandler),
+        (r"/api/skills/get", SkillGetApiHandler),
+        (r"/api/skills/enabled", SkillEnabledListApiHandler),
+        (r"/api/skills/create", SkillCreateApiHandler),
+        (r"/api/skills/update", SkillUpdateApiHandler),
+        (r"/api/skills/delete", SkillDeleteApiHandler),
+        (r"/api/skills/toggle", SkillToggleApiHandler),
         (r"/admin/watch-management", WatchManagementHandler),
         (r"/api/watch/collect", WatchCollectApiHandler),
         (r"/api/watch/data", WatchCollectedDataApiHandler),
@@ -235,6 +274,7 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/digital-employees/upload-md", DigitalEmployeeUploadMdHandler),
         (r"/api/digital-employees/list-md", DigitalEmployeeListMdHandler),
         (r"/api/digital-employees/models", DigitalEmployeeModelsApiHandler),
+        (r"/api/digital-employees/skills", DigitalEmployeeSkillsApiHandler),
         (r"/api/digital-employees/test", DigitalEmployeeTestApiHandler),
         (r"/api/user/register", UserRegisterApiHandler),
         (r"/api/user/models", UserModelsApiHandler),

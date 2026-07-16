@@ -6,6 +6,7 @@ import urllib.parse
 from app.controllers.base import BaseHandler
 from app.models.digital_employee import DigitalEmployeeRepository
 from app.models.ai_model import AiModelRepository
+from app.models.skill import SkillRepository
 
 
 class DigitalEmployeeManagementHandler(BaseHandler):
@@ -234,6 +235,14 @@ class DigitalEmployeeModelsApiHandler(BaseHandler):
     def get(self):
         models = DigitalEmployeeRepository.get_all_models()
         self.write(json.dumps({"success": True, "data": models}, ensure_ascii=False))
+
+
+class DigitalEmployeeSkillsApiHandler(BaseHandler):
+    """获取可用技能列表（用于数字员工关联多选）"""
+    @tornado.web.authenticated
+    def get(self):
+        skills = SkillRepository.get_enabled_list()
+        self.write(json.dumps({"success": True, "data": skills}, ensure_ascii=False))
 
 
 class DigitalEmployeeTestApiHandler(BaseHandler):

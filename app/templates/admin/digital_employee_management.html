@@ -188,10 +188,12 @@
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">技能配置</label>
+                <label class="layui-form-label">关联技能</label>
                 <div class="layui-input-block">
-                    <textarea name="skills" placeholder='JSON格式的技能配置，如：[{"name":"天气查询","description":"查询天气","action":"weather"}]' class="layui-textarea" style="min-height:60px;"></textarea>
-                    <div style="color:#999;font-size:12px;margin-top:4px;">可选，Skill 技能支持，用于增强数字员工能力</div>
+                    <select name="skill_ids" id="skillSelect" multiple lay-filter="skillSelect" lay-search="">
+                        <option value="">加载中...</option>
+                    </select>
+                    <div style="color:#999;font-size:12px;margin-top:4px;">多选关联技能（仅显示启用状态），保存后存入 skills 字段。不关联则留空</div>
                 </div>
             </div>
             <div class="layui-form-item">
@@ -213,6 +215,15 @@
         <!-- API 类型配置 -->
         <div id="apiConfigSection" style="display:none;">
             <div class="form-section-title">API 配置</div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">关联接口</label>
+                <div class="layui-input-block">
+                    <select name="linked_interface" id="linkedInterfaceSelect" lay-filter="linkedInterface">
+                        <option value="">手动填写（不关联）</option>
+                    </select>
+                    <div style="color:#999;font-size:12px;margin-top:4px;">选择已注册接口将自动填充下方字段（独立保存，后续修改接口不影响已创建员工）</div>
+                </div>
+            </div>
             <div class="layui-form-item">
                 <label class="layui-form-label">API 地址 <span style="color:red;">*</span></label>
                 <div class="layui-input-block">
@@ -369,6 +380,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
         } else {
             $('#llmConfigSection').hide();
             $('#apiConfigSection').show();
+            setTimeout(function() { loadLinkedInterfaces(); }, 200);
         }
     };
 
@@ -388,6 +400,84 @@ layui.use(['form', 'layer', 'jquery'], function(){
             }
         });
     }
+
+    // 加载已启用的技能列表（供多选关联）
+    function loadSkills(selectedIds) {
+        $.ajax({
+            url: '/api/digital-employees/skills', type: 'GET', dataType: 'json',
+            success: function(res) {
+                var skills = res.data || [];
+                var html = '';
+                skills.forEach(function(s) {
+                    var sel = (selectedIds && selectedIds.indexOf(String(s.id)) !== -1) ? 'selected' : '';
+                    html += '<option value="' + s.id + '" ' + sel + '>' + s.name + '</option>';
+                });
+                $('#skillSelect').html(html || '<option value="">(无可用技能)</option>');
+                form.render('select');
+            },
+            error: function() {
+                $('#skillSelect').html('<option value="">(加载失败)</option>');
+                form.render('select');
+            }
+        });
+    }
+
+    // 处理技能多选
+    form.on('select(skillSelect)', function(data) {
+        var selectedValues = [];
+        $('#skillSelect option:selected').each(function() {
+            selectedValues.push($(this).val());
+        });
+        $('input[name="skill_ids"]').val(JSON.stringify(selectedValues));
+    });
+
+    // 加载已启用的API接口列表（供关联选择）
+    function loadLinkedInterfaces() {
+        $.ajax({
+            url: '/api/api-interfaces/enabled', type: 'GET', dataType: 'json',
+            success: function(res) {
+                var items = res.data || [];
+                var html = '<option value="">手动填写（不关联）</option>';
+                items.forEach(function(item) {
+                    html += '<option value="' + item.id + '">' + item.name + ' (' + item.code + ')</option>';
+                });
+                $('#linkedInterfaceSelect').html(html);
+                form.render('select');
+            },
+            error: function() {
+                $('#linkedInterfaceSelect').html('<option value="">手动填写（不关联）</option>');
+                form.render('select');
+            }
+        });
+    }
+
+    // 关联接口选择变化 — 自动填充API字段
+    form.on('select(linkedInterface)', function(data) {
+        var interfaceId = data.value;
+        if (!interfaceId) {
+            // 取消选择，清空字段
+            $('input[name="api_url"]').val('');
+            $('select[name="api_method"]').val('GET');
+            $('textarea[name="api_headers"]').val('{}');
+            $('textarea[name="api_params"]').val('{}');
+            form.render();
+            return;
+        }
+        $.ajax({
+            url: '/api/api-interfaces/get', type: 'GET', dataType: 'json',
+            data: {id: interfaceId},
+            success: function(res) {
+                if (res.success && res.data) {
+                    var d = res.data;
+                    $('input[name="api_url"]').val(d.url || '');
+                    $('select[name="api_method"]').val(d.method || 'GET');
+                    $('textarea[name="api_headers"]').val(d.headers || '{}');
+                    $('textarea[name="api_params"]').val(d.params || '{}');
+                    form.render();
+                }
+            }
+        });
+    });
 
     // 加载数据
     function loadData(page, search, typeFilter) {
@@ -471,6 +561,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
         uploadedMdFiles = [];
         $('#mdFileList').hide().empty();
         loadModels(null);
+        loadSkills([]);
         form.val('employeeForm', {type:'llm', status:'1', sort_order:'0'});
         toggleEmployeeType();
         form.render();
@@ -490,7 +581,16 @@ layui.use(['form', 'layer', 'jquery'], function(){
         var id = field.id;
         var isEdit = id && id !== '';
         var url = isEdit ? '/api/digital-employees/update' : '/api/digital-employees/create';
-        
+
+        // 收集多选的技能ID，转为skills JSON
+        var selectedSkillIds = [];
+        $('#skillSelect option:selected').each(function() {
+            var v = $(this).val();
+            if (v) selectedSkillIds.push(v);
+        });
+        field.skills = JSON.stringify(selectedSkillIds);
+        delete field.skill_ids;
+
         $.ajax({
             url: url, type: 'POST', dataType: 'json',
             contentType: 'application/json',
@@ -672,6 +772,13 @@ layui.use(['form', 'layer', 'jquery'], function(){
                     'api_params': d.api_params || '',
                     'api_response_template': d.api_response_template || ''
                 });
+                // 加载关联技能（补选已关联的技能）
+                var selectedSkillIds = [];
+                try { 
+                    var skillsData = typeof d.skills === 'string' ? JSON.parse(d.skills) : d.skills;
+                    if (Array.isArray(skillsData)) selectedSkillIds = skillsData.map(function(s) { return String(s); });
+                } catch(e) {}
+                loadSkills(selectedSkillIds);
                 if (d.crawl4ai_enabled == 1) {
                     $('input[name="crawl4ai_enabled"]').prop('checked', true);
                 } else {

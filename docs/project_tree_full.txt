@@ -23,11 +23,13 @@ D:.
     │   │   │   admin_warehouse.py     数据仓库页面+API（CRUD/深度采集/批量操作）
     │   │   │   admin_model.py         模型引擎页面+API（CRUD/分类筛选/SSE对话测试）
     │   │   │   admin_digital_employee.py  数字员工管理页面+API（CRUD/LLM+API双型/MD上传）
+    │   │   │   admin_api_interface.py  接口管理页面+API（CRUD/Layui表格/数字员工集成）
+    │   │   │   admin_skill.py  技能管理页面+API（CRUD/Python函数+API调用+Prompt模板三种实现）
     │   │   │   multimodal.py          多模态API（生图/生视频 ImageGenHandler + VideoGenHandler）
     │   │   │   user_chat.py           用户侧对话API（SSE流式/意图识别/问数/报表/@技能）
     │   │   │   user_export.py         用户侧导出API（UserExportPdfApiHandler PDF导出）
     │   │   │   data_query.py          数据查询API（智能问数/数据库查询/分析）
-    │   │   │   mock_apis.py           内置Mock API型数字员工（新闻实时抓取/音乐随机推荐/电影搜索）
+    │   │   │   mock_apis.py           内置Mock API型数字员工（新闻-聚合数据API/Baidu兜底/音乐-iTunes API/电影-TMDB API+豆瓣补充+本地库）
     │   │   │
     │   ├───parsers 数据解析器包
     │   │   │   _init_.py
@@ -70,9 +72,10 @@ D:.
     │   │   │
     │   │   └───js
     │   │           base.js            全局JS工具函数
-    │   │           chat.js            用户侧对话页面JS（SSE/标记/对话管理）
+    │   │           chat.js            用户侧对话页面JS（SSE/标记/对话管理/卡片渲染）
     │   │           marked.min.js      Markdown渲染库
     │   │           dashboard-charts.js 数智大屏ECharts图表配置
+    │   │       favicon.ico          站点图标
     │   │
     │   └───templates 模板目录
     │       │   base.html              用户侧-公共基础模板页

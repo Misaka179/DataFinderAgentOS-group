@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.data-table td, .data-table th { vertical-align: middle !important; text-align: center; }
+.data-table td:nth-child(2) { text-align: left; }
+.data-table td:nth-child(6) { text-align: left; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge-active { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; background: #e6f7e6; color: #389e0d; }
+.badge-inactive { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; background: #fff1f0; color: #cf1322; }
+.badge-builtin { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11px; background: #e6f0ff; color: #1890ff; }
+.badge-custom { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11px; background: #f0f0f0; color: #666; }
+.impl-section { margin-top: 10px; }
+.form-section-title { font-size: 14px; font-weight: bold; color: #333; padding: 10px 0 5px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+</style>
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <div class="search-bar" style="padding: 15px 20px 0;">
+            <form class="layui-form" lay-filter="searchForm">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">名称/编码</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="keyword" placeholder="搜索名称/编码" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md3">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">状态</label>
+                            <div class="layui-input-block">
+                                <select name="statusFilter">
+                                    <option value="">全部状态</option>
+                                    <option value="1">启用</option>
+                                    <option value="0">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md5">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <div class="search-actions">
+                                    <button class="layui-btn btn-search" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                    <button type="button" class="layui-btn layui-btn-normal" id="addBtn"><i class="layui-icon layui-icon-addition"></i> 新增技能</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="data-table" style="padding: 15px 20px;">
+            <table class="layui-table" lay-skin="line" id="dataTable">
+                <thead>
+                    <tr>
+                        <th class="col-id">ID</th>
+                        <th>技能名称</th>
+                        <th>编码</th>
+                        <th style="width:70px;">类型</th>
+                        <th style="width:80px;">实现方式</th>
+                        <th>描述</th>
+                        <th style="width:70px;">状态</th>
+                        <th style="width:150px;">创建时间</th>
+                        <th style="width:140px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="dataBody">
+                    <tr><td colspan="9" style="text-align:center;color:#999;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-bar" style="padding: 0 20px 15px; text-align: right;">
+            <div id="pagination"></div>
+        </div>
+    </div>
+
+    <div class="layui-footer text-xs">
+        &copy; 2024 智能瞭望与问数系统 - 政务数据智能分析平台
+    </div>
+</div>
+
+<!-- 编辑/新增弹窗 -->
+<div id="formModal" style="display:none;padding:15px 20px 0;">
+    <form class="layui-form layui-form-pane" lay-filter="skillForm">
+        <input type="hidden" name="id" id="skillId">
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span style="color:red;">*</span> 名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" lay-verify="required" placeholder="例如：今日热点摘要" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span style="color:red;">*</span> 编码</label>
+            <div class="layui-input-block">
+                <input type="text" name="code" lay-verify="required" placeholder="唯一标识，例如：hot_news_summary" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">类型</label>
+            <div class="layui-input-block">
+                <select name="type" lay-filter="typeSelect">
+                    <option value="custom">自定义</option>
+                    <option value="builtin">内置</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span style="color:red;">*</span> 实现方式</label>
+            <div class="layui-input-block">
+                <select name="impl_type" lay-filter="implTypeSelect">
+                    <option value="api_call">API调用</option>
+                    <option value="prompt">Prompt模板</option>
+                    <option value="python_func">Python函数</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-section-title">实现配置 <span style="font-size:12px;color:#999;">（根据实现方式选择填写）</span></div>
+        <input type="hidden" name="impl_config" id="implConfigInput" value="{}">
+        <input type="hidden" name="input_schema" id="inputSchemaInput" value="{}">
+        <input type="hidden" name="output_schema" id="outputSchemaInput" value="{}">
+
+        <!-- API调用配置 -->
+        <div id="apiCallConfig" class="impl-section">
+            <div class="layui-form-item">
+                <label class="layui-form-label">URL</label>
+                <div class="layui-input-block">
+                    <input type="text" name="api_url" placeholder="https://api.example.com/endpoint" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">方法</label>
+                <div class="layui-input-block">
+                    <select name="api_method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">请求头</label>
+                <div class="layui-input-block">
+                    <textarea name="api_headers" placeholder='{"Content-Type":"application/json"}' class="layui-textarea" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">参数模板</label>
+                <div class="layui-input-block">
+                    <textarea name="api_params" placeholder='{"query":"{keyword}"}' class="layui-textarea" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt模板配置 -->
+        <div id="promptConfig" class="impl-section" style="display:none;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">系统提示词</label>
+                <div class="layui-input-block">
+                    <textarea name="system_prompt" placeholder="系统提示词，可使用 {变量} 占位" class="layui-textarea" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">用户提示词</label>
+                <div class="layui-input-block">
+                    <textarea name="user_template" placeholder="用户提示词模板，可使用 {变量} 占位" class="layui-textarea" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Python函数配置 -->
+        <div id="pythonConfig" class="impl-section" style="display:none;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">模块路径</label>
+                <div class="layui-input-block">
+                    <input type="text" name="module_path" placeholder="app.services.skill_funcs" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">函数名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="func_name" placeholder="my_function" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">描述</label>
+            <div class="layui-input-block">
+                <textarea name="description" placeholder="技能功能描述" class="layui-textarea" rows="2"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <select name="status">
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item" style="text-align:center;">
+            <button type="button" class="layui-btn layui-btn-primary" id="cancelBtn">取消</button>
+            <button class="layui-btn" lay-submit lay-filter="saveBtn">保存</button>
+        </div>
+    </form>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+<script>
+layui.use(['form','layer','element','jquery'], function() {
+    var form = layui.form, layer = layui.layer, element = layui.element, $ = layui.$;
+    var currentPage = 1, pageSize = 20, isEdit = false;
+
+    function getXsrfToken() {
+        var name = '_xsrf=';
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var c = cookies[i].trim();
+            if (c.indexOf(name) === 0) return c.substring(name.length);
+        }
+        return '';
+    }
+
+    // 实现方式切换
+    form.on('select(implTypeSelect)', function(data) {
+        var v = data.value;
+        $('#apiCallConfig').toggle(v === 'api_call');
+        $('#promptConfig').toggle(v === 'prompt');
+        $('#pythonConfig').toggle(v === 'python_func');
+        form.render();
+    });
+
+    // 搜索
+    form.on('submit(searchBtn)', function(data) {
+        currentPage = 1;
+        loadList(currentPage, data.field.keyword, data.field.statusFilter);
+        return false;
+    });
+
+    // 加载列表
+    function loadList(page, keyword, status) {
+        $('#dataBody').html('<tr><td colspan="9" style="text-align:center;color:#999;">加载中...</td></tr>');
+        $.ajax({
+            url: '/api/skills/list', type: 'GET', dataType: 'json',
+            data: {page: page, size: pageSize, keyword: keyword || '', status: status || ''},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.error || '加载失败'); return; }
+                var html = '';
+                if (res.data.length === 0) {
+                    html = '<tr><td colspan="9" style="text-align:center;color:#999;">暂无数据</td></tr>';
+                } else {
+                    var implLabels = {api_call:'API调用', prompt:'Prompt模板', python_func:'Python函数'};
+                    res.data.forEach(function(item) {
+                        html += '<tr>' +
+                            '<td style="text-align:center;">' + item.id + '</td>' +
+                            '<td>' + (item.name || '') + '</td>' +
+                            '<td>' + (item.code || '') + '</td>' +
+                            '<td><span class="' + (item.type === 'builtin' ? 'badge-builtin' : 'badge-custom') + '">' + (item.type === 'builtin' ? '内置' : '自定义') + '</span></td>' +
+                            '<td>' + (implLabels[item.impl_type] || item.impl_type) + '</td>' +
+                            '<td title="' + (item.description || '') + '">' + (item.description || '-') + '</td>' +
+                            '<td>' + (item.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>') + '</td>' +
+                            '<td>' + (item.created_at || '') + '</td>' +
+                            '<td>' +
+                                '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="editSkill(' + item.id + ')"><i class="layui-icon layui-icon-edit"></i></button> ' +
+                                '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="toggleSkill(' + item.id + ')">' + (item.status == 1 ? '禁用' : '启用') + '</button> ' +
+                                (item.type !== 'builtin' ? '<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteSkill(' + item.id + ')"><i class="layui-icon layui-icon-delete"></i></button>' : '') +
+                            '</td>' +
+                        '</tr>';
+                    });
+                }
+                $('#dataBody').html(html);
+                renderPagination(res.total, res.page, res.size);
+            },
+            error: function() {
+                $('#dataBody').html('<tr><td colspan="9" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
+            }
+        });
+    }
+
+    function renderPagination(total, current, size) {
+        var totalPage = Math.ceil(total / size);
+        if (totalPage <= 1) {
+            $('#pagination').html('');
+            return;
+        }
+        var html = '<div class="layui-box layui-laypage layui-laypage-default">';
+        html += '<a href="javascript:;" class="layui-laypage-prev' + (current <= 1 ? ' layui-disabled' : '') + '" data-page="' + (current - 1) + '">上一页</a>';
+        for (var i = 1; i <= totalPage; i++) {
+            html += '<a href="javascript:;" class="' + (i === current ? 'layui-laypage-curr' : '') + '" data-page="' + i + '">' + i + '</a>';
+        }
+        html += '<a href="javascript:;" class="layui-laypage-next' + (current >= totalPage ? ' layui-disabled' : '') + '" data-page="' + (current + 1) + '">下一页</a>';
+        html += '<span class="layui-laypage-total">共 ' + total + ' 条</span>';
+        html += '</div>';
+        $('#pagination').html(html);
+    }
+
+    $(document).on('click', '#pagination a:not(.layui-disabled)', function() {
+        var page = parseInt($(this).data('page'));
+        if (page) { currentPage = page; loadList(page, $('input[name="keyword"]').val(), $('select[name="statusFilter"]').val()); }
+    });
+
+    // 收集实现配置
+    function collectImplConfig() {
+        var t = $('select[name="impl_type"]').val();
+        var config = {};
+        if (t === 'api_call') {
+            config.url = $('input[name="api_url"]').val() || '';
+            config.method = $('select[name="api_method"]').val() || 'GET';
+            try { config.headers = JSON.parse($('textarea[name="api_headers"]').val() || '{}'); } catch(e) { config.headers = {}; }
+            try { config.params = JSON.parse($('textarea[name="api_params"]').val() || '{}'); } catch(e) { config.params = {}; }
+        } else if (t === 'prompt') {
+            config.system_prompt = $('textarea[name="system_prompt"]').val() || '';
+            config.user_template = $('textarea[name="user_template"]').val() || '';
+        } else if (t === 'python_func') {
+            config.module_path = $('input[name="module_path"]').val() || '';
+            config.func_name = $('input[name="func_name"]').val() || '';
+        }
+        $('#implConfigInput').val(JSON.stringify(config));
+        return config;
+    }
+
+    // 新增
+    $('#addBtn').on('click', function(e) {
+        e.preventDefault();
+        isEdit = false;
+        $('#skillId').val('');
+        $('#formModal form')[0].reset();
+        form.val('skillForm', {type:'custom', impl_type:'api_call', api_method:'GET', status:'1'});
+        $('select[name="impl_type"]').val('api_call');
+        $('#apiCallConfig').show(); $('#promptConfig').hide(); $('#pythonConfig').hide();
+        form.render();
+        layer.open({
+            type:1, title:'新增技能', area:['700px', '620px'],
+            content:$('#formModal'),
+            cancel:function(idx){ layer.close(idx); }
+        });
+    });
+    $('#cancelBtn').on('click', function() { layer.closeAll(); });
+
+    // 保存
+    form.on('submit(saveBtn)', function(data) {
+        collectImplConfig();
+        var url = isEdit ? '/api/skills/update' : '/api/skills/create';
+        $.ajax({
+            url: url, type: 'POST', dataType: 'json',
+            data: $('#skillForm').serialize(),
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    layer.closeAll();
+                    layer.msg(isEdit ? '更新成功' : '创建成功', {icon:1});
+                    var kw = $('input[name="keyword"]').val();
+                    var st = $('select[name="statusFilter"]').val();
+                    loadList(currentPage, kw, st);
+                } else {
+                    layer.msg(res.error || '操作失败', {icon:2});
+                }
+            }
+        });
+        return false;
+    });
+
+    // 编辑/删除/切换
+    window.editSkill = function(id) {
+        $.ajax({
+            url: '/api/skills/get', type: 'GET', dataType: 'json', data: {id: id},
+            success: function(res) {
+                if (!res.success) { layer.msg(res.error); return; }
+                isEdit = true;
+                var d = res.data;
+                $('#skillId').val(d.id);
+                form.val('skillForm', {
+                    name: d.name, code: d.code, type: d.type,
+                    impl_type: d.impl_type, status: String(d.status),
+                    description: d.description || ''
+                });
+                var config = d.impl_config;
+                if (typeof config === 'string') try { config = JSON.parse(config); } catch(e) { config = {}; }
+                if (d.impl_type === 'api_call') {
+                    $('input[name="api_url"]').val(config.url || '');
+                    $('select[name="api_method"]').val(config.method || 'GET');
+                    $('textarea[name="api_headers"]').val(JSON.stringify(config.headers || {}, null, 2));
+                    $('textarea[name="api_params"]').val(JSON.stringify(config.params || {}, null, 2));
+                } else if (d.impl_type === 'prompt') {
+                    $('textarea[name="system_prompt"]').val(config.system_prompt || '');
+                    $('textarea[name="user_template"]').val(config.user_template || '');
+                } else if (d.impl_type === 'python_func') {
+                    $('input[name="module_path"]').val(config.module_path || '');
+                    $('input[name="func_name"]').val(config.func_name || '');
+                }
+                $('#apiCallConfig').toggle(d.impl_type === 'api_call');
+                $('#promptConfig').toggle(d.impl_type === 'prompt');
+                $('#pythonConfig').toggle(d.impl_type === 'python_func');
+                form.render();
+                layer.open({
+                    type:1, title:'编辑技能', area:['700px', '620px'],
+                    content:$('#formModal'),
+                    cancel:function(idx){ layer.close(idx); }
+                });
+            }
+        });
+    };
+
+    window.deleteSkill = function(id) {
+        layer.confirm('确认删除该技能？', function(idx) {
+            $.ajax({
+                url: '/api/skills/delete', type: 'POST', dataType: 'json',
+                data: {id: id},
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    layer.close(idx);
+                    if (res.success) {
+                        layer.msg('删除成功', {icon:1});
+                        var kw = $('input[name="keyword"]').val();
+                        var st = $('select[name="statusFilter"]').val();
+                        loadList(currentPage, kw, st);
+                    } else {
+                        layer.msg(res.error || '删除失败', {icon:2});
+                    }
+                }
+            });
+        });
+    };
+
+    window.toggleSkill = function(id) {
+        $.ajax({
+            url: '/api/skills/toggle', type: 'POST', dataType: 'json',
+            data: {id: id},
+            headers: {'X-XSRFToken': getXsrfToken()},
+            success: function(res) {
+                if (res.success) {
+                    layer.msg(res.status == 1 ? '已启用' : '已禁用', {icon:1});
+                    var kw = $('input[name="keyword"]').val();
+                    var st = $('select[name="statusFilter"]').val();
+                    loadList(currentPage, kw, st);
+                } else {
+                    layer.msg(res.error || '操作失败', {icon:2});
+                }
+            }
+        });
+    };
+
+    // 个人信息弹窗
+    window.showProfile = function() {
+        $.ajax({
+            url: '/api/profile', type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    var u = res.data;
+                    $('#profileUsername').text(u.username || '-');
+                    $('#profileRole').text(u.role_name || '-');
+                    $('#profileStatus').text(u.status == 1 ? '启用' : '禁用');
+                    $('#profileCreated').text(u.created_at || '-');
+                    layer.open({type: 1, title: '个人信息', area: ['500px'], content: $('#profileModal')});
+                }
+            }
+        });
+    };
+
+    window.showChangePwd = function() {
+        layer.open({
+            type: 1, title: '修改密码', area: ['500px'], content: $('#changePwdModal'),
+            btn: ['保存', '取消'],
+            yes: function(index) {
+                var oldPwd = $('input[name="old_password"]').val();
+                var newPwd = $('input[name="new_password"]').val();
+                var confirmPwd = $('input[name="confirm_password"]').val();
+                if (!oldPwd || !newPwd || !confirmPwd) { layer.msg('请填写完整', {icon: 2}); return; }
+                if (newPwd !== confirmPwd) { layer.msg('两次密码输入不一致', {icon: 2}); return; }
+                if (newPwd.length < 6) { layer.msg('新密码长度不能少于6位', {icon: 2}); return; }
+                $.ajax({
+                    url: '/api/profile/change-password', type: 'POST', dataType: 'json',
+                    data: {old_password: oldPwd, new_password: newPwd},
+                    headers: {'X-XSRFToken': getXsrfToken()},
+                    success: function(res) {
+                        if (res.success) {
+                            layer.msg('密码修改成功，请重新登录', {icon: 1}, function() {
+                                document.getElementById('admin-logout-form').submit();
+                            });
+                            layer.close(index);
+                        } else { layer.msg(res.error || '操作失败', {icon: 2}); }
+                    }
+                });
+            }
+        });
+    };
+
+    // 初始加载
+    loadList(1, '', '');
+});
+</script>
+{% end %}

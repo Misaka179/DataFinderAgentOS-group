@@ -10,6 +10,7 @@ from app.config import config
 class CryptoManager:
     _instance = None
     _fernet = None
+    _available = False
 
     def __new__(cls):
         if cls._instance is None:
@@ -20,27 +21,32 @@ class CryptoManager:
     def _init_fernet(self):
         secret_key = config.ENCRYPTION_KEY
         if not secret_key:
-            raise ValueError("ENCRYPTION_KEY environment variable is not set")
+            self._available = False
+            return
 
-        password = secret_key.encode()
-        salt = b'datafinder_agent_os_salt'
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100000,
-            backend=default_backend()
-        )
-        key = base64.urlsafe_b64encode(kdf.derive(password))
-        self._fernet = Fernet(key)
+        try:
+            password = secret_key.encode()
+            salt = b'datafinder_agent_os_salt'
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,
+                backend=default_backend()
+            )
+            key = base64.urlsafe_b64encode(kdf.derive(password))
+            self._fernet = Fernet(key)
+            self._available = True
+        except Exception:
+            self._available = False
 
     def encrypt(self, plaintext):
-        if not plaintext:
+        if not plaintext or not self._available:
             return plaintext
         return self._fernet.encrypt(plaintext.encode()).decode()
 
     def decrypt(self, ciphertext):
-        if not ciphertext:
+        if not ciphertext or not self._available:
             return ciphertext
         try:
             return self._fernet.decrypt(ciphertext.encode()).decode()

@@ -431,7 +431,12 @@
     }
     els.welcomeArea.style.display = 'none';
     state.messages.forEach((msg, idx) => {
-      appendMessageDOM(msg.role, msg.content, msg.employee_name, false);
+      appendMessageDOM(msg.role, msg.content, msg.employee_name, false, {
+        responseFormat: msg.employee_response_format,
+        extraData: msg.extra_data,
+        tokens: msg.tokens,
+        timeMs: msg.time_ms
+      });
     });
     scrollToBottom();
   }
@@ -550,7 +555,7 @@
             <div style="font-size:13px;color:rgba(255,255,255,0.85);margin-bottom:4px;"><b>导演：</b>${d.director}</div>
             <div style="font-size:13px;color:rgba(255,255,255,0.85);margin-bottom:8px;"><b>演员：</b>${(d.actors || []).join(' / ')}</div>
             <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.6;margin-bottom:10px;max-height:80px;overflow-y:auto;">${d.summary}</div>
-            <a href="${d.url}" target="_blank" style="display:inline-block;padding:6px 18px;background:#e74c3c;color:#fff;border-radius:4px;text-decoration:none;font-size:13px;">查看豆瓣</a>
+            <a href="${d.url}" target="_blank" style="display:inline-block;padding:6px 18px;background:#e74c3c;color:#fff;border-radius:4px;text-decoration:none;font-size:13px;">查看详情</a>
           </div>
         </div>
       `;

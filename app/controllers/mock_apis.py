@@ -1,4 +1,4 @@
-"""内置数字员工 API（新闻实时抓取 / 音乐 iTunes / 电影豆瓣搜索 / 本地详情库互补）
+"""内置数字员工 API（新闻实时抓取 / 音乐 iTunes / 电影TMDB搜索 / 豆瓣+本地库互补）
     
 返回带 self-describing 格式的统一 JSON 结构：
     {"success": true, "data": {"content": "...", "responseFormat": "...", "extraData": {...}}}
@@ -231,7 +231,7 @@ def _fetch_juhe_news():
 
     try:
         resp = requests.get(
-            "http://v.juhe.cn/toutiao/index",
+            "https://v.juhe.cn/toutiao/index",
             params={"type": "top", "key": juhe["key"]},
             timeout=10
         )
@@ -510,7 +510,7 @@ MOVIE_DB = {
         "rating": "8.4",
         "year": "2019",
         "poster": "https://picsum.photos/seed/nz/400/600",
-        "url": "https://movie.douban.com/subject/26266085/"
+        "url": "https://www.themoviedb.org/search?query=哪吒之魔童降世"
     },
     "流浪地球": {
         "title": "流浪地球3",
@@ -520,7 +520,7 @@ MOVIE_DB = {
         "rating": "9.2",
         "year": "2026",
         "poster": "https://picsum.photos/seed/liulang/400/600",
-        "url": "https://movie.douban.com/subject/35361237/"
+        "url": "https://www.themoviedb.org/search?query=流浪地球3"
     },
     "满江红": {
         "title": "满江红",
@@ -530,7 +530,7 @@ MOVIE_DB = {
         "rating": "7.6",
         "year": "2023",
         "poster": "https://picsum.photos/seed/mjh/400/600",
-        "url": "https://movie.douban.com/subject/35769079/"
+        "url": "https://www.themoviedb.org/search?query=满江红"
     },
     "长津湖": {
         "title": "长津湖",
@@ -540,7 +540,7 @@ MOVIE_DB = {
         "rating": "7.6",
         "year": "2021",
         "poster": "https://picsum.photos/seed/cjh/400/600",
-        "url": "https://movie.douban.com/subject/35051132/"
+        "url": "https://www.themoviedb.org/search?query=长津湖"
     },
     "战狼2": {
         "title": "战狼2",
@@ -550,7 +550,7 @@ MOVIE_DB = {
         "rating": "7.1",
         "year": "2017",
         "poster": "https://picsum.photos/seed/zl2/400/600",
-        "url": "https://movie.douban.com/subject/26363254/"
+        "url": "https://www.themoviedb.org/search?query=战狼2"
     },
     "你好李焕英": {
         "title": "你好，李焕英",
@@ -560,7 +560,7 @@ MOVIE_DB = {
         "rating": "7.8",
         "year": "2021",
         "poster": "https://picsum.photos/seed/lhy/400/600",
-        "url": "https://movie.douban.com/subject/34841067/"
+        "url": "https://www.themoviedb.org/search?query=你好，李焕英"
     },
     "红海行动": {
         "title": "红海行动",
@@ -570,7 +570,7 @@ MOVIE_DB = {
         "rating": "8.3",
         "year": "2018",
         "poster": "https://picsum.photos/seed/hhxd/400/600",
-        "url": "https://movie.douban.com/subject/26924357/"
+        "url": "https://www.themoviedb.org/search?query=红海行动"
     },
     "我不是药神": {
         "title": "我不是药神",
@@ -580,7 +580,7 @@ MOVIE_DB = {
         "rating": "9.0",
         "year": "2018",
         "poster": "https://picsum.photos/seed/yys/400/600",
-        "url": "https://movie.douban.com/subject/26752088/"
+        "url": "https://www.themoviedb.org/search?query=我不是药神"
     },
     "深海": {
         "title": "深海",
@@ -590,7 +590,7 @@ MOVIE_DB = {
         "rating": "8.7",
         "year": "2023",
         "poster": "https://picsum.photos/seed/shenhai/400/600",
-        "url": "https://movie.douban.com/subject/35376910/"
+        "url": "https://www.themoviedb.org/search?query=深海"
     },
     "刺杀小说家": {
         "title": "刺杀小说家",
@@ -600,7 +600,7 @@ MOVIE_DB = {
         "rating": "6.6",
         "year": "2021",
         "poster": "https://picsum.photos/seed/csxsj/400/600",
-        "url": "https://movie.douban.com/subject/35264930/"
+        "url": "https://www.themoviedb.org/search?query=刺杀小说家"
     },
     "白蛇缘起": {
         "title": "白蛇：缘起",
@@ -610,15 +610,15 @@ MOVIE_DB = {
         "rating": "8.5",
         "year": "2019",
         "poster": "https://picsum.photos/seed/baishe/400/600",
-        "url": "https://movie.douban.com/subject/30331149/"
+        "url": "https://www.themoviedb.org/search?query=白蛇：缘起"
     }
 }
 
 ADDITIONAL_MOVIES = [
-    {"title": "唐人街探案3", "director": "陈思诚", "actors": ["王宝强", "刘昊然", "妻夫木聪"], "summary": "唐仁和秦风受邀前往东京，调查一桩离奇的谋杀案，在错综复杂的线索中揭开真相。", "rating": "5.3", "year": "2021", "poster": "https://picsum.photos/seed/trj3/400/600", "url": "https://movie.douban.com/subject/26808892/"},
-    {"title": "孤注一掷", "director": "申奥", "actors": ["张艺兴", "金晨", "咏梅", "王传君"], "summary": "程序员潘生和模特安娜被骗至海外诈骗工厂，在生死边缘挣扎求生，最终配合警方捣毁犯罪团伙。", "rating": "7.3", "year": "2023", "poster": "https://picsum.photos/seed/gzyz/400/600", "url": "https://movie.douban.com/subject/35267224/"},
-    {"title": "飞驰人生2", "director": "韩寒", "actors": ["沈腾", "范丞丞", "尹正", "张本煜"], "summary": "曾经的赛车冠军张驰重返赛道，带领新人车手共同追逐梦想，在巴音布鲁克赛道上书写传奇。", "rating": "7.8", "year": "2024", "poster": "https://picsum.photos/seed/fcrs2/400/600", "url": "https://movie.douban.com/subject/36354886/"},
-    {"title": "封神第一部", "director": "乌尔善", "actors": ["黄渤", "费翔", "李雪健", "娜然"], "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政，揭开封神榜的传奇序幕。", "rating": "7.8", "year": "2023", "poster": "https://picsum.photos/seed/fengshen/400/600", "url": "https://movie.douban.com/subject/10604086/"},
+    {"title": "唐人街探案3", "director": "陈思诚", "actors": ["王宝强", "刘昊然", "妻夫木聪"], "summary": "唐仁和秦风受邀前往东京，调查一桩离奇的谋杀案，在错综复杂的线索中揭开真相。", "rating": "5.3", "year": "2021", "poster": "https://picsum.photos/seed/trj3/400/600", "url": "https://www.themoviedb.org/search?query=唐人街探案3"},
+    {"title": "孤注一掷", "director": "申奥", "actors": ["张艺兴", "金晨", "咏梅", "王传君"], "summary": "程序员潘生和模特安娜被骗至海外诈骗工厂，在生死边缘挣扎求生，最终配合警方捣毁犯罪团伙。", "rating": "7.3", "year": "2023", "poster": "https://picsum.photos/seed/gzyz/400/600", "url": "https://www.themoviedb.org/search?query=孤注一掷"},
+    {"title": "飞驰人生2", "director": "韩寒", "actors": ["沈腾", "范丞丞", "尹正", "张本煜"], "summary": "曾经的赛车冠军张驰重返赛道，带领新人车手共同追逐梦想，在巴音布鲁克赛道上书写传奇。", "rating": "7.8", "year": "2024", "poster": "https://picsum.photos/seed/fcrs2/400/600", "url": "https://www.themoviedb.org/search?query=飞驰人生2"},
+    {"title": "封神第一部", "director": "乌尔善", "actors": ["黄渤", "费翔", "李雪健", "娜然"], "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政，揭开封神榜的传奇序幕。", "rating": "7.8", "year": "2023", "poster": "https://picsum.photos/seed/fengshen/400/600", "url": "https://www.themoviedb.org/search?query=封神第一部"},
 ]
 
 ALL_MOVIES = {}
@@ -628,6 +628,97 @@ for m in ADDITIONAL_MOVIES:
 
 
 # 对外暴露的辅助函数（供 _call_builtin_mock_api 直接调用）
+
+def _extract_movie_keyword(text):
+    """从自然语言中提取电影名称
+
+    Examples:
+        "我想看满江红" → "满江红"
+        "帮我搜一下流浪地球" → "流浪地球"
+        "有没有哪吒" → "哪吒"
+        "搜索战狼2" → "战狼2"
+        "满江红" → "满江红"
+    """
+    text = text.strip()
+    if not text:
+        return text
+
+    # 移除常见的前缀表达（意图词 + 动作词）
+    # 注意：长组合（如“帮我搜一下”）需要排在短组合（如“帮我搜”）前面，避免截断
+    text = re.sub(
+        r'^(?:我想看|我要看|我想搜一下|我想搜|帮我搜一下|帮我找一下|帮我查一下|'
+        r'帮我搜|帮我找|帮我查|'
+        r'给我搜一下|给我找一下|给我搜|给我找|给我看|给[我你]推荐一下|给[我你]推荐|推荐一下|推荐|'
+        r'搜索|搜一下|搜一搜|找一下|查一下|看下|看看|看|搜|找|查)\s*',
+        '', text
+    )
+
+    # 移除 "有没有/是否有" 前缀
+    text = re.sub(r'^(?:有没有|是否有|有没有什么|有什么)\s*', '', text)
+
+    # 移除常见后缀
+    text = re.sub(
+        r'\s*(?:吗[？?]?|呢[？?]?|吧[！!]?|'
+        r'的电影|这部[电影片]?|这[部个][电影片]?|这个电影|'
+        r'怎么样|好不好看|好看吗)$',
+        '', text
+    )
+
+    # 移除末尾标点
+    text = re.sub(r'[，,。！!？?\s]+$', '', text)
+
+    return text.strip() or text  # 若全部被移除则返回原文
+
+
+def _get_tmdb_api_key():
+    """从 api_keys.json 读取 TMDB API Key，fallback 到硬编码"""
+    keys = _load_api_keys()
+    tmdb = keys.get("tmdb", {})
+    if tmdb.get("enabled") and tmdb.get("key"):
+        return tmdb["key"]
+    return "7db612d4425ec6e821f2f42311621b3a"  # fallback
+
+_TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
+
+
+def _search_tmdb_movie(keyword):
+    """通过 TMDB API 搜索电影（真实搜索，不限影片）
+
+    Returns: list[dict] 或 []
+    """
+    if not keyword:
+        return []
+
+    try:
+        url = "https://api.themoviedb.org/3/search/movie"
+        params = {
+            "api_key": _get_tmdb_api_key(),
+            "query": keyword,
+            "language": "zh-CN",
+            "page": 1,
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        if resp.status_code != 200:
+            return []
+
+        data = resp.json()
+        results = []
+        for item in data.get("results", [])[:10]:
+            poster_path = item.get("poster_path", "")
+            results.append({
+                "title": item.get("title", "") or item.get("original_title", ""),
+                "original_title": item.get("original_title", ""),
+                "overview": item.get("overview", ""),
+                "year": (item.get("release_date", "") or "")[:4],
+                "poster": f"{_TMDB_IMAGE_BASE}{poster_path}" if poster_path else "",
+                "rating": round(item.get("vote_average", 0), 1),
+                "vote_count": item.get("vote_count", 0),
+                "tmdb_id": item.get("id"),
+                "url": f"https://www.themoviedb.org/movie/{item.get('id')}",
+            })
+        return results
+    except Exception:
+        return []
 
 def _search_douban_movie(keyword):
     """通过豆瓣 suggest API 搜索电影
@@ -656,50 +747,87 @@ def _search_douban_movie(keyword):
         return []
 
 
-def _search_movie(keyword):
-    """按关键词搜索电影
+def _enrich_tmdb_with_local(tmdb_results, keyword_lower):
+    """用本地库补充 TMDB 结果（导演、演员等 TMDB 不直接返回的数据）"""
+    enriched = []
+    for movie in tmdb_results:
+        title = movie.get("title", "")
+        matched_local = None
+        # 尝试匹配本地库
+        for local_key, local_info in ALL_MOVIES.items():
+            if local_key[:3] in title or title[:3] in local_key:
+                matched_local = local_info
+                break
+        if matched_local:
+            movie["director"] = matched_local.get("director", "")
+            movie["actors"] = matched_local.get("actors", [])
+            if not movie.get("overview"):
+                movie["overview"] = matched_local.get("summary", "")
+        else:
+            movie["director"] = ""
+            movie["actors"] = []
+        movie["summary"] = movie.pop("overview", "")
+        enriched.append(movie)
+    return enriched
 
-    优先使用豆瓣API匹配，然后用本地详情库补充完整数据
+
+def _search_movie(keyword):
+    """按关键词搜索电影（TMDB API → 豆瓣搜索 → 本地库兜底）
+
+    1. 先提取真正的电影名（去除"我想看"等自然语言前缀）
+    2. TMDB API 搜索（不限影片，任意影片均可搜到）
+    3. 本地库补充导演/演员等详细信息
+    4. 豆瓣API作为补充
+    5. 本地库兜底
+
     Returns: list[dict] 匹配的电影信息列表
     """
+    # 第0步：提取真正的关键词
+    keyword = _extract_movie_keyword(keyword)
     keyword_lower = keyword.lower().strip()
     matched = []
 
-    # 第1步：豆瓣API搜索
+    # 第1步：TMDB API 搜索（真实搜索，不限影片）
+    tmdb_results = _search_tmdb_movie(keyword)
+    if tmdb_results:
+        enriched = _enrich_tmdb_with_local(tmdb_results, keyword_lower)
+        matched.extend(enriched)
+
+    # 第2步：豆瓣API搜索（补充TMDB可能漏掉的）
     douban_results = _search_douban_movie(keyword)
     if douban_results:
         for dr in douban_results[:5]:
-            # 尝试从本地库匹配详细信息
             db_title = dr["douban_title"]
+            # 跳过TMDB已有且标题匹配的
+            if any(db_title[:3] in m.get("title", "")[:3] or m.get("title", "")[:3] in db_title[:3] for m in matched):
+                continue
             full_info = None
             for name, info in ALL_MOVIES.items():
                 if name[:3] in db_title or db_title[:3] in name:
                     full_info = info.copy()
-                    full_info["title"] = db_title  # 使用豆瓣真实标题
+                    full_info["title"] = db_title
                     full_info["year"] = dr.get("year", full_info.get("year", ""))
                     full_info["poster"] = dr.get("poster") or full_info.get("poster", "")
-                    full_info["url"] = dr["url"]  # 豆瓣真实链接
+                    full_info["url"] = f"https://www.themoviedb.org/search?query={urllib.parse.quote(db_title)}"
                     break
             if not full_info:
-                # 本地库未匹配，构造基本信息
                 full_info = {
                     "title": db_title,
-                    "director": "请前往豆瓣页面查看",
+                    "director": "",
                     "actors": [],
-                    "summary": "请前往豆瓣页面查看详情",
+                    "summary": "",
                     "rating": "?",
                     "year": dr.get("year", ""),
                     "poster": dr.get("poster", ""),
-                    "url": dr["url"],
+                    "url": f"https://www.themoviedb.org/search?query={urllib.parse.quote(db_title)}",
                 }
             matched.append(full_info)
 
-    # 第2步：本地库搜索（补充豆瓣未覆盖的）
+    # 第3步：本地库搜索（兜底）
     for name, info in ALL_MOVIES.items():
         if (keyword_lower in name.lower()
                 or any(keyword_lower in a.lower() for a in info.get("actors", []))):
-            # 如果已通过豆瓣添加，跳过（用豆瓣数据更准）
-            if any(m.get("title") == info.get("title") for m in matched):
+            if any(m.get("title", "") == info.get("title", "") for m in matched):
                 continue
             matched.append(info.copy())
 
@@ -712,22 +840,18 @@ def _get_random_movie():
 
 
 class MockMovieHandler(BaseHandler):
-    """支持按片名搜索和随机推荐"""
+    """支持按片名搜索（TMDB真实API）和随机推荐（本地库）"""
     def get(self):
         keyword = self.get_argument("keyword", "").strip()
 
         if keyword:
-            # 按关键词搜索
-            matched = []
-            for name, info in ALL_MOVIES.items():
-                if keyword in name or any(keyword in a for a in info["actors"]):
-                    matched.append(info)
+            matched = _search_movie(keyword)
             if not matched:
                 self.set_header("Content-Type", "application/json")
                 self.write(json.dumps({
                     "success": True,
                     "data": {
-                        "content": f"😅 未找到与「{keyword}」相关的电影信息，试试其他关键词吧！",
+                        "content": f"😅 未找到与「{_extract_movie_keyword(keyword)}」相关的电影信息，换个关键词试试吧！",
                         "responseFormat": "text",
                         "extraData": {}
                     }
@@ -736,8 +860,7 @@ class MockMovieHandler(BaseHandler):
                 return
             selected = random.choice(matched)
         else:
-            # 随机推荐
-            selected = random.choice(list(ALL_MOVIES.values()))
+            selected = _get_random_movie()
 
         text = (
             f"🎬 **{selected['title']}** ({selected['year']})\n\n"
