@@ -1,34 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-<style>
-.layui-layout-admin .layui-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-.layui-layout-admin .layui-logo { color: #fff !important; font-size: 20px; font-weight: 600; line-height: normal; width: 220px; display: flex; align-items: center; gap: 6px; padding: 0 10px 0 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.layui-side { background: #1e293b !important; top: 60px; }
-.layui-side-scroll { width: 220px; }
-.layui-nav-tree { background: #1e293b !important; }
-.layui-nav-tree .layui-nav-item a { color: rgba(255,255,255,.75); height: 46px; line-height: 46px; }
-.layui-nav-tree .layui-nav-item a:hover { background: rgba(255,255,255,.08); color: #fff; }
-.layui-nav-tree .layui-nav-item.layui-this a { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; color: #fff; }
-.layui-body { top: 60px; left: 220px; background: #f1f5f9; padding: 20px; overflow-y: auto; }
-.layui-footer { left: 220px; background: #fff; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center; line-height: 50px; }
-.search-bar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.data-table { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.data-table .table-wrap { overflow-x: auto; }
-.data-table table { min-width: 900px; }
-.data-table td:last-child { white-space: nowrap; }
-.data-table .title-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.data-table .title-cell:hover { overflow: visible; white-space: normal; word-break: break-all; background: #fff; position: relative; z-index: 1; }
-.pagination-bar { background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; }
-
-/* 详情弹窗 */
-.detail-view { padding: 0 15px; }
-.detail-view .detail-item { margin-bottom: 15px; }
-.detail-view .detail-label { font-weight: 600; color: #475569; font-size: 13px; margin-bottom: 4px; display: block; }
-.detail-view .detail-value { color: #1e293b; font-size: 14px; line-height: 1.6; word-break: break-all; }
-
-/* 浮动窗占位 */
-.floating-panel-placeholder { display: none; }
-</style>
 
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
@@ -37,6 +8,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -78,20 +54,25 @@
         <div class="search-bar">
             <form class="layui-form">
                 <div class="layui-row layui-col-space15">
-                    <div class="layui-col-md6">
+                    <div class="layui-col-md5">
                         <div class="layui-form-item">
                             <label class="layui-form-label">搜索</label>
                             <div class="layui-input-block">
-                                <input type="text" id="searchInput" placeholder="标题 / 来源 / 关键词" class="layui-input">
+                                <input type="text" id="searchInput" placeholder="标题 / 来源 / 关键词" class="layui-input" style="width:240px;">
                             </div>
                         </div>
                     </div>
-                    <div class="layui-col-md6">
-                        <div class="layui-form-item">
+                    <div class="layui-col-md7">
+                        <div class="layui-form-item" style="margin-bottom:0;">
                             <label class="layui-form-label">&nbsp;</label>
                             <div class="layui-input-block">
-                                <button type="button" class="layui-btn" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
-                                <button type="button" class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                <div class="search-actions">
+                                    <button type="button" class="layui-btn btn-search" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="button" class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                    <button type="button" class="layui-btn layui-btn-danger" id="batchDeleteBtn" disabled><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
+                                    <button type="button" class="layui-btn layui-btn-normal" id="batchDeepCollectBtn" disabled><i class="layui-icon layui-icon-export"></i> 批量深度采集</button>
+                                    <span class="batch-info" id="batchInfo"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -99,34 +80,29 @@
             </form>
         </div>
         <div class="data-table">
-            <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
-                <button class="layui-btn layui-btn-sm" id="batchDeleteBtn" disabled style="background:#e74c3c;"><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
-                <button class="layui-btn layui-btn-sm layui-btn-normal" id="batchDeepCollectBtn" disabled><i class="layui-icon layui-icon-export"></i> 批量深度采集</button>
-                <span id="batchInfo" style="color:#999;font-size:12px;"></span>
-            </div>
-            <div class="table-wrap">
+            <div class="table-wrap" style="overflow-x:auto;">
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th style="width:36px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
-                        <th style="width:50px;">#</th>
+                        <th class="col-checkbox"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
+                        <th class="col-id">#</th>
                         <th>标题</th>
-                        <th style="width:100px;">来源</th>
-                        <th style="width:90px;">关键词</th>
-                        <th style="width:80px;">深度采集</th>
-                        <th style="width:140px;">采集时间</th>
-                        <th style="width:220px;white-space:nowrap;">操作</th>
+                        <th>来源</th>
+                        <th>关键词</th>
+                        <th class="col-status">深度采集</th>
+                        <th class="col-time">采集时间</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="warehouseBody">
-                    <tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>
+                    <tr><td colspan="8" class="text-muted" style="text-align:center;">加载中...</td></tr>
                 </tbody>
             </table>
             </div>
         </div>
         <div class="pagination-bar"><div id="pagination"></div></div>
     </div>
-    <div class="layui-footer">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
+    <div class="layui-footer text-xs">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
 </div>
 
 <!-- 详情弹窗 -->
@@ -208,7 +184,7 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
     }
 
     function loadData(page, search) {
-        $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr>');
+        $('#warehouseBody').html('<tr><td colspan="8" class="text-muted" style="text-align:center;">加载中...</td></tr>');
         $.ajax({
             url: '/api/warehouse/list',
             type: 'GET',
@@ -216,11 +192,11 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             data: {page: page || 1, page_size: pageSize, search: search || ''},
             success: function(res) {
                 if (!res || !res.data) {
-                    $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:red;">数据格式错误</td></tr>');
+                    $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">数据格式错误</td></tr>');
                     return;
                 }
                 if (res.data.length === 0) {
-                    $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">暂无数据</td></tr>');
+                    $('#warehouseBody').html('<tr><td colspan="8" class="text-muted" style="text-align:center;">暂无数据</td></tr>');
                     $('#pagination').html('');
                     return;
                 }
@@ -244,16 +220,16 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                     html += '<tr>' +
                         '<td><input type="checkbox" class="wh-checkbox" data-id="' + item.id + '" onchange="updateBatchBtnState()"></td>' +
                         '<td>' + rowNum + '</td>' +
-                        '<td><div class="title-cell" title="' + (item.title || '').replace(/"/g,'&quot;') + '">' + (item.title || '-') + '</div></td>' +
-                        '<td>' + (item.source_name || '-') + '</td>' +
-                        '<td>' + (item.keyword || '-') + '</td>' +
+                        '<td><div class="cell-text" title="' + (item.title || '').replace(/"/g,'&quot;') + '">' + (item.title || '<span class="cell-empty">-</span>') + '</div></td>' +
+                        '<td>' + (item.source_name || '<span class="cell-empty">-</span>') + '</td>' +
+                        '<td>' + (item.keyword || '<span class="cell-empty">-</span>') + '</td>' +
                         '<td>' + deepHtml + '</td>' +
-                        '<td>' + (item.collected_at || '-') + '</td>' +
-                        '<td>' +
-                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button> ' +
+                        '<td>' + (item.collected_at || '<span class="cell-empty">-</span>') + '</td>' +
+                        '<td><div class="action-btns">' +
+                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button>' +
                             collectBtn +
                             '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteItem(' + item.id + ', \'' + (item.title || '').replace(/'/g,"\\'") + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>' +
-                        '</td></tr>';
+                        '</div></td></tr>';
                 });
                 $('#warehouseBody').html(html);
                 $('#selectAllCheckbox').prop('checked', false);
@@ -261,7 +237,7 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function() {
-                $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:red;">加载失败</td></tr>');
+                $('#warehouseBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }

@@ -1,85 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-<style>
-.layui-layout-admin .layui-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.layui-layout-admin .layui-logo {
-    color: #fff !important;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: normal;
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 10px 0 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layui-side {
-    background: #1e293b !important;
-    top: 60px;
-}
-.layui-side-scroll {
-    width: 220px;
-}
-.layui-nav-tree {
-    background: #1e293b !important;
-}
-.layui-nav-tree .layui-nav-item a {
-    color: rgba(255,255,255,.75);
-    height: 46px;
-    line-height: 46px;
-}
-.layui-nav-tree .layui-nav-item a:hover {
-    background: rgba(255,255,255,.08);
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item.layui-this a {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #fff;
-}
-.layui-body {
-    top: 60px;
-    left: 220px;
-    background: #f1f5f9;
-    padding: 20px;
-    overflow-y: auto;
-}
-.layui-footer {
-    left: 220px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
-    text-align: center;
-    line-height: 50px;
-}
-.search-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.data-table {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.pagination-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    text-align: center;
-}
-</style>
 
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
@@ -88,6 +8,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -135,7 +60,7 @@
         <div class="search-bar">
             <form class="layui-form" lay-filter="searchForm">
                 <div class="layui-row layui-col-space15">
-                    <div class="layui-col-md4">
+                    <div class="layui-col-md3">
                         <div class="layui-form-item">
                             <label class="layui-form-label">用户名</label>
                             <div class="layui-input-block">
@@ -143,7 +68,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="layui-col-md4">
+                    <div class="layui-col-md2">
                         <div class="layui-form-item">
                             <label class="layui-form-label">角色</label>
                             <div class="layui-input-block">
@@ -153,7 +78,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="layui-col-md4">
+                    <div class="layui-col-md2">
                         <div class="layui-form-item">
                             <label class="layui-form-label">状态</label>
                             <div class="layui-input-block">
@@ -165,12 +90,17 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="layui-form-item">
-                    <div class="layui-input-block">
-                        <button class="layui-btn" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
-                        <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
-                        <button class="layui-btn layui-btn-normal" id="addUserBtn"><i class="layui-icon layui-icon-addition"></i> 新增用户</button>
+                    <div class="layui-col-md5">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <div class="search-actions">
+                                    <button class="layui-btn btn-search" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                    <button class="layui-btn layui-btn-normal" id="addUserBtn"><i class="layui-icon layui-icon-addition"></i> 新增用户</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -180,12 +110,12 @@
             <table class="layui-table" lay-skin="line" id="userTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>用户名</th>
                         <th>角色</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-time">创建时间</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="userTableBody">
@@ -199,7 +129,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -397,25 +327,22 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
                 
                 var html = '';
                 if (res.data.length === 0) {
-                    html = '<tr><td colspan="6" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                    html = '<tr><td colspan="6" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
                 } else {
                     res.data.forEach(function(user) {
-                        console.log('User:', user);
-                        var statusHtml = user.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                        var statusHtml = user.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                         var isAdmin = (user.username === 'admin');
-                        var deleteBtn = isAdmin
-                            ? '<button class="layui-btn layui-btn-xs layui-btn-disabled" disabled><i class="layui-icon layui-icon-delete"></i> 删除</button>'
-                            : '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">删除</button>';
+                        var actionHtml = '<button class="layui-btn layui-btn-xs" onclick="editUser(' + user.id + ')">编辑</button>';
+                        if (!isAdmin) {
+                            actionHtml += '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>';
+                        }
                         html += '<tr>' +
-                            '<td>' + user.id + '</td>' +
-                            '<td>' + (isAdmin ? user.username + ' <span class="layui-badge layui-bg-red">超管</span>' : user.username) + '</td>' +
-                            '<td>' + (user.role_name || '-') + '</td>' +
-                            '<td>' + statusHtml + '</td>' +
+                            '<td class="col-id">' + user.id + '</td>' +
+                            '<td>' + (isAdmin ? user.username + ' <span class="badge-active" style="background:#fee2e2;color:#dc2626;">超管</span>' : user.username) + '</td>' +
+                            '<td>' + (user.role_name || '<span class="cell-empty">-</span>') + '</td>' +
+                            '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + user.created_at + '</td>' +
-                            '<td>' +
-                                '<button class="layui-btn layui-btn-xs" onclick="editUser(' + user.id + ')">编辑</button> ' +
-                                deleteBtn +
-                            '</td>' +
+                            '<td class="col-actions"><div class="action-btns">' + actionHtml + '</div></td>' +
                         '</tr>';
                     });
                 }
@@ -427,7 +354,7 @@ layui.use(['form', 'table', 'layer', 'element', 'jquery'], function(){
             error: function(xhr, status, error) {
                 console.error('Ajax Error:', status, error);
                 console.error('Response:', xhr.responseText);
-                $('#userTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
+                $('#userTableBody').html('<tr><td colspan="6" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
             }
         });
     }

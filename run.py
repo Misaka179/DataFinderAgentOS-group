@@ -1,4 +1,5 @@
-import os
+import os, sys
+sys.stdout.reconfigure(encoding='utf-8')
 import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
@@ -122,7 +123,7 @@ def webapp():
     settings = dict(
         template_path=os.path.join(base_dir, "app", "templates"),
         static_path=os.path.join(base_dir, "app", "static"),
-        cookie_secret="datafinderagentos-token",
+        cookie_secret=os.environ.get("COOKIE_SECRET", "datafinderagentos-token"),
         login_url="/",
         xsrf_cookies=True,
         debug=True,

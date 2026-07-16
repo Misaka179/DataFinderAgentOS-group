@@ -14,3 +14,13 @@ Thumbs.db
 
 # 本地临时文件
 app.db
+
+# 环境变量（可能含密钥）
+.env
+
+# 日志文件
+*.log
+
+# 数据库文件（演示库已提交v1，后续不再跟踪，首次运行自动生成）
+database/*
+!database/.gitkeep

@@ -1,78 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-<style>
-.layui-layout-admin .layui-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.layui-layout-admin .layui-logo {
-    color: #fff !important;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: normal;
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 10px 0 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layui-side {
-    background: #1e293b !important;
-    top: 60px;
-}
-.layui-side-scroll {
-    width: 220px;
-}
-.layui-nav-tree {
-    background: #1e293b !important;
-}
-.layui-nav-tree .layui-nav-item a {
-    color: rgba(255,255,255,.75);
-    height: 46px;
-    line-height: 46px;
-}
-.layui-nav-tree .layui-nav-item a:hover {
-    background: rgba(255,255,255,.08);
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item.layui-this a {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #fff;
-}
-.layui-body {
-    top: 60px;
-    left: 220px;
-    background: #f1f5f9;
-    padding: 20px;
-    overflow-y: auto;
-}
-.layui-footer {
-    left: 220px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
-    text-align: center;
-    line-height: 50px;
-}
-.search-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.data-table {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-</style>
-
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo">
@@ -80,6 +7,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -125,10 +57,8 @@
 
     <div class="layui-body">
         <div class="search-bar">
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button class="layui-btn" id="addFuncBtn"><i class="layui-icon layui-icon-addition"></i> 新增功能</button>
-                </div>
+            <div class="search-actions">
+                <button class="layui-btn layui-btn-normal" id="addFuncBtn"><i class="layui-icon layui-icon-addition"></i> 新增功能</button>
             </div>
         </div>
 
@@ -136,16 +66,16 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th style="width:50px;">ID</th>
+                        <th class="col-id">ID</th>
                         <th>功能名称</th>
-                        <th style="width:60px;">层级</th>
+                        <th>层级</th>
                         <th>功能编码</th>
                         <th>图标</th>
                         <th>路由</th>
                         <th>父功能</th>
-                        <th style="width:50px;">排序</th>
-                        <th style="width:50px;">状态</th>
-                        <th style="width:190px;">操作</th>
+                        <th>排序</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="funcTableBody">
@@ -155,7 +85,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -323,28 +253,28 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 });
                 var html = '';
                 if (data.length === 0) {
-                    html = '<tr><td colspan="10" style="text-align: center; color: #999;">暂无数据</td></tr>';
+                    html = '<tr><td colspan="10" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
                 } else {
                     data.forEach(function(func) {
-                        var statusHtml = func.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
-                        var parentName = func.parent_id == 0 ? '<span style="color:#999;">-</span>' : (parentMap[func.parent_id] || 'ID:' + func.parent_id);
-                        var levelHtml = func.parent_id == 0 ? '<span class="layui-badge layui-bg-blue">一级</span>' : '<span class="layui-badge layui-bg-cyan">二级</span>';
-                        var iconHtml = func.icon ? '<i class="layui-icon ' + func.icon + '"></i>' : '-';
+                        var statusHtml = func.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
+                        var parentName = func.parent_id == 0 ? '<span class="cell-empty">-</span>' : (parentMap[func.parent_id] || 'ID:' + func.parent_id);
+                        var levelHtml = func.parent_id == 0 ? '<span class="badge-active" style="background:#eef2ff;color:#4f46e5;">一级</span>' : '<span class="badge-active" style="background:#e0f2fe;color:#0284c7;">二级</span>';
+                        var iconHtml = func.icon ? '<i class="icon-base layui-icon ' + func.icon + '"></i>' : '<span class="cell-empty">-</span>';
                         html += '<tr>' +
-                            '<td>' + func.id + '</td>' +
+                            '<td class="col-id">' + func.id + '</td>' +
                             '<td>' + func.name + '</td>' +
-                            '<td>' + levelHtml + '</td>' +
+                            '<td class="col-center">' + levelHtml + '</td>' +
                             '<td>' + func.code + '</td>' +
-                            '<td>' + iconHtml + '</td>' +
-                            '<td>' + (func.route || '-') + '</td>' +
+                            '<td class="icon-cell">' + iconHtml + '</td>' +
+                            '<td class="col-url" title="' + (func.route || '') + '"><span class="cell-url">' + (func.route || '<span class="cell-empty">-</span>') + '</span></td>' +
                             '<td>' + parentName + '</td>' +
-                            '<td>' + func.sort_order + '</td>' +
-                            '<td>' + statusHtml + '</td>' +
-                            '<td>' +
-                                '<button class="layui-btn layui-btn-xs" onclick="editFunction(' + func.id + ')">编辑</button> ' +
-                                '<button class="layui-btn layui-btn-warm layui-btn-xs" onclick="toggleFunction(' + func.id + ', ' + func.status + ')">' + (func.status == 1 ? '禁用' : '启用') + '</button> ' +
+                            '<td class="col-center">' + func.sort_order + '</td>' +
+                            '<td class="col-status">' + statusHtml + '</td>' +
+                            '<td class="col-actions"><div class="action-btns">' +
+                                '<button class="layui-btn layui-btn-xs" onclick="editFunction(' + func.id + ')">编辑</button>' +
+                                '<button class="layui-btn layui-btn-xs" style="background:#f59e0b;color:#fff;" onclick="toggleFunction(' + func.id + ', ' + func.status + ')">' + (func.status == 1 ? '禁用' : '启用') + '</button>' +
                                 '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteFunction(' + func.id + ', \'' + func.name + '\')">删除</button>' +
-                            '</td>' +
+                            '</div></td>' +
                         '</tr>';
                     });
                 }
@@ -352,7 +282,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Functions API Error:', status, error);
-                $('#funcTableBody').html('<tr><td colspan="10" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#funcTableBody').html('<tr><td colspan="10" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }

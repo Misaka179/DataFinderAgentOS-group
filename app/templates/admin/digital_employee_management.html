@@ -1,25 +1,14 @@
 {% extends "base.html" %}
 {% block body %}
 <style>
-.layui-layout-admin .layui-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-.layui-layout-admin .layui-logo { color: #fff !important; font-size: 20px; font-weight: 600; line-height: normal; width: 220px; display: flex; align-items: center; gap: 6px; padding: 0 10px 0 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.layui-side { background: #1e293b !important; top: 60px; }
-.layui-side-scroll { width: 220px; }
-.layui-nav-tree { background: #1e293b !important; }
-.layui-nav-tree .layui-nav-item a { color: rgba(255,255,255,.75); height: 46px; line-height: 46px; }
-.layui-nav-tree .layui-nav-item a:hover { background: rgba(255,255,255,.08); color: #fff; }
-.layui-nav-tree .layui-nav-item.layui-this a { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; color: #fff; }
-.layui-body { top: 60px; left: 220px; background: #f1f5f9; padding: 20px; overflow-y: auto; }
-.layui-footer { left: 220px; background: #fff; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center; line-height: 50px; }
-.search-bar { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.data-table { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .data-table .table-wrap { overflow-x: auto; }
 .data-table table { min-width: 700px; }
 .data-table td:last-child { white-space: nowrap; }
 .data-table .desc-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pagination-bar { background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; }
 .type-badge-llm { background: #6366f1 !important; }
 .type-badge-api { background: #0ea5e9 !important; }
+.badge-llm { display:inline-block; padding:2px 10px; border-radius:4px; font-size:12px; line-height:20px; font-weight:500; background:#eef2ff; color:#4f46e5; }
+.badge-api { display:inline-block; padding:2px 10px; border-radius:4px; font-size:12px; line-height:20px; font-weight:500; background:#e0f2fe; color:#0284c7; }
 .form-section-title { font-size: 14px; font-weight: 600; color: #1e293b; padding: 8px 0; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
 /* 表单弹窗内容过多时滚动 */
 #employeeFormModal { overflow-y: auto; max-height: 70vh; padding-right: 5px; }
@@ -32,6 +21,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -97,9 +91,9 @@
                         <div class="layui-form-item" style="margin-bottom:0;">
                             <label class="layui-form-label">&nbsp;</label>
                             <div class="layui-input-block">
-                                <button type="button" class="layui-btn layui-btn-sm" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
-                                <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
-                                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="addBtn"><i class="layui-icon layui-icon-addition"></i> 新建员工</button>
+                                <button type="button" class="layui-btn btn-search" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                <button type="button" class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                <button type="button" class="layui-btn layui-btn-normal" id="addBtn"><i class="layui-icon layui-icon-addition"></i> 新建员工</button>
                             </div>
                         </div>
                     </div>
@@ -111,14 +105,14 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th style="width:50px;">ID</th>
-                        <th style="width:120px;">名称</th>
-                        <th style="width:80px;">类型</th>
+                        <th class="col-id">ID</th>
+                        <th>名称</th>
+                        <th>类型</th>
                         <th>描述</th>
-                        <th style="width:60px;">排序</th>
-                        <th style="width:60px;">状态</th>
-                        <th style="width:150px;">创建时间</th>
-                        <th style="width:180px;">操作</th>
+                        <th>排序</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-time">创建时间</th>
+                        <th class="col-actions" style="width:220px;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="employeeBody">
@@ -129,7 +123,7 @@
         </div>
         <div class="pagination-bar"><div id="pagination"></div></div>
     </div>
-    <div class="layui-footer">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
+    <div class="layui-footer text-xs">© 2024 智能瞭望与问数系统 - 政务数据智能分析平台</div>
 </div>
 
 <!-- 新增/编辑弹窗 -->
@@ -407,35 +401,35 @@ layui.use(['form', 'layer', 'jquery'], function(){
                     return;
                 }
                 if (res.data.length === 0) {
-                    $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:#999;">暂无数据</td></tr>');
+                    $('#employeeBody').html('<tr><td colspan="8" class="text-muted" style="text-align:center;">暂无数据</td></tr>');
                     $('#pagination').html('');
                     return;
                 }
                 var html = '';
                 res.data.forEach(function(item, index) {
                     var rowNum = (res.page-1)*res.page_size + index + 1;
-                    var typeHtml = item.type === 'llm' ? '<span class="layui-badge type-badge-llm">LLM</span>' : '<span class="layui-badge type-badge-api">API</span>';
-                    var statusHtml = item.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    var typeHtml = item.type === 'llm' ? '<span class="badge-llm">LLM</span>' : '<span class="badge-api">API</span>';
+                    var statusHtml = item.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                     html += '<tr>' +
                         '<td>' + rowNum + '</td>' +
-                        '<td>' + (item.name || '-') + '</td>' +
+                        '<td>' + (item.name || '<span class="cell-empty">-</span>') + '</td>' +
                         '<td>' + typeHtml + '</td>' +
-                        '<td><div class="desc-cell" title="' + (item.description||'').replace(/"/g,'&quot;') + '">' + (item.description||'-') + '</div></td>' +
+                        '<td><div class="cell-text" title="' + (item.description||'').replace(/"/g,'&quot;') + '">' + (item.description || '<span class="cell-empty">-</span>') + '</div></td>' +
                         '<td>' + (item.sort_order||0) + '</td>' +
                         '<td>' + statusHtml + '</td>' +
-                        '<td>' + (item.created_at||'-') + '</td>' +
-                        '<td>' +
-                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button> ' +
-                            '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="testEmployee(' + item.id + ')"><i class="layui-icon layui-icon-util"></i> 测试</button> ' +
-                            '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="editEmployee(' + item.id + ')"><i class="layui-icon layui-icon-edit"></i> 编辑</button> ' +
+                        '<td>' + (item.created_at||'<span class="cell-empty">-</span>') + '</td>' +
+                        '<td><div class="action-btns">' +
+                            '<button class="layui-btn layui-btn-xs" onclick="viewDetail(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看</button>' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="testEmployee(' + item.id + ')"><i class="layui-icon layui-icon-util"></i> 测试</button>' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="editEmployee(' + item.id + ')"><i class="layui-icon layui-icon-edit"></i> 编辑</button>' +
                             '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteEmployee(' + item.id + ',\'' + (item.name||'').replace(/'/g,"\\'") + '\')"><i class="layui-icon layui-icon-delete"></i> 删除</button>' +
-                        '</td></tr>';
+                        '</div></td></tr>';
                 });
                 $('#employeeBody').html(html);
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function() {
-                $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:red;">加载失败</td></tr>');
+                $('#employeeBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }

@@ -1,86 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-<style>
-.layui-layout-admin .layui-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.layui-layout-admin .layui-logo {
-    color: #fff !important;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: normal;
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 10px 0 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layui-side {
-    background: #1e293b !important;
-    top: 60px;
-}
-.layui-side-scroll {
-    width: 220px;
-}
-.layui-nav-tree {
-    background: #1e293b !important;
-}
-.layui-nav-tree .layui-nav-item a {
-    color: rgba(255,255,255,.75);
-    height: 46px;
-    line-height: 46px;
-}
-.layui-nav-tree .layui-nav-item a:hover {
-    background: rgba(255,255,255,.08);
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item.layui-this a {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #fff;
-}
-.layui-body {
-    top: 60px;
-    left: 220px;
-    background: #f1f5f9;
-    padding: 20px;
-    overflow-y: auto;
-}
-.layui-footer {
-    left: 220px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
-    text-align: center;
-    line-height: 50px;
-}
-.search-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.data-table {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.pagination-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    text-align: center;
-}
-</style>
-
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo">
@@ -88,6 +7,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -135,7 +59,7 @@
         <div class="search-bar">
             <form class="layui-form" lay-filter="searchForm">
                 <div class="layui-row layui-col-space15">
-                    <div class="layui-col-md6">
+                    <div class="layui-col-md4">
                         <div class="layui-form-item">
                             <label class="layui-form-label">名称</label>
                             <div class="layui-input-block">
@@ -143,7 +67,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="layui-col-md6">
+                    <div class="layui-col-md3">
                         <div class="layui-form-item">
                             <label class="layui-form-label">状态</label>
                             <div class="layui-input-block">
@@ -155,12 +79,17 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="layui-form-item">
-                    <div class="layui-input-block">
-                        <button class="layui-btn" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
-                        <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
-                        <button class="layui-btn layui-btn-normal" id="addSourceBtn"><i class="layui-icon layui-icon-addition"></i> 新增瞭源</button>
+                    <div class="layui-col-md5">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <div class="search-actions">
+                                    <button class="layui-btn btn-search" lay-submit lay-filter="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                    <button class="layui-btn layui-btn-normal" id="addSourceBtn"><i class="layui-icon layui-icon-addition"></i> 新增瞭源</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -170,19 +99,19 @@
             <table class="layui-table" lay-skin="line" id="sourceTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>名称</th>
                         <th>来源类型</th>
                         <th>URL模板</th>
                         <th>关键词参数</th>
                         <th>分页参数</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-time">创建时间</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="sourceTableBody">
-                    <tr><td colspan="9" style="text-align: center;">加载中...</td></tr>
+                    <tr><td colspan="9" class="text-muted" style="text-align: center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -192,7 +121,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -384,28 +313,43 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             },
             success: function(res) {
                 if (!res || !res.data) {
+<<<<<<< HEAD
                     $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">数据格式错误</td></tr>');
+=======
+                    $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">数据格式错误</td></tr>');
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                     return;
                 }
                 var html = '';
                 if (res.data.length === 0) {
+<<<<<<< HEAD
                     html = '<tr><td colspan="9" style="text-align: center; color: #999;">暂无数据</td></tr>';
+=======
+                    html = '<tr><td colspan="8" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                 } else {
                     res.data.forEach(function(source) {
-                        var statusHtml = source.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                        var statusHtml = source.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                         html += '<tr>' +
+<<<<<<< HEAD
                             '<td>' + source.id + '</td>' +
                             '<td>' + (source.name || '-') + '</td>' +
                             '<td>' + (source.source_type || 'baidu_news') + '</td>' +
                             '<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (source.url_template || '') + '">' + (source.url_template || '-') + '</td>' +
                             '<td>' + (source.keyword_param || '-') + '</td>' +
+=======
+                            '<td class="col-id">' + source.id + '</td>' +
+                            '<td>' + (source.name || '<span class="cell-empty">-</span>') + '</td>' +
+                            '<td class="col-url" title="' + (source.url_template || '') + '"><span class="cell-url">' + (source.url_template || '<span class="cell-empty">-</span>') + '</span></td>' +
+                            '<td>' + (source.keyword_param || '<span class="cell-empty">-</span>') + '</td>' +
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                             '<td>' + (source.page_param || '-') + ' (' + (source.page_step || 0) + ')</td>' +
-                            '<td>' + statusHtml + '</td>' +
+                            '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + source.created_at + '</td>' +
-                            '<td>' +
-                                '<button class="layui-btn layui-btn-xs" onclick="editSource(' + source.id + ')">编辑</button> ' +
+                            '<td class="col-actions"><div class="action-btns">' +
+                                '<button class="layui-btn layui-btn-xs" onclick="editSource(' + source.id + ')">编辑</button>' +
                                 '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteSource(' + source.id + ', \'' + source.name + '\')">删除</button>' +
-                            '</td>' +
+                            '</div></td>' +
                         '</tr>';
                     });
                 }
@@ -413,7 +357,11 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function(xhr, status, error) {
+<<<<<<< HEAD
                 $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
+=======
+                $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
             }
         });
     }

@@ -17,7 +17,9 @@ class UserChatHandler(BaseHandler):
         if not self.current_user:
             self.redirect("/login")
             return
-        self.render("chat.html", title="智能问数", username=self.current_user)
+        user_info = self.get_user_info()
+        role_code = user_info.get("role_code", "") if user_info else ""
+        self.render("chat.html", title="智能问数", username=self.current_user, role_code=role_code)
 
 
 class UserRegisterApiHandler(BaseHandler):

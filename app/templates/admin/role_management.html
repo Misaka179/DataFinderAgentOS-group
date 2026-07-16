@@ -1,89 +1,5 @@
 {% extends "base.html" %}
 {% block body %}
-<style>
-.layui-layout-admin .layui-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.layui-layout-admin .layui-logo {
-    color: #fff !important;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: normal;
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 10px 0 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layui-side {
-    background: #1e293b !important;
-    top: 60px;
-}
-.layui-side-scroll {
-    width: 220px;
-}
-.layui-nav-tree {
-    background: #1e293b !important;
-}
-.layui-nav-tree .layui-nav-item a {
-    color: rgba(255,255,255,.75);
-    height: 46px;
-    line-height: 46px;
-}
-.layui-nav-tree .layui-nav-item a:hover {
-    background: rgba(255,255,255,.08);
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item.layui-this a {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item a i {
-    font-size: 16px !important;
-}
-.layui-body {
-    top: 60px;
-    left: 220px;
-    background: #f1f5f9;
-    padding: 20px;
-    overflow-y: auto;
-}
-.layui-footer {
-    left: 220px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
-    text-align: center;
-    line-height: 50px;
-}
-.search-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.data-table {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-}
-.pagination-bar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    text-align: center;
-}
-</style>
-
 <div class="layui-layout layui-layout-admin">
     <div class="layui-header">
         <div class="layui-logo">
@@ -91,6 +7,11 @@
             智能瞭望与问数后台
         </div>
         <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
             <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
@@ -136,10 +57,8 @@
 
     <div class="layui-body">
         <div class="search-bar">
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button class="layui-btn" id="addRoleBtn"><i class="layui-icon layui-icon-addition"></i> 新增角色</button>
-                </div>
+            <div class="search-actions">
+                <button class="layui-btn layui-btn-normal" id="addRoleBtn"><i class="layui-icon layui-icon-addition"></i> 新增角色</button>
             </div>
         </div>
 
@@ -147,16 +66,16 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>角色名称</th>
                         <th>角色编码</th>
                         <th>描述</th>
-                        <th>状态</th>
-                        <th>操作</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="roleTableBody">
-                    <tr><td colspan="6" style="text-align: center;">加载中...</td></tr>
+                    <tr><td colspan="6" class="text-muted" style="text-align:center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -166,7 +85,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -317,26 +236,27 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var data = res && res.data ? res.data : [];
                 var html = '';
                 data.forEach(function(role) {
-                    var statusHtml = role.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    var statusHtml = role.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                     var isDefault = role.code === 'admin' || role.code === 'user';
+                    var descHtml = role.description ? role.description : '<span class="cell-empty">-</span>';
                     html += '<tr>' +
                         '<td>' + role.id + '</td>' +
                         '<td>' + role.name + '</td>' +
                         '<td>' + role.code + '</td>' +
-                        '<td>' + (role.description || '-') + '</td>' +
+                        '<td>' + descHtml + '</td>' +
                         '<td>' + statusHtml + '</td>' +
-                        '<td>' +
-                            (!isDefault ? '<button class="layui-btn layui-btn-xs" onclick="editRole(' + role.id + ')">编辑</button> ' : '') +
-                            (!isDefault ? '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteRole(' + role.id + ', \'' + role.name + '\')">删除</button> ' : '') +
+                        '<td><div class="action-btns">' +
+                            (!isDefault ? '<button class="layui-btn layui-btn-xs" onclick="editRole(' + role.id + ')">编辑</button>' : '') +
+                            (!isDefault ? '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteRole(' + role.id + ', \'' + role.name + '\')">删除</button>' : '') +
                             '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="assignFunctions(' + role.id + ', \'' + role.name + '\')">分配功能</button>' +
-                        '</td>' +
+                        '</div></td>' +
                     '</tr>';
                 });
-                $('#roleTableBody').html(html || '<tr><td colspan="6" style="text-align: center; color: #999;">暂无数据</td></tr>');
+                $('#roleTableBody').html(html || '<tr><td colspan="6" class="text-muted" style="text-align:center;">暂无数据</td></tr>');
                 
                 // 渲染分页
                 var total = data.length;
-                var pages = Math.ceil(total / 20);
+                var pages = Math.max(Math.ceil(total / 20), 1);
                 var paginationHtml = '<div class="layui-box layui-laypage layui-laypage-default">';
                 paginationHtml += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
                 for (var i = 1; i <= pages; i++) {
@@ -347,7 +267,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Roles API Error:', status, error);
-                $('#roleTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#roleTableBody').html('<tr><td colspan="6" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }
@@ -507,7 +427,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var checked = assignedIds.indexOf(pf.id) > -1 ? 'checked' : '';
                 html += '<div style="margin: 8px 0;"><label style="font-weight: bold; cursor: pointer;">' +
                     '<input type="checkbox" class="func-checkbox" value="' + pf.id + '" ' + checked + '> ' +
-                    (pf.icon ? '<i class="layui-icon ' + pf.icon + '"></i> ' : '') + pf.name +
+                    (pf.icon ? '<i class="icon-base layui-icon ' + pf.icon + '"></i> ' : '') + pf.name +
                     '</label></div>';
                 // 子功能
                 var childFuncs = funcs.filter(function(f) { return f.parent_id == pf.id; });
@@ -515,7 +435,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                     var checked2 = assignedIds.indexOf(cf.id) > -1 ? 'checked' : '';
                     html += '<div style="margin: 4px 0 4px 30px;"><label style="cursor: pointer;">' +
                         '<input type="checkbox" class="func-checkbox" value="' + cf.id + '" ' + checked2 + '> ' +
-                        (cf.icon ? '<i class="layui-icon ' + cf.icon + '"></i> ' : '') + cf.name +
+                        (cf.icon ? '<i class="icon-base layui-icon ' + cf.icon + '"></i> ' : '') + cf.name +
                         '</label></div>';
                 });
             });

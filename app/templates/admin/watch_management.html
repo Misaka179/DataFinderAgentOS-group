@@ -1,64 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
 <style>
-.layui-layout-admin .layui-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-}
-.layui-layout-admin .layui-logo {
-    color: #fff !important;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: normal;
-    width: 220px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 10px 0 16px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layui-side {
-    background: #1e293b !important;
-    top: 60px;
-}
-.layui-side-scroll {
-    width: 220px;
-}
-.layui-nav-tree {
-    background: #1e293b !important;
-}
-.layui-nav-tree .layui-nav-item a {
-    color: rgba(255,255,255,.75);
-    height: 46px;
-    line-height: 46px;
-}
-.layui-nav-tree .layui-nav-item a:hover {
-    background: rgba(255,255,255,.08);
-    color: #fff;
-}
-.layui-nav-tree .layui-nav-item.layui-this a {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-    color: #fff;
-}
-.layui-body {
-    top: 60px;
-    left: 220px;
-    background: #f1f5f9;
-    padding: 20px;
-    overflow-y: auto;
-}
-.layui-footer {
-    left: 220px;
-    background: #fff;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
-    text-align: center;
-    line-height: 50px;
-}
-
 /* ===== 瞭望管理独立风格 ===== */
 .watch-container {
     max-width: 1400px;
@@ -523,6 +465,11 @@
         </div>
         <ul class="layui-nav layui-layout-right">
             <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
+            <li class="layui-nav-item">
                 <a href="javascript:;">
                     <i class="layui-icon layui-icon-username"></i>
                     {{ username }}
@@ -643,7 +590,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
