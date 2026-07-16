@@ -727,6 +727,10 @@ layui.use(['layer', 'element', 'jquery'], function(){
                                 '<span class="source-method">' + method + '</span>' +
                             '</div>' +
                             '<div class="source-params">' +
+                                '<div class="param-item">' +
+                                    '<span class="param-label">来源类型</span>' +
+                                    '<span class="param-value">' + (source.source_type || 'baidu_news') + '</span>' +
+                                '</div>' +
                                 '<div class="param-item full-width">' +
                                     '<span class="param-label">URL模板</span>' +
                                     '<span class="param-value" title="' + urlTemplate.replace(/"/g, '&quot;') + '">' + urlTemplate + '</span>' +

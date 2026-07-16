@@ -10,6 +10,7 @@ from app.controllers.base import BaseHandler
 from app.models.watch_source import WatchSourceRepository
 from app.models.watch_data import WatchDataRepository
 from app.models.data_warehouse import DataWarehouseRepository
+from app.parsers import ParserRegistry
 
 
 class WatchManagementHandler(BaseHandler):
@@ -79,10 +80,18 @@ class WatchCollectApiHandler(BaseHandler):
         page_step = source.get("page_step", 10)
         headers_raw = source.get("headers", "{}")
 
-        # 计算分页偏移值: (page - 1) * page_step
+        # Build URL — only append query params when keyword_param/page_param are non-empty
+        # (RSS feeds have no query parameters, JSON APIs use their own scheme)
         page_offset = (page - 1) * page_step
-        params = {keyword_param: keyword, page_param: str(page_offset)}
-        url = url_template + urllib.parse.urlencode(params)
+        params = {}
+        if keyword_param:
+            params[keyword_param] = keyword
+        if page_param:
+            params[page_param] = str(page_offset)
+        if params:
+            url = url_template + urllib.parse.urlencode(params)
+        else:
+            url = url_template
 
         # 解析headers
         try:
@@ -107,95 +116,11 @@ class WatchCollectApiHandler(BaseHandler):
             print(f"HTTP请求失败: {e}")
             return []
 
-        # 解析百度新闻HTML
-        return WatchCollectApiHandler._parse_baidu_news(html, source["id"], source["name"], keyword)
+        # Dispatch to the appropriate parser based on source_type
+        source_type = source.get("source_type", "baidu_news")
+        parser_cls = ParserRegistry.get_parser(source_type)
+        return parser_cls.parse(html, source["id"], source["name"], keyword)
 
-    @staticmethod
-    def _parse_baidu_news(html, source_id, source_name, keyword):
-        """解析百度新闻搜索结果HTML"""
-        items = []
-
-        # 百度新闻结果模式
-        # 1. 匹配 <div class="result"> 或 <div class="result-op">...<h3>...<a>标题</a>
-        # 2. 匹配 <h3 class="news-title">...<a>标题</a>
-        # 3. 匹配摘要内容
-
-        # 尝试多种解析模式
-
-        # 模式1: 匹配 h3 内的链接 (百度新闻典型结构)
-        title_links = re.findall(
-            r'<h3[^>]*>.*?<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>',
-            html, re.DOTALL
-        )
-
-        # 模式2: 匹配 news-title_1 _2LjNc 等class
-        if not title_links:
-            title_links = re.findall(
-                r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>',
-                html, re.DOTALL
-            )
-
-        # 提取摘要 (<span class="content-right_8Zs40"> 或 <div class="c-abstract">)
-        summaries = re.findall(
-            r'<span[^>]*class="[^"]*content-right[^"]*"[^>]*>(.*?)</span>',
-            html, re.DOTALL
-        )
-        if not summaries:
-            summaries = re.findall(
-                r'<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>(.*?)</div>',
-                html, re.DOTALL
-            )
-        if not summaries:
-            summaries = re.findall(
-                r'<span[^>]*class="[^"]*abstract[^"]*"[^>]*>(.*?)</span>',
-                html, re.DOTALL
-            )
-
-        # 去重
-        seen_titles = set()
-
-        for i, (url, title) in enumerate(title_links):
-            # 清理标题中的HTML标签
-            title_clean = re.sub(r'<[^>]+>', '', title).strip()
-            if not title_clean:
-                continue
-
-            # 跳过非新闻链接
-            if title_clean in seen_titles:
-                continue
-            if len(title_clean) < 4:
-                continue
-
-            seen_titles.add(title_clean)
-
-            # 规范化URL：处理协议相对路径(//...)和相对路径
-            normalized_url = url.strip()
-            if normalized_url.startswith("//"):
-                normalized_url = "https:" + normalized_url
-            elif normalized_url.startswith("/"):
-                normalized_url = "https://www.baidu.com" + normalized_url
-            elif not normalized_url.startswith("http://") and not normalized_url.startswith("https://"):
-                normalized_url = "https://" + normalized_url
-
-            # 获取对应的摘要
-            summary = ""
-            if i < len(summaries):
-                summary = re.sub(r'<[^>]+>', '', summaries[i]).strip()
-                summary = re.sub(r'\s+', ' ', summary)[:200]
-
-            items.append({
-                "source_id": source_id,
-                "keyword": keyword,
-                "title": title_clean,
-                "url": normalized_url,
-                "summary": summary,
-                "source_name": source_name
-            })
-
-            if len(items) >= 50:  # 限制最多50条
-                break
-
-        return items
 
 
 class WatchCollectedDataApiHandler(BaseHandler):

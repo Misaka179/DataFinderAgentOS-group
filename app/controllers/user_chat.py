@@ -307,10 +307,11 @@ class UserChatApiHandler(BaseHandler):
             if analysis_result:
                 analysis_text = analysis_result
 
-        # 检测是否需要图表
+        # 检测是否需要图表 — 始终尝试，_prepare_chart_data 内部判断数据是否适合做图
         chart_data = None
-        if intent in ("chart_request", "analysis", "report") and data:
+        if data:
             chart_data = self._prepare_chart_data(data, columns)
+            print(f"[PREPARE_CHART] data_rows={len(data)} columns={columns} chart={chart_data is not None} type={chart_data.get('chart_type') if chart_data else 'N/A'}")
 
         # 最终输出：如果LLM分析成功，用分析结果 + 数据表格
         if analysis_text:
@@ -318,11 +319,15 @@ class UserChatApiHandler(BaseHandler):
         else:
             result_text = basic_text
 
+        # 准备表格数据（始终生成）
+        table_data = self._prepare_table_data(data, columns)
+
         return {
             "success": True,
             "data": result_text,
             "data_rows": data,
             "chart_data": chart_data,
+            "table_data": table_data,
             "analysis_text": analysis_text or basic_text,
             "basic_text": basic_text,
             "row_count": row_count,
@@ -331,15 +336,35 @@ class UserChatApiHandler(BaseHandler):
             "sql": sql
         }
 
+    # 时间字段关键词（用于检测时间序列）
+    TIME_COLUMN_KEYWORDS = ["time", "date", "datetime", "created", "updated", "collected",
+                            "时间", "日期", "创建", "更新", "采集"]
+    # 分类字段关键词
+    CATEGORY_COLUMN_KEYWORDS = ["name", "source", "category", "type", "status", "title",
+                                "名称", "来源", "分类", "类型", "状态", "标题"]
+    # 数值字段关键词
+    NUMERIC_COLUMN_KEYWORDS = ["count", "total", "sum", "amount", "num", "size", "avg",
+                               "数量", "总数", "合计", "平均", "计数", "统计"]
+
     def _prepare_chart_data(self, data, columns):
-        """根据数据准备图表配置"""
+        """根据数据准备图表配置 — 支持 line/pie/bar 三种图表类型"""
         if not data or not columns:
             return None
-        # 尝试找出分类列和数值列
+
+        # 分类列：时间列 vs 普通分类列 vs 数值列
+        time_cols = []
         numeric_cols = []
         category_cols = []
+
         for col in columns:
-            # 检查是否有数值数据
+            col_lower = col.lower()
+            # 检测时间字段
+            is_time = any(kw in col_lower for kw in self.TIME_COLUMN_KEYWORDS)
+            if is_time:
+                time_cols.append(col)
+                continue
+
+            # 检测数值字段
             has_number = any(
                 isinstance(row.get(col), (int, float)) or
                 (isinstance(row.get(col), str) and row[col].replace('.', '').replace('-', '').isdigit())
@@ -350,41 +375,115 @@ class UserChatApiHandler(BaseHandler):
             else:
                 category_cols.append(col)
 
-        if not category_cols or not numeric_cols:
+        if not numeric_cols:
             return None
 
-        cat_col = category_cols[0]
-        num_col = numeric_cols[0]
+        num_col = numeric_cols[0]  # 首选数值列
 
-        # 准备ECharts数据
+        # 决策图表类型
+        if time_cols:
+            # 有时间字段 → 折线图
+            return self._build_line_chart(data, time_cols[0], num_col, columns)
+        elif category_cols and len(set(str(r.get(category_cols[0], "")) for r in data[:20])) <= 6:
+            # 分类 ≤ 6 → 饼图
+            return self._build_pie_chart(data, category_cols[0], num_col)
+        elif category_cols:
+            # 分类多 → 柱状图
+            return self._build_bar_chart(data, category_cols[0], num_col)
+        elif time_cols:
+            return self._build_line_chart(data, time_cols[0], num_col, columns)
+        else:
+            # 只有数值列，无分类 → 柱状图
+            return self._build_bar_chart(data, columns[0], num_col)
+
+    def _build_line_chart(self, data, time_col, num_col, all_columns):
+        """构建折线图配置（时间序列）"""
+        x_data = []
+        values = []
+        for row in data[:30]:
+            t_val = str(row.get(time_col, ""))
+            # 截取日期部分 (YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS → YYYY-MM-DD)
+            if len(t_val) >= 10:
+                t_val = t_val[:10]
+            elif len(t_val) > 16:
+                t_val = t_val[:16]
+            n_val = self._to_number(row.get(num_col, 0))
+            x_data.append(t_val)
+            values.append(n_val)
+
+        return {
+            "chart_type": "line",
+            "title": f"{num_col} 趋势",
+            "x_data": x_data,
+            "series": [{"name": num_col, "data": values}],
+            "category_label": time_col,
+            "value_label": num_col
+        }
+
+    def _build_pie_chart(self, data, cat_col, num_col):
+        """构建饼图配置"""
         categories = []
         values = []
         for row in data[:20]:
-            cat_val = row.get(cat_col, "")
-            num_val = row.get(num_col, 0)
-            if isinstance(num_val, str):
-                try:
-                    num_val = float(num_val.replace('%', '').replace(',', ''))
-                except (ValueError, TypeError):
-                    num_val = 0
-            categories.append(str(cat_val)[:20])
-            values.append(num_val)
+            cat_val = str(row.get(cat_col, ""))[:20]
+            n_val = self._to_number(row.get(num_col, 0))
+            categories.append(cat_val)
+            values.append(n_val)
 
-        # 根据数据特点选择合适的图表类型
-        if len(categories) <= 1:
+        if len(set(categories)) <= 1:
             return None
-        elif len(categories) <= 8:
-            chart_type = "pie"  # 少类别用饼图
-        else:
-            chart_type = "bar"  # 多类别用柱状图
 
         return {
-            "chart_type": chart_type,
+            "chart_type": "pie",
+            "title": f"{cat_col} 分布",
+            "categories": categories,
+            "values": values,
+            "category_label": cat_col,
+            "value_label": num_col
+        }
+
+    def _build_bar_chart(self, data, cat_col, num_col):
+        """构建柱状图配置"""
+        categories = []
+        values = []
+        for row in data[:20]:
+            cat_val = str(row.get(cat_col, ""))[:20]
+            n_val = self._to_number(row.get(num_col, 0))
+            categories.append(cat_val)
+            values.append(n_val)
+
+        if len(categories) <= 1:
+            return None
+
+        return {
+            "chart_type": "bar",
             "title": f"{cat_col} - {num_col}",
             "categories": categories,
             "values": values,
             "category_label": cat_col,
             "value_label": num_col
+        }
+
+    @staticmethod
+    def _to_number(val):
+        """将值转换为数字，失败返回0"""
+        if isinstance(val, (int, float)):
+            return val
+        if isinstance(val, str):
+            try:
+                return float(val.replace('%', '').replace(',', '').strip())
+            except (ValueError, TypeError):
+                return 0
+        return 0
+
+    @staticmethod
+    def _prepare_table_data(data, columns, max_rows=100):
+        """将查询结果格式化为前端表格数据"""
+        return {
+            "columns": columns,
+            "rows": data[:max_rows],
+            "total_rows": len(data),
+            "display_rows": min(len(data), max_rows)
         }
     async def post(self):
         if not self.current_user:
@@ -457,14 +556,21 @@ class UserChatApiHandler(BaseHandler):
             if last_msg:
                 intent = self._detect_intent(last_msg)
                 if intent in ("data_query", "chart_request", "analysis", "relationship", "report"):
-                    # 如果需要模型又还没确定，获取默认模型
+                    # 数据查询模型获取：优先用户选择的 model_id，再 fallback 到默认模型
                     if not model:
-                        model = AiModelRepository.get_default()
+                        if model_id:
+                            model = AiModelRepository.get_by_id(int(model_id))
+                        if not model:
+                            model = AiModelRepository.get_default()
                     if model:
                         data_result = await self._handle_data_query(msg_list, model)
                         if data_result and data_result.get("success"):
                             result_text = data_result["data"]
                             chart_data = data_result.get("chart_data")
+                            table_data = data_result.get("table_data")
+                            data_intent = data_result.get("intent", "data_query")
+                            # DEBUG
+                            print(f"[DATA_QUERY] intent={data_intent} chart={chart_data is not None} chart_type={chart_data.get('chart_type') if chart_data else 'N/A'} table_rows={table_data.get('total_rows') if table_data else 0} row_count={data_result.get('row_count')}")
                             # 通过SSE返回数据查询结果
                             self.set_header("Content-Type", "text/event-stream")
                             self.set_header("Cache-Control", "no-cache")
@@ -476,6 +582,8 @@ class UserChatApiHandler(BaseHandler):
                             card_fields = []
                             if chart_data:
                                 extra_data["chart"] = chart_data
+                            if table_data:
+                                extra_data["table"] = table_data
                             if data_result.get("row_count", 0) > 0 and data_result.get("columns"):
                                 card_fields = []
                                 data_rows = data_result.get("data_rows", [])
@@ -487,22 +595,26 @@ class UserChatApiHandler(BaseHandler):
                                         if val:
                                             cn_name = self.CN_COLUMN_NAMES.get(col, col)
                                             card_fields.append({"key": col, "label": cn_name, "value": str(val)})
-                                elif data_rows and len(data_rows) > 1:
-                                    # 多条记录显示汇总统计
-                                    for col in data_result["columns"][:5]:
-                                        cn_name = self.CN_COLUMN_NAMES.get(col, col)
-                                        vals = [r.get(col) for r in data_rows if r.get(col)]
-                                        if vals:
-                                            card_fields.append({"key": col, "label": cn_name, "value": f"共{len(vals)}项"})
                                 if card_fields:
                                     extra_data["cardFields"] = card_fields
                                     extra_data["cardTitle"] = "数据概览"
+
+                            # 决定响应格式：chart > table > data_card > text
+                            if chart_data:
+                                response_format = "chart_card"
+                            elif table_data and table_data.get("display_rows", 0) > 0:
+                                response_format = "table"
+                            elif card_fields:
+                                response_format = "data_card"
+                            else:
+                                response_format = "text"
+
                             response_data = json.dumps({
                                 "choices": [{"delta": {"content": result_text}, "index": 0}],
                                 "employee_name": "数据分析",
-                                "employee_response_format": "data_card" if card_fields else ("chart_card" if chart_data else "text"),
+                                "employee_response_format": response_format,
                                 "extra_data": extra_data,
-                                "intent": data_result.get("intent", "data_query"),
+                                "intent": data_intent,
                                 "row_count": data_result.get("row_count", 0)
                             })
                             self.write(f"data: {response_data}\n\n")

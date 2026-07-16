@@ -340,6 +340,56 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border: 1px solid var(--border-color);
 }
 
+/* 数据结果表格 */
+.data-table-wrapper {
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+.data-table-header {
+  background: #f1f5f9;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+.table-scroll {
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.data-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-result-table th {
+  background: #f8fafc;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.data-result-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-result-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+.data-result-table tr:hover {
+  background: #e0f2fe;
+}
+
 /* 欢迎消息 */
 .welcome-message {
   text-align: center; padding: 80px 20px 40px;
@@ -684,3 +734,61 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   .auth-left { padding: 20px; }
   .auth-card { max-width: 100%; padding: 28px 24px; }
 }
+
+/* ============================================================
+   对话 PDF 导出 UI
+   ============================================================ */
+
+/* 操作按钮行 */
+.sidebar-tasks-actions {
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* 导出按钮 */
+#exportModeBtn {
+  background: none; border: 1px solid var(--primary);
+  border-radius: 6px; padding: 3px 10px; font-size: 12px;
+  color: var(--primary); cursor: pointer;
+  transition: var(--transition);
+}
+#exportModeBtn:hover {
+  background: var(--primary); color: #fff;
+}
+
+/* 选择模式操作栏 */
+.export-actions {
+  display: none; align-items: center; gap: 8px;
+  padding: 6px 16px; background: var(--primary-light);
+  border-bottom: 1px solid var(--border-color);
+}
+.export-actions.visible { display: flex; }
+.select-all-label {
+  font-size: 12px; color: var(--text-primary); cursor: pointer;
+  user-select: none; display: flex; align-items: center; gap: 4px;
+}
+.btn-export-confirm, .btn-export-cancel {
+  padding: 4px 12px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; transition: var(--transition);
+}
+.btn-export-confirm {
+  background: var(--primary); color: #fff; border: none;
+}
+.btn-export-confirm:hover { background: var(--primary-dark); }
+.btn-export-cancel {
+  background: #fff; color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.btn-export-cancel:hover { background: var(--bg-body); }
+
+/* 导出复选框 */
+.task-checkbox {
+  width: 16px; height: 16px; flex-shrink: 0;
+  accent-color: var(--primary); cursor: pointer;
+  display: none;
+}
+.export-mode .task-checkbox { display: block; }
+.export-mode .task-delete { display: none !important; }
+.export-mode .task-item { cursor: pointer; }
+
+/* 选择模式下禁用删除hover */
+.export-mode .task-item:hover .task-delete { display: none !important; }

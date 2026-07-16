@@ -118,7 +118,13 @@ def init_db():
             )
             """
         )
-        
+
+        # Migration: add source_type column for multi-source parser dispatch
+        try:
+            conn.execute("ALTER TABLE watch_sources ADD COLUMN source_type TEXT NOT NULL DEFAULT 'baidu_news'")
+        except Exception:
+            pass
+
         # 瞭望采集数据表
         conn.execute(
             """

@@ -69,17 +69,17 @@ class WatchSourceRepository:
             conn.close()
 
     @staticmethod
-    def create(name, url_template, method, headers, keyword_param, page_param, page_step):
+    def create(name, url_template, method, headers, keyword_param, page_param, page_step, source_type="baidu_news"):
         """创建瞭源"""
         conn = get_connection()
         try:
             if isinstance(headers, dict):
                 headers = json.dumps(headers, ensure_ascii=False)
             conn.execute(
-                """INSERT INTO watch_sources 
-                (name, url_template, method, headers, keyword_param, page_param, page_step) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (name, url_template, method, headers, keyword_param, page_param, page_step)
+                """INSERT INTO watch_sources
+                (name, url_template, method, headers, keyword_param, page_param, page_step, source_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (name, url_template, method, headers, keyword_param, page_param, page_step, source_type)
             )
             conn.commit()
             return True
@@ -94,7 +94,7 @@ class WatchSourceRepository:
         conn = get_connection()
         try:
             allowed = {"name", "url_template", "method", "headers",
-                       "keyword_param", "page_param", "page_step", "status"}
+                       "keyword_param", "page_param", "page_step", "status", "source_type"}
             updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
 
             if not updates:

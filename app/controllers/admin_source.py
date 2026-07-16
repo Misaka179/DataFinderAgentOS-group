@@ -61,6 +61,7 @@ class SourceCreateApiHandler(BaseHandler):
         keyword_param = self.get_argument("keyword_param", "word")
         page_param = self.get_argument("page_param", "pn")
         page_step = int(self.get_argument("page_step", 10))
+        source_type = self.get_argument("source_type", "baidu_news")
 
         if not name or not url_template:
             self.set_status(400)
@@ -76,7 +77,7 @@ class SourceCreateApiHandler(BaseHandler):
             self.write(json.dumps({"success": False, "message": "Headers格式错误，需为JSON格式"}))
             return
 
-        if WatchSourceRepository.create(name, url_template, method, headers, keyword_param, page_param, page_step):
+        if WatchSourceRepository.create(name, url_template, method, headers, keyword_param, page_param, page_step, source_type):
             self.write(json.dumps({"success": True, "message": "瞭源创建成功"}))
         else:
             self.set_status(400)
@@ -96,6 +97,7 @@ class SourceUpdateApiHandler(BaseHandler):
         page_param = self.get_argument("page_param", "")
         page_step = self.get_argument("page_step", "")
         status = self.get_argument("status", "")
+        source_type = self.get_argument("source_type", "")
 
         updates = {}
         if name:
@@ -121,6 +123,8 @@ class SourceUpdateApiHandler(BaseHandler):
             updates["page_step"] = int(page_step)
         if status:
             updates["status"] = int(status)
+        if source_type:
+            updates["source_type"] = source_type
 
         if WatchSourceRepository.update(int(source_id), **updates):
             self.write(json.dumps({"success": True, "message": "瞭源更新成功"}))

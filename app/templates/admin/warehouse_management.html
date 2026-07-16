@@ -67,10 +67,10 @@
                             <label class="layui-form-label">&nbsp;</label>
                             <div class="layui-input-block">
                                 <div class="search-actions">
-                                    <button class="layui-btn btn-search" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
-                                    <button class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
-                                    <button class="layui-btn layui-btn-danger" id="batchDeleteBtn" disabled><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
-                                    <button class="layui-btn layui-btn-normal" id="batchDeepCollectBtn" disabled><i class="layui-icon layui-icon-export"></i> 批量深度采集</button>
+                                    <button type="button" class="layui-btn btn-search" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="button" class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                    <button type="button" class="layui-btn layui-btn-danger" id="batchDeleteBtn" disabled><i class="layui-icon layui-icon-delete"></i> 批量删除</button>
+                                    <button type="button" class="layui-btn layui-btn-normal" id="batchDeepCollectBtn" disabled><i class="layui-icon layui-icon-export"></i> 批量深度采集</button>
                                     <span class="batch-info" id="batchInfo"></span>
                                 </div>
                             </div>
@@ -203,12 +203,20 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 var html = '';
                 res.data.forEach(function(item, index) {
                     var rowNum = (res.page - 1) * res.page_size + index + 1;
-                    var deepHtml = item.is_deep_collected == 1
-                        ? '<span class="badge-active">是</span>'
-                        : '<span class="badge-inactive">否</span>';
-                    var collectBtn = item.is_deep_collected == 1
-                        ? '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="viewDeepResult(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看结果</button>'
-                        : '';
+                    var isRunning = item.task_status === 'running' || item.task_status === 'pending';
+                    var deepHtml = isRunning
+                        ? '<span class="layui-badge layui-bg-blue">采集中</span>'
+                        : item.is_deep_collected == 1
+                        ? '<span class="layui-badge layui-bg-green">是</span>'
+                        : '<span class="layui-badge layui-bg-gray">否</span>';
+                    var collectBtn = '';
+                    if (isRunning && item.task_id) {
+                        collectBtn = '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="reopenDeepPanel(' + item.task_id + ',' + item.id + ')"><i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i> 查看进度</button> ';
+                    } else if (item.is_deep_collected == 1) {
+                        collectBtn = '<button class="layui-btn layui-btn-xs layui-btn-warm" onclick="viewDeepResult(' + item.id + ')"><i class="layui-icon layui-icon-about"></i> 查看结果</button> ';
+                    } else {
+                        collectBtn = '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="deepCollect(' + item.id + ')"><i class="layui-icon layui-icon-export"></i> 深度采集</button> ';
+                    }
                     html += '<tr>' +
                         '<td><input type="checkbox" class="wh-checkbox" data-id="' + item.id + '" onchange="updateBatchBtnState()"></td>' +
                         '<td>' + rowNum + '</td>' +
@@ -267,6 +275,18 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             },
             error: function() { layer.msg('获取详情失败', {icon:2}); }
         });
+    };
+
+    // 重新打开运行中任务的进度面板（从表格按钮触发）
+    window.reopenDeepPanel = function(taskId, warehouseId) {
+        var title = '-';
+        $('.wh-checkbox').each(function() {
+            if ($(this).data('id') == warehouseId) {
+                title = $(this).closest('tr').find('.title-cell').text() || '-';
+                return false;
+            }
+        });
+        openDeepPanel(taskId, title);
     };
 
     // 深度采集任务面板内容模板
@@ -532,20 +552,30 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
         });
     };
 
-    // 搜索
+    // 搜索 — 阻止表单提交
+    $('.search-bar form').on('submit', function(e) {
+        e.preventDefault();
+        currentPage = 1;
+        loadData(1, $('#searchInput').val().trim());
+        return false;
+    });
     $('#searchBtn').on('click', function() {
         currentPage = 1;
-        loadData(1, $('#searchInput').val());
+        loadData(1, $('#searchInput').val().trim());
         return false;
     });
     $('#resetBtn').on('click', function() {
         $('#searchInput').val('');
         currentPage = 1;
-        loadData(1);
+        loadData(1, '');
         return false;
     });
     $('#searchInput').on('keydown', function(e) {
-        if (e.key === 'Enter') { currentPage = 1; loadData(1, $(this).val()); }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            currentPage = 1;
+            loadData(1, $(this).val().trim());
+        }
     });
 
     // 全选/全不选
@@ -678,6 +708,13 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
     $('#batchDeepCollectBtn').on('click', function() {
         var ids = getSelectedIds();
         if (ids.length === 0) { layer.msg('请先选择数据', {icon:2}); return; }
+        // 在提交前收集每个ID对应的标题
+        var titleMap = {};
+        $('.wh-checkbox:checked').each(function() {
+            var cid = $(this).data('id');
+            var $tr = $(this).closest('tr');
+            titleMap[cid] = $tr.find('.title-cell').text() || '-';
+        });
         var idx = layer.load(1, {shade: [0.3, '#fff']});
         $.ajax({
             url: '/api/warehouse/batch-deep-collect',
@@ -693,30 +730,11 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                     $('#selectAllCheckbox').prop('checked', false);
                     $('.wh-checkbox').prop('checked', false);
                     updateBatchBtnState();
-                    // 构造任务信息列表
+                    // 构造任务信息列表（使用提价前收集的标题）
                     if (res.task_ids && res.task_ids.length > 0) {
-                        var taskInfos = [];
-                        res.task_ids.forEach(function(tid) {
-                            var title = '-';
-                            var wid = 0;
-                            $('.wh-checkbox').each(function() {
-                                var cid = $(this).data('id');
-                                if (ids.indexOf(cid) > -1 && taskInfos.length === 0) {
-                                    var $tr = $(this).closest('tr');
-                                    title = $tr.find('.title-cell').text() || '-';
-                                    wid = cid;
-                                }
-                            });
-                            // 简化：用索引匹配
-                            var idx2 = res.task_ids.indexOf(tid);
-                            var wid2 = ids[idx2] || 0;
-                            var title2 = '-';
-                            $('.wh-checkbox').each(function() {
-                                if ($(this).data('id') == wid2) {
-                                    title2 = $(this).closest('tr').find('.title-cell').text() || '-';
-                                }
-                            });
-                            taskInfos.push({task_id: tid, warehouse_id: wid2, title: title2});
+                        var taskInfos = res.task_ids.map(function(tid, i) {
+                            var wid = ids[i] || 0;
+                            return {task_id: tid, warehouse_id: wid, title: titleMap[wid] || '-'};
                         });
                         setTimeout(function() {
                             openBatchPanel(taskInfos);

@@ -14,6 +14,7 @@ from app.controllers.user_chat import (
     UserChatApiHandler
 )
 from app.controllers.multimodal import ImageGenHandler, VideoGenHandler
+from app.controllers.user_export import UserExportPdfApiHandler
 from app.controllers.home import (IndexHandler, GestureHandler, AdminIndexHandler, DashboardStatsApiHandler,
     DataScreenHandler, DataScreenStatsApiHandler, DataScreenWordcloudApiHandler,
     DataScreenTrendsApiHandler, DataScreenSourceApiHandler, DataScreenSankeyApiHandler,
@@ -260,6 +261,7 @@ def webapp():
         (r"/api/user/chat", UserChatApiHandler),
         (r"/api/user/image-gen", ImageGenHandler),
         (r"/api/user/video-gen", VideoGenHandler),
+        (r"/api/user/export/pdf", UserExportPdfApiHandler),
     ],
     **settings
     )
@@ -432,13 +434,35 @@ if __name__ == '__main__':
                 "sec-ch-ua-platform": "Windows"
             }
             conn.execute(
-                """INSERT INTO watch_sources (name, url_template, method, headers, keyword_param, page_param, page_step, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO watch_sources (name, url_template, method, headers, keyword_param, page_param, page_step, status, source_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 ("百度新闻", "https://www.baidu.com/s?rtt=1&bsst=1&cl=2&tn=news&rsv_dl=ns_pc&",
-                 "GET", json.dumps(baidu_headers, ensure_ascii=False), "word", "pn", 10, 1)
+                 "GET", json.dumps(baidu_headers, ensure_ascii=False), "word", "pn", 10, 1, "baidu_news")
             )
-            print("✓ 已初始化「百度新闻」瞭源规则")
-        
+            print("✓ 已初始化「百度新闻」瞭源规则 (baidu_news)")
+
+        # 初始化 Hacker News JSON API 瞭源（如果不存在）
+        hn_exists = conn.execute("SELECT id FROM watch_sources WHERE name='Hacker News'").fetchone()
+        if not hn_exists:
+            conn.execute(
+                """INSERT INTO watch_sources (name, url_template, method, headers, keyword_param, page_param, page_step, status, source_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ("Hacker News", "https://hn.algolia.com/api/v1/search?",
+                 "GET", "{}", "query", "page", 1, 1, "json_api")
+            )
+            print("✓ 已初始化「Hacker News」瞭源规则 (json_api)")
+
+        # 初始化 36氪 RSS 瞭源（如果不存在）
+        kr36_exists = conn.execute("SELECT id FROM watch_sources WHERE name='36氪 RSS'").fetchone()
+        if not kr36_exists:
+            conn.execute(
+                """INSERT INTO watch_sources (name, url_template, method, headers, keyword_param, page_param, page_step, status, source_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ("36氪 RSS", "https://36kr.com/feed",
+                 "GET", "{}", "", "", 0, 1, "rss")
+            )
+            print("✓ 已初始化「36氪 RSS」瞭源规则 (rss)")
+
         # 初始化模型引擎功能（如果不存在）
         me_func = conn.execute("SELECT id FROM functions WHERE code='model_engine'").fetchone()
         if not me_func:

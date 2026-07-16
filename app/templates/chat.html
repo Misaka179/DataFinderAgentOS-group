@@ -28,13 +28,22 @@
     </div>
 
     <!-- C区：任务/历史列表 -->
-    <div class="sidebar-tasks">
+    <div class="sidebar-tasks" id="sidebarTasks">
       <div class="sidebar-tasks-header">
         <span>对话历史</span>
-        <div>
+        <div class="sidebar-tasks-actions">
+          <button id="exportModeBtn" title="导出对话">📥 导出</button>
           <button id="clearHistoryBtn" title="清空历史">清空</button>
           <button id="newChatBtn" title="新建对话">+ 新建</button>
         </div>
+      </div>
+      <!-- 选择模式操作栏 -->
+      <div class="export-actions" id="exportActions">
+        <label class="select-all-label">
+          <input type="checkbox" id="selectAllCheckbox"> 全选
+        </label>
+        <button class="btn-export-confirm" id="exportConfirmBtn">确认导出</button>
+        <button class="btn-export-cancel" id="exportCancelBtn">取消</button>
       </div>
       <div id="taskList"></div>
     </div>

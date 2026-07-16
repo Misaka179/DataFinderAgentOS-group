@@ -101,6 +101,7 @@
                     <tr>
                         <th class="col-id">ID</th>
                         <th>名称</th>
+                        <th>来源类型</th>
                         <th>URL模板</th>
                         <th>关键词参数</th>
                         <th>分页参数</th>
@@ -110,7 +111,7 @@
                     </tr>
                 </thead>
                 <tbody id="sourceTableBody">
-                    <tr><td colspan="8" class="text-muted" style="text-align:center;">加载中...</td></tr>
+                    <tr><td colspan="9" class="text-muted" style="text-align: center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -133,6 +134,16 @@
             <label class="layui-form-label">名称</label>
             <div class="layui-input-block">
                 <input type="text" name="name" lay-verify="required" placeholder="例如：百度新闻" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">来源类型</label>
+            <div class="layui-input-block">
+                <select name="source_type" lay-verify="required">
+                    <option value="baidu_news">百度新闻 (HTML)</option>
+                    <option value="rss">RSS/Atom 订阅</option>
+                    <option value="json_api">JSON API</option>
+                </select>
             </div>
         </div>
         <div class="layui-form-item">
@@ -302,20 +313,36 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             },
             success: function(res) {
                 if (!res || !res.data) {
+<<<<<<< HEAD
+                    $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">数据格式错误</td></tr>');
+=======
                     $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">数据格式错误</td></tr>');
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                     return;
                 }
                 var html = '';
                 if (res.data.length === 0) {
+<<<<<<< HEAD
+                    html = '<tr><td colspan="9" style="text-align: center; color: #999;">暂无数据</td></tr>';
+=======
                     html = '<tr><td colspan="8" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                 } else {
                     res.data.forEach(function(source) {
                         var statusHtml = source.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                         html += '<tr>' +
+<<<<<<< HEAD
+                            '<td>' + source.id + '</td>' +
+                            '<td>' + (source.name || '-') + '</td>' +
+                            '<td>' + (source.source_type || 'baidu_news') + '</td>' +
+                            '<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (source.url_template || '') + '">' + (source.url_template || '-') + '</td>' +
+                            '<td>' + (source.keyword_param || '-') + '</td>' +
+=======
                             '<td class="col-id">' + source.id + '</td>' +
                             '<td>' + (source.name || '<span class="cell-empty">-</span>') + '</td>' +
                             '<td class="col-url" title="' + (source.url_template || '') + '"><span class="cell-url">' + (source.url_template || '<span class="cell-empty">-</span>') + '</span></td>' +
                             '<td>' + (source.keyword_param || '<span class="cell-empty">-</span>') + '</td>' +
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                             '<td>' + (source.page_param || '-') + ' (' + (source.page_step || 0) + ')</td>' +
                             '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + source.created_at + '</td>' +
@@ -330,7 +357,11 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function(xhr, status, error) {
+<<<<<<< HEAD
+                $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
+=======
                 $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
+>>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
             }
         });
     }
@@ -398,7 +429,8 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             'keyword_param': 'word',
             'page_param': 'pn',
             'page_step': '10',
-            'status': '1'
+            'status': '1',
+            'source_type': 'baidu_news'
         });
         openIndex = layer.open({
             type: 1,
@@ -432,7 +464,8 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                         'keyword_param': s.keyword_param,
                         'page_param': s.page_param || '',
                         'page_step': String(s.page_step),
-                        'status': String(s.status)
+                        'status': String(s.status),
+                        'source_type': s.source_type || 'baidu_news'
                     });
                     form.render();
                     openIndex = layer.open({
