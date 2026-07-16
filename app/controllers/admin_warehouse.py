@@ -23,6 +23,15 @@ class WarehouseListApiHandler(BaseHandler):
         page_size = int(self.get_argument("page_size", 20))
         search = self.get_argument("search", "")
         result = DataWarehouseRepository.get_all(page, page_size, search if search else None)
+        # 批量查询运行中的任务状态
+        if result.get("data"):
+            warehouse_ids = [item["id"] for item in result["data"]]
+            task_map = DeepCollectRepository.get_latest_by_warehouse_ids(warehouse_ids)
+            for item in result["data"]:
+                wid = item["id"]
+                if wid in task_map:
+                    item["task_status"] = task_map[wid].get("status")
+                    item["task_id"] = task_map[wid].get("task_id")
         self.write(json.dumps(result, ensure_ascii=False))
 
 
@@ -84,9 +93,10 @@ def _find_deep_collect_employee():
     return None
 
 
-async def _start_single_deep_collect(warehouse_id):
-    """为单条数据启动深度采集"""
-    employee = _find_deep_collect_employee()
+async def _start_single_deep_collect(warehouse_id, employee=None):
+    """为单条数据启动深度采集（employee 可预传入以优化批量查询）"""
+    if employee is None:
+        employee = _find_deep_collect_employee()
     employee_id = employee["id"] if employee else None
     employee_name = employee["name"] if employee else "未知"
 
@@ -133,9 +143,11 @@ async def _execute_deep_collect(task_id, warehouse_item, employee):
     """后台执行深度采集（使用crawl4ai抓取网页 + 数字员工分析）"""
     try:
         # 步骤1: 初始化
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         DeepCollectRepository.update_task(task_id, {
             "status": "running",
             "progress": 5,
+            "started_at": now,
             "steps": json.dumps([
                 {"name": "初始化任务", "status": "completed", "time": ""},
                 {"name": "获取数字员工", "status": "running", "time": ""},
@@ -429,8 +441,10 @@ class WarehouseBatchDeepCollectApiHandler(BaseHandler):
         ids = [int(x) for x in ids]
         task_ids = []
 
+        # 只查一次员工，所有任务复用
+        employee = _find_deep_collect_employee()
         for wid in ids:
-            task_id = await _start_single_deep_collect(wid)
+            task_id = await _start_single_deep_collect(wid, employee=employee)
             if task_id:
                 task_ids.append(task_id)
 
