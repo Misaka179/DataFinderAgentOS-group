@@ -172,6 +172,16 @@
     .layui-body { left: 0; }
     .layui-footer { left: 0; }
 }
+.tool-btn {
+    display:inline-flex; align-items:center; gap:3px;
+    padding:2px 9px; border-radius:4px; font-size:11px; font-weight:500;
+    cursor:pointer; border:1px solid rgba(148,163,184,.2);
+    background:transparent; color:#94a3b8;
+    transition:all .15s; line-height:1.5;
+}
+.tool-btn:hover { border-color:#60a5fa; color:#e2e8f0; background:rgba(96,165,250,.08); }
+.tool-btn.scan-btn:hover { border-color:#34d399; color:#34d399; background:rgba(52,211,153,.08); }
+.tool-btn i { font-size:11px; }
 </style>
 
 <div class="layui-layout layui-layout-admin">
@@ -267,12 +277,12 @@
             <div class="center-col">
                 <div class="chart-panel">
                     <div class="panel-title"><i class="layui-icon" style="color:#60a5fa;">&#xe63c;</i> 预警列表
-                        <span style="float:right;font-size:11px;color:#64748b;" id="warn-count-label"></span>
-                        <span style="float:right;font-size:11px;color:#22c55e;margin-right:10px;" id="scan-msg"></span>
-                        <span style="float:right;font-size:11px;margin-right:10px;">
-                            <button class="btn btn-primary btn-sm" onclick="openWordModal()"><i class="layui-icon">&#xe642;</i> 敏感词管理</button>
-                            <button class="btn btn-success btn-sm" onclick="batchReview()" id="review-btn"><i class="layui-icon">&#xe667;</i> AI批量审核</button>
-                            <button class="btn btn-warning btn-sm" onclick="triggerScan()" id="scan-btn"><i class="layui-icon">&#xe669;</i> 扫描对话</button>
+                        <span style="float:right;display:flex;align-items:center;gap:6px;">
+                            <span style="color:#64748b;font-size:11px;" id="warn-count-label"></span>
+                            <span style="color:#22c55e;font-size:11px;" id="scan-msg"></span>
+                            <button class="layui-btn layui-btn-xs" onclick="openWordModal()"><i class="layui-icon layui-icon-edit"></i> 管理</button>
+                            <button class="layui-btn layui-btn-xs layui-btn-normal" onclick="batchReview()" id="review-btn"><i class="layui-icon layui-icon-ok-circle"></i> 审核</button>
+                            <button class="layui-btn layui-btn-xs layui-btn-warm" onclick="triggerScan()" id="scan-btn"><i class="layui-icon layui-icon-util"></i> 扫描</button>
                         </span>
                     </div>
                     <div class="warn-table-wrap" id="warn-table-wrap">
