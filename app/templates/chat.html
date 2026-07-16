@@ -51,10 +51,12 @@
         {% end %}
       </span>
       <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-        <a href="/index" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">首页</a>
+        {% if role_code == 'admin' %}
+        <a href="/admin/index" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">管理后台</a>
+        {% end %}
         <form method="post" action="/logout" style="margin:0; padding:0; display:inline;" id="logoutForm">
           {% module xsrf_form_html() %}
-          <button type="submit" style="font-size: 13px; color: var(--text-tertiary); background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer;">退出</button>
+          <button type="submit" style="font-size: 13px; color: var(--text-tertiary); background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer;">退出登录</button>
         </form>
       </div>
     </div>

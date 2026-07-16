@@ -10,33 +10,70 @@ html, body {
     align-items: stretch !important;
     height: 100%;
 }
+
+/* ===== 背景动画容器 ===== */
 .login-container {
     min-height: 100vh;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background: linear-gradient(135deg, #0c1222 0%, #1a2332 40%, #0f172a 100%);
     padding: 20px;
+    position: relative;
+    overflow: hidden;
 }
+.login-container::before {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,.15) 0%, transparent 70%);
+    top: -200px;
+    right: -150px;
+    animation: floatOrb 8s ease-in-out infinite;
+}
+.login-container::after {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,.1) 0%, transparent 70%);
+    bottom: -150px;
+    left: -100px;
+    animation: floatOrb 10s ease-in-out infinite reverse;
+}
+@keyframes floatOrb {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(30px, -30px) scale(1.1); }
+}
+
+/* ===== 登录卡片 ===== */
 .login-box {
     width: 100%;
     max-width: 960px;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 25px 60px rgba(0,0,0,.4);
+    background: rgba(255,255,255,.98);
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05);
     overflow: hidden;
     display: flex;
-    animation: fadeIn .5s ease;
+    animation: loginFadeIn .6s cubic-bezier(.22,1,.36,1);
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(20px);
 }
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes loginFadeIn {
+    from { opacity: 0; transform: translateY(24px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ===== 左侧品牌区 ===== */
 .login-left {
-    flex: 1;
-    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 40%, #3b82f6 100%);
-    padding: 60px 50px;
+    flex: 1.1;
+    background: linear-gradient(160deg, #1e40af 0%, #2563eb 35%, #3b82f6 65%, #60a5fa 100%);
+    padding: 56px 44px;
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -47,87 +84,154 @@ html, body {
 .login-left::before {
     content: '';
     position: absolute;
-    width: 400px;
-    height: 400px;
+    width: 500px;
+    height: 500px;
     border-radius: 50%;
-    background: rgba(255,255,255,.06);
-    top: -100px;
-    right: -100px;
+    background: rgba(255,255,255,.07);
+    top: -180px;
+    right: -120px;
+    animation: leftOrb1 7s ease-in-out infinite;
 }
 .login-left::after {
     content: '';
     position: absolute;
-    width: 300px;
-    height: 300px;
+    width: 350px;
+    height: 350px;
     border-radius: 50%;
     background: rgba(255,255,255,.04);
-    bottom: -50px;
-    left: -80px;
+    bottom: -80px;
+    left: -100px;
+    animation: leftOrb2 9s ease-in-out infinite alternate;
 }
-.login-right {
-    flex: 1;
-    padding: 50px 50px;
-    background: #fff;
+@keyframes leftOrb1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-20px, 20px) scale(1.08); }
 }
-.login-right form { width: 100%; }
+@keyframes leftOrb2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(30px, -20px); }
+}
+/* 装饰网格线 */
+.login-left .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+}
+
 .login-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 40px;
+    gap: 12px;
+    margin-bottom: 36px;
     position: relative;
     z-index: 1;
 }
 .login-logo-icon {
-    width: 40px;
-    height: 40px;
-    background: rgba(255,255,255,.2);
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    background: rgba(255,255,255,.18);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     font-weight: 700;
     color: #fff;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.1);
 }
-.login-title {
+
+.left-title {
     font-size: 32px;
     font-weight: 700;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+    line-height: 1.3;
+    letter-spacing: .5px;
+}
+.left-title .highlight {
+    background: linear-gradient(90deg, #fcd34d, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.left-desc {
+    font-size: 14px;
+    opacity: .85;
+    line-height: 1.8;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 1;
+}
+.left-features {
+    position: relative;
+    z-index: 1;
+}
+.left-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 8px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,.1);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,.06);
+    transition: all .25s;
+}
+.left-feature-item:hover {
+    background: rgba(255,255,255,.16);
+    transform: translateX(4px);
+}
+.left-feature-item .feat-icon {
+    font-size: 17px;
+    width: 26px;
+    text-align: center;
+}
+
+/* ===== 右侧表单区 ===== */
+.login-right {
+    flex: 1;
+    padding: 48px 44px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.login-right form { width: 100%; }
+
+.login-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
     color: #0f172a;
+    letter-spacing: .3px;
 }
 .login-desc {
     color: #64748b;
-    margin-bottom: 32px;
+    margin-bottom: 28px;
     font-size: 14px;
 }
+
 .login-input-group {
-    margin-bottom: 22px;
-    position: relative;
+    margin-bottom: 20px;
 }
 .login-input-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-weight: 600;
     color: #334155;
     font-size: 13px;
 }
-.layui-input {
-    height: 46px;
-    border-radius: 8px;
-    border: 1.5px solid #e2e8f0;
-    padding-left: 42px;
-    font-size: 14px;
-    transition: border-color .2s, box-shadow .2s;
-    background: #f8fafc;
+.login-input-group .input-wrap {
+    position: relative;
 }
-.layui-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-    background: #fff;
-}
-.input-icon {
+.login-input-group .input-wrap .input-icon {
     position: absolute;
     left: 14px;
     top: 50%;
@@ -135,45 +239,132 @@ html, body {
     color: #94a3b8;
     font-size: 16px;
     z-index: 1;
+    transition: color .2s;
 }
+.login-input-group .input-wrap:focus-within .input-icon {
+    color: #2563eb;
+}
+.layui-input {
+    height: 48px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    padding-left: 44px;
+    font-size: 14px;
+    transition: all .25s;
+    background: #f8fafc;
+    color: #0f172a;
+    width: 100%;
+    outline: none;
+}
+.layui-input::placeholder {
+    color: #94a3b8;
+    font-size: 13px;
+}
+.layui-input:hover {
+    border-color: #cbd5e1;
+    background: #fff;
+}
+.layui-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37,99,235,.1);
+    background: #fff;
+}
+/* 密码可见切换 */
+.pwd-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    z-index: 2;
+    transition: color .2s;
+}
+.pwd-toggle:hover { color: #475569; }
+
 .login-btn {
     width: 100%;
-    height: 46px;
-    border-radius: 8px;
+    height: 48px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     font-size: 16px;
     font-weight: 600;
     border: none;
     cursor: pointer;
     color: #fff;
-    transition: all .2s;
-    box-shadow: 0 2px 8px rgba(37,99,235,.25);
+    transition: all .25s;
+    box-shadow: 0 4px 14px rgba(37,99,235,.3);
     letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 4px;
 }
-.login-btn:hover {
+.login-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
     background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-    box-shadow: 0 4px 16px rgba(37,99,235,.35);
+    opacity: 0;
+    transition: opacity .25s;
+}
+.login-btn:hover::before { opacity: 1; }
+.login-btn:hover {
+    box-shadow: 0 6px 20px rgba(37,99,235,.4);
     transform: translateY(-1px);
 }
-.login-btn:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+.login-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(37,99,235,.25);
 }
+.login-btn:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+.login-btn span { position: relative; z-index: 1; }
+/* 加载中spinner */
+.login-btn .spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    position: relative;
+    z-index: 1;
+    margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.login-btn.loading span { display: none; }
+.login-btn.loading .spinner { display: block; }
+
 .login-error {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     padding: 12px 16px;
     background: #fef2f2;
     color: #dc2626;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #fecaca;
     font-size: 13px;
     display: none;
+    animation: shake .35s ease;
 }
-.login-error.active { display: block; }
+.login-error.active { display: flex; align-items: center; gap: 8px; }
+.login-error .err-icon { font-size: 16px; flex-shrink: 0; }
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
 .login-footer {
-    margin-top: 28px;
+    margin-top: 24px;
     text-align: center;
     color: #94a3b8;
     font-size: 13px;
@@ -182,49 +373,42 @@ html, body {
     color: #2563eb;
     text-decoration: none;
     font-weight: 600;
+    transition: color .2s;
 }
-.login-footer a:hover { text-decoration: underline; }
-.left-title {
-    font-size: 34px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    position: relative;
-    z-index: 1;
-    line-height: 1.3;
-}
-.left-desc {
-    font-size: 14px;
-    opacity: .85;
-    line-height: 1.8;
-    margin-bottom: 32px;
-    position: relative;
-    z-index: 1;
-}
-.left-features {
-    margin-top: 8px;
-    position: relative;
-    z-index: 1;
-}
-.left-feature-item {
+.login-footer a:hover { color: #1d4ed8; text-decoration: underline; }
+
+/* ===== 表单底部装饰 ===== */
+.login-divider {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 10px;
-    padding: 10px 16px;
-    background: rgba(255,255,255,.1);
-    border-radius: 8px;
-    backdrop-filter: blur(4px);
-    font-size: 14px;
+    margin: 18px 0 0;
+    color: #cbd5e1;
+    font-size: 12px;
 }
-.left-feature-item .feat-icon {
-    font-size: 18px;
-    width: 28px;
-    text-align: center;
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
 }
+
+/* ===== 响应式 ===== */
 @media screen and (max-width: 768px) {
-    .login-box { flex-direction: column; }
-    .login-left { padding: 40px 30px; }
-    .login-right { padding: 40px 30px; }
+    .login-box { flex-direction: column; border-radius: 16px; }
+    .login-left { padding: 36px 28px; flex: none; }
+    .login-left::before { width: 300px; height: 300px; top: -100px; right: -80px; }
+    .login-left::after { width: 200px; height: 200px; bottom: -60px; left: -60px; }
+    .left-title { font-size: 26px; }
+    .login-right { padding: 32px 28px; }
+}
+@media screen and (max-width: 480px) {
+    .login-container { padding: 12px; }
+    .login-left { padding: 28px 20px; }
+    .login-right { padding: 24px 20px; }
+    .login-title { font-size: 24px; }
+    .left-feature-item { padding: 8px 12px; font-size: 12px; }
 }
 </style>
 {% end %}
@@ -232,11 +416,12 @@ html, body {
 <div class="login-container">
     <div class="login-box">
         <div class="login-left">
+            <div class="grid-bg"></div>
             <div class="login-logo">
                 <div class="login-logo-icon">O</div>
-                <span style="font-size: 18px; font-weight: 600;">智能瞭望与问数系统</span>
+                <span style="font-size: 17px; font-weight: 600; letter-spacing: .5px;">智能瞭望与问数系统</span>
             </div>
-            <div class="left-title">数据智能<br>瞭望与问数</div>
+            <div class="left-title">数据智能<br><span class="highlight">瞭望与问数</span></div>
             <div class="left-desc">
                 基于AI大模型的政务数据智能采集与分析平台，让数据对话，让决策有据。
             </div>
@@ -263,26 +448,35 @@ html, body {
             <div class="login-title">欢迎登录</div>
             <div class="login-desc">请输入您的账号信息以访问智能问数系统</div>
 
-            <div class="login-error" id="authError"></div>
+            <div class="login-error" id="authError">
+                <span class="err-icon">✕</span>
+                <span id="authErrorText"></span>
+            </div>
 
-            <form method="post" id="loginForm">
+            <form method="post" id="loginForm" autocomplete="off">
                 {% module xsrf_form_html() %}
                 <div class="login-input-group">
                     <label>用户名</label>
-                    <div style="position: relative;">
+                    <div class="input-wrap">
                         <i class="layui-icon layui-icon-username input-icon"></i>
                         <input type="text" name="username" class="layui-input" placeholder="请输入用户名" required autocomplete="username">
                     </div>
                 </div>
                 <div class="login-input-group">
                     <label>密码</label>
-                    <div style="position: relative;">
+                    <div class="input-wrap">
                         <i class="layui-icon layui-icon-password input-icon"></i>
-                        <input type="password" name="password" class="layui-input" placeholder="请输入密码" required autocomplete="current-password">
+                        <input type="password" name="password" class="layui-input" id="loginPwd" placeholder="请输入密码" required autocomplete="current-password">
+                        <button type="button" class="pwd-toggle" id="pwdToggle" tabindex="-1" title="显示密码">👁</button>
                     </div>
                 </div>
-                <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span>登 录</span>
+                    <div class="spinner"></div>
+                </button>
             </form>
+
+            <div class="login-divider"></div>
 
             <div class="login-footer">
                 还没有账号？<a href="/register">立即注册</a>
@@ -292,44 +486,60 @@ html, body {
 </div>
 
 <script>
-document.getElementById('loginForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('loginBtn');
-    const errorEl = document.getElementById('authError');
-    btn.disabled = true;
-    btn.textContent = '登录中...';
-    errorEl.classList.remove('active');
+(function() {
+    var loginForm = document.getElementById('loginForm');
+    if (!loginForm) return;
 
-    const formData = new URLSearchParams(new FormData(this));
-    try {
-        const resp = await fetch('/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: formData.toString()
-        });
-        if (resp.redirected) {
-            window.location.href = resp.url;
-            return;
-        }
-        if (!resp.ok) {
-            errorEl.textContent = resp.status === 401 ? '用户名或密码错误' : '登录失败，请重试';
+    var btn = document.getElementById('loginBtn');
+    var errorEl = document.getElementById('authError');
+    var errorText = document.getElementById('authErrorText');
+
+    // 密码可见切换
+    document.getElementById('pwdToggle')?.addEventListener('click', function() {
+        var pwd = document.getElementById('loginPwd');
+        if (!pwd) return;
+        var isPassword = pwd.type === 'password';
+        pwd.type = isPassword ? 'text' : 'password';
+        this.textContent = isPassword ? '🙈' : '👁';
+    });
+
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        btn.classList.add('loading');
+        btn.disabled = true;
+        errorEl.classList.remove('active');
+
+        var formData = new URLSearchParams(new FormData(this));
+        try {
+            var resp = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: formData.toString()
+            });
+            if (resp.redirected) {
+                window.location.href = resp.url;
+                return;
+            }
+            if (!resp.ok) {
+                errorText.textContent = resp.status === 401 ? '用户名或密码错误' : '登录失败，请重试';
+                errorEl.classList.add('active');
+                return;
+            }
+            var html = await resp.text();
+            if (html.includes('/chat')) {
+                window.location.href = '/index';
+            } else {
+                errorText.textContent = '登录失败，请检查用户名和密码';
+                errorEl.classList.add('active');
+            }
+        } catch(e) {
+            errorText.textContent = '网络错误，请稍后重试';
             errorEl.classList.add('active');
-            return;
+        } finally {
+            btn.classList.remove('loading');
+            btn.disabled = false;
         }
-        const html = await resp.text();
-        if (html.includes('/chat')) {
-            window.location.href = '/index';
-        } else {
-            errorEl.textContent = '登录失败，请检查用户名和密码';
-            errorEl.classList.add('active');
-        }
-    } catch(e) {
-        errorEl.textContent = '网络错误，请稍后重试';
-        errorEl.classList.add('active');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '登 录';
-    }
-});
+    });
+})();
 </script>
 {% end %}
