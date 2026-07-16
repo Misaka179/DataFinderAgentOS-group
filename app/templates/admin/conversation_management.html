@@ -269,19 +269,30 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
         loadConversations(1, '');
     });
 
-    // 查看消息
+    var msgLayerIndex = null;
+
+    // 查看消息：打开弹层并加载消息列表
     window.viewMessages = function(convId, title, username) {
         $('#msgModalTitle').text(title);
         $('#msgModalUser').text(username);
+
+        // 弹层已打开时仅刷新内容，避免同一节点重复叠开弹层导致遮罩堆积
+        if (msgLayerIndex === null) {
+            msgLayerIndex = layer.open({
+                type: 1,
+                title: '会话消息',
+                area: ['750px', '550px'],
+                content: $('#messagesModal'),
+                end: function() { msgLayerIndex = null; }
+            });
+        }
+        loadMessagesList(convId);
+    };
+
+    // 加载弹层内的消息列表（不新开弹层）
+    function loadMessagesList(convId) {
         $('#msgModalCount').text('加载中...');
         $('#messagesList').html('<div style="text-align:center;color:#94a3b8;padding:20px;">加载中...</div>');
-
-        layer.open({
-            type: 1,
-            title: '会话消息',
-            area: ['750px', '550px'],
-            content: $('#messagesModal')
-        });
 
         $.ajax({
             url: '/api/admin/conversations/messages',
@@ -329,7 +340,7 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 $('#messagesList').html('<div style="text-align:center;color:#dc2626;padding:20px;">加载失败</div>');
             }
         });
-    };
+    }
 
     // HTML转义
     function escapeHtml(str) {
@@ -348,12 +359,10 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 headers: {'X-XSRFToken': getXsrfToken()},
                 success: function(res) {
                     if (res.success) {
-                        layer.msg('消息已删除', {icon: 1});
                         layer.close(index);
-                        // 重新加载消息列表
-                        var title = $('#msgModalTitle').text();
-                        var username = $('#msgModalUser').text();
-                        viewMessages(convId, title, username);
+                        layer.msg('消息已删除', {icon: 1});
+                        // 仅刷新弹层内消息列表，不再重复打开弹层
+                        loadMessagesList(convId);
                         // 同时刷新会话列表（消息数变化）
                         loadConversations(currentPage);
                     } else {
