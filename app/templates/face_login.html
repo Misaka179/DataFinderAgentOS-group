@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人脸识别登录 - 智能瞭望</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei",sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px;width:420px;max-width:95vw;text-align:center}
+.login-card h1{font-size:22px;color:#fff;margin-bottom:8px}
+.login-card h1 span{background:linear-gradient(90deg,#f093fb,#f5576c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-card .subtitle{color:#888;font-size:13px;margin-bottom:24px}
+.video-box{position:relative;width:100%;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.15);margin-bottom:20px}
+.video-box video{width:100%;display:block}
+.video-box canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.status-text{color:#aaa;font-size:14px;margin:12px 0;min-height:20px}
+.status-text.success{color:#43e97b}
+.status-text.error{color:#ff4d4f}
+.btn{display:inline-block;padding:12px 32px;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;transition:all .3s;color:#fff;margin:6px}
+.btn-primary{background:linear-gradient(90deg,#f093fb,#f5576c)}
+.btn-primary:hover{transform:scale(1.05)}
+.btn-secondary{background:rgba(255,255,255,.1)}
+.btn-secondary:hover{background:rgba(255,255,255,.2)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.registered-users{margin-top:16px;text-align:left}
+.registered-users h3{color:#ccc;font-size:13px;margin-bottom:8px}
+.registered-users .user-tag{display:inline-block;background:rgba(255,255,255,.08);padding:4px 10px;border-radius:6px;font-size:12px;color:#aaa;margin:2px}
+.links{margin-top:16px}
+.links a{color:#888;font-size:12px;text-decoration:none;margin:0 8px}
+.links a:hover{color:#fff}
+</style>
+</head>
+<body>
+<div class="login-card">
+  <h1>👤 <span>人脸识别</span> 登录</h1>
+  <p class="subtitle">首次使用请先注册人脸</p>
+  <div class="video-box">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div class="status-text" id="status">正在加载人脸识别模型...</div>
+  <div>
+    <button class="btn btn-primary" id="btnRegister" onclick="registerFace()" disabled>📸 注册人脸</button>
+    <button class="btn btn-secondary" id="btnLogin" onclick="loginFace()" disabled>🔓 人脸登录</button>
+  </div>
+  <div class="links">
+    <a href="/login">密码登录</a>
+    <a href="/register">注册账号</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+var modelsLoaded = false;
+var lastDescriptor = null;
+var userName = '';
+
+function getXsrfToken() {
+  var m = document.cookie.match(/_xsrf=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function setStatus(msg, cls) {
+  var el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status-text';
+  if (cls) el.classList.add(cls);
+}
+
+async function loadModels() {
+  try {
+    var weightsUrl = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights/';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(weightsUrl);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(weightsUrl);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(weightsUrl);
+    modelsLoaded = true;
+    document.getElementById('btnRegister').disabled = false;
+    document.getElementById('btnLogin').disabled = false;
+    startCamera();
+  } catch (e) {
+    setStatus('❌ 模型加载失败: ' + e.message, 'error');
+  }
+}
+
+async function startCamera() {
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+    var video = document.getElementById('webcam');
+    video.srcObject = stream;
+    await video.play();
+    setStatus('✅ 模型就绪，摄像头已开启，请对准摄像头');
+  } catch (e) {
+    setStatus('❌ 摄像头错误: ' + e.message, 'error');
+  }
+}
+
+async function detectFace() {
+  var video = document.getElementById('webcam');
+  // 确保视频正在播放且有画面
+  if (!video.srcObject || video.readyState < 2) {
+    setStatus('⏳ 摄像头准备中...', '');
+    return null;
+  }
+  var options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+  var result = await faceapi.detectSingleFace(video, options)
+    .withFaceLandmarks().withFaceDescriptor();
+  if (result) {
+    lastDescriptor = result.descriptor;
+    var canvas = document.getElementById('overlay');
+    var dims = faceapi.matchDimensions(canvas, video, true);
+    var resized = faceapi.resizeResults(result, dims);
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    new faceapi.draw.DrawBox(resized.detection.box, { boxColor: '#43e97b', lineWidth: 2 }).draw(canvas);
+    return result;
+  }
+  return null;
+}
+
+function getStoredFaces() {
+  try {
+    var data = localStorage.getItem('face_users');
+    return data ? JSON.parse(data) : {};
+  } catch (e) { return {}; }
+}
+
+async function registerFace() {
+  var name = prompt('请输入你的用户名（与系统账号一致）：');
+  if (!name) return;
+  userName = name;
+  setStatus('📸 正在检测人脸...');
+  var result = await detectFace();
+  if (!result) { setStatus('❌ 未检测到人脸，请正对摄像头', 'error'); return; }
+  var faces = getStoredFaces();
+  faces[userName] = Array.from(lastDescriptor);
+  localStorage.setItem('face_users', JSON.stringify(faces));
+  setStatus('✅ ' + userName + ' 人脸注册成功！', 'success');
+}
+
+async function loginFace() {
+  setStatus('🔍 正在识别人脸...');
+  var result = await detectFace();
+  if (!result) { setStatus('❌ 未检测到人脸', 'error'); return; }
+  var faces = getStoredFaces();
+  var names = Object.keys(faces);
+  if (names.length === 0) { setStatus('❌ 没有已注册的人脸，请先注册', 'error'); return; }
+
+  var bestMatch = null;
+  var bestDist = 1.0;
+  for (var i = 0; i < names.length; i++) {
+    var storedDesc = new Float32Array(faces[names[i]]);
+    var dist = faceapi.euclideanDistance(lastDescriptor, storedDesc);
+    if (dist < bestDist && dist < 0.6) { bestDist = dist; bestMatch = names[i]; }
+  }
+
+  if (bestMatch) {
+    setStatus('✅ 识别成功: ' + bestMatch + '，正在登录...', 'success');
+    // 调用后端登录
+    try {
+      var formData = new URLSearchParams();
+      formData.append('username', bestMatch);
+      formData.append('password', '');  // face login uses special handling
+      formData.append('face_login', '1');
+      formData.append('_xsrf', getXsrfToken());
+      var resp = await fetch('/face-login', {
+        method: 'POST',
+        body: formData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        redirect: 'follow'
+      });
+      if (resp.redirected || resp.ok) {
+        window.location.href = '/chat';
+      }
+    } catch (e) {
+      setStatus('登录请求失败: ' + e.message, 'error');
+    }
+  } else {
+    setStatus('❌ 人脸不匹配（距离: ' + bestDist.toFixed(3) + '）', 'error');
+  }
+}
+
+loadModels();
+</script>
+</body>
+</html>

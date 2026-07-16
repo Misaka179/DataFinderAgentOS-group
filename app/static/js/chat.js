@@ -31,6 +31,7 @@
     els.messageList = $('#messageList');
     els.inputText = $('#inputText');
     els.sendBtn = $('#sendBtn');
+    els.imgGenBtn = $('#imgGenBtn');
     els.modelSelect = $('#modelSelect');
     els.taskList = $('#taskList');
     els.quickMenu = $('#quickMenu');
@@ -68,6 +69,23 @@
       newConversation();
     } else {
       switchConversation(state.conversations[0].id);
+    }
+    // 检查是否有手势页面跳转过来的意图
+    var gesturePrompt = sessionStorage.getItem('gesture_prompt');
+    var gestureEmployee = sessionStorage.getItem('gesture_employee');
+    if (gesturePrompt) {
+      sessionStorage.removeItem('gesture_prompt');
+      sessionStorage.removeItem('gesture_employee');
+      els.inputText.value = gesturePrompt;
+      if (gestureEmployee) {
+        var emp = state.employees.find(function(e) { return e.name === gestureEmployee; });
+        if (emp) {
+          state.activeEmployee = { id: emp.id, name: emp.name };
+          els.employeeTagName.textContent = '@' + emp.name;
+          els.inputTag.style.display = 'inline-flex';
+        }
+      }
+      setTimeout(function() { sendMessage(); }, 500);
     }
   }
 
@@ -414,7 +432,7 @@
     bubble.appendChild(contentDiv);
 
     // 添加token/响应时间信息
-    if (role === 'ai' && (extra.tokens || extra.timeMs)) {
+    if (role === 'assistant' && (extra.tokens || extra.timeMs)) {
       const meta = document.createElement('div');
       meta.className = 'message-meta';
       const parts = [];
@@ -422,6 +440,16 @@
       if (extra.tokens !== undefined) parts.push(`token: ${extra.tokens}`);
       meta.textContent = parts.join(' · ');
       bubble.appendChild(meta);
+    }
+
+    // TTS 语音播报按钮
+    if (role === 'assistant' && content) {
+      const ttsBtn = document.createElement('button');
+      ttsBtn.className = 'tts-btn';
+      ttsBtn.title = '语音播报';
+      ttsBtn.innerHTML = '🔊';
+      ttsBtn.onclick = function() { toggleTTS(content, ttsBtn); };
+      bubble.appendChild(ttsBtn);
     }
 
     div.appendChild(avatar);
@@ -825,6 +853,8 @@
   function bindEvents() {
     // 发送
     els.sendBtn.addEventListener('click', sendMessage);
+    // 生图
+    els.imgGenBtn.addEventListener('click', imageGen);
     els.inputText.addEventListener('input', (e) => {
       onInput(e);
       autoResizeTextarea();
@@ -880,6 +910,72 @@
         hideQuickMenu();
       }
     });
+  }
+
+  // ---- 图片生成 ----
+  async function imageGen() {
+    const prompt = els.inputText.value.trim();
+    if (!prompt) return;
+    if (state.isGenerating) return;
+    state.isGenerating = true;
+    els.sendBtn.disabled = true;
+    els.imgGenBtn.disabled = true;
+
+    appendMessageDOM('user', '🎨 生成图片: ' + prompt);
+    els.inputText.value = '';
+
+    const placeholder = appendMessageDOM('assistant', '🎨 正在生成图片...');
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('prompt', prompt);
+      formData.append('_xsrf', getCookie('_xsrf'));
+      const resp = await fetch(getXsrfUrl('/api/user/image-gen'), {
+        method: 'POST',
+        body: formData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      const data = await resp.json();
+
+      placeholder.container.remove();
+      if (data.ok && data.image_url) {
+        const imgDiv = appendMessageDOM('assistant', '', '图片生成', true);
+        const img = document.createElement('img');
+        img.src = data.image_url;
+        img.style.cssText = 'max-width:100%;border-radius:12px;margin-top:8px;';
+        img.onerror = function() { img.alt = '图片加载失败，URL: ' + data.image_url; };
+        imgDiv.bubble.appendChild(img);
+      } else {
+        appendMessageDOM('assistant', '❌ ' + (data.msg || '生成失败'));
+      }
+    } catch (e) {
+      placeholder.container.remove();
+      appendMessageDOM('assistant', '❌ 请求失败: ' + e.message);
+    } finally {
+      state.isGenerating = false;
+      els.sendBtn.disabled = false;
+      els.imgGenBtn.disabled = false;
+    }
+  }
+
+  // ---- TTS 语音播报 ----
+  let ttsUtterance = null;
+
+  function toggleTTS(text, btn) {
+    if (ttsUtterance && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      btn.innerHTML = '🔊';
+      return;
+    }
+    const cleanText = text.replace(/<[^>]*>/g, '').replace(/[*#_`~>\[\]]/g, '').trim();
+    if (!cleanText) return;
+    ttsUtterance = new SpeechSynthesisUtterance(cleanText);
+    ttsUtterance.lang = 'zh-CN';
+    ttsUtterance.rate = 1.0;
+    ttsUtterance.onstart = function() { btn.innerHTML = '🔇'; };
+    ttsUtterance.onend = function() { btn.innerHTML = '🔊'; ttsUtterance = null; };
+    ttsUtterance.onerror = function() { btn.innerHTML = '🔊'; ttsUtterance = null; };
+    window.speechSynthesis.speak(ttsUtterance);
   }
 
   // ---- 启动 ----

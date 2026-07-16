@@ -38,6 +38,28 @@ class RegisterHandler(BaseHandler):
             return
         self.render("register.html", title="用户注册")
 
+class FaceLoginHandler(BaseHandler):
+    """人脸识别登录页面 + 人脸登录验证"""
+    def get(self):
+        if self.current_user:
+            self.redirect("/index")
+            return
+        # 触发 XSRF cookie 下发，前端 POST 时需要
+        self.xsrf_token
+        self.render("face_login.html")
+
+    def post(self):
+        username = self.get_body_argument("username", "").strip()
+        face_login = self.get_body_argument("face_login", "0")
+        if face_login == "1" and username:
+            user = UserRepository.get_user_by_username(username)
+            if user and user["status"] == 1:
+                self.set_secure_cookie("username", username)
+                self.redirect("/index")
+                return
+        self.set_status(403)
+        self.write({"ok": False, "msg": "人脸验证失败"})
+
 class AdminLoginHandler(BaseHandler):
     def get(self):
         self.render("admin/login.html",title="后台登录",error=None)

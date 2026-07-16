@@ -318,6 +318,19 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border-top: 1px solid var(--border-color);
 }
 
+/* TTS 语音播报按钮 */
+.tts-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.2s;
+}
+.tts-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+
 /* 图表容器 */
 .chart-container {
   width: 100%;
@@ -456,7 +469,9 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   box-shadow: 0 2px 6px rgba(43,95,217,0.25);
 }
 .input-actions .btn-send:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(43,95,217,0.35); }
-.input-actions .btn-send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.input-actions .btn-send:disabled, .input-actions .btn-img:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-actions .btn-send:disabled { box-shadow: none; }
+.input-actions .btn-img:hover { background: #fef3e2; color: #e67e22; }
 
 /* 输入提示 */
 .input-tag {

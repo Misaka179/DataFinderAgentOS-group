@@ -54,6 +54,9 @@
         {% if role_code == 'admin' %}
         <a href="/admin/index" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">管理后台</a>
         {% end %}
+        <a href="/gesture" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">🖐 手势</a>
+        <a href="/face-login" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">👤 人脸</a>
+        <a href="/index" style="font-size: 13px; color: var(--text-tertiary); text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color);">首页</a>
         <form method="post" action="/logout" style="margin:0; padding:0; display:inline;" id="logoutForm">
           {% module xsrf_form_html() %}
           <button type="submit" style="font-size: 13px; color: var(--text-tertiary); background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer;">退出登录</button>
@@ -101,6 +104,7 @@
         <div class="input-row">
           <textarea id="inputText" rows="1" placeholder="输入消息，输入 / 使用快捷功能，输入 @ 调用数字员工..." autofocus></textarea>
           <div class="input-actions">
+            <button class="btn-img" id="imgGenBtn" title="生成图片">🎨</button>
             <button class="btn-send" id="sendBtn" title="发送 (Enter)">➤</button>
           </div>
         </div>

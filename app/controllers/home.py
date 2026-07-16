@@ -12,7 +12,6 @@ class IndexHandler(BaseHandler):
     def get(self):
         self.redirect("/chat")
 
-
 class DashboardStatsApiHandler(BaseHandler):
     """控制台统计数据API（用于前端实时刷新）"""
     @tornado.web.authenticated
@@ -33,7 +32,6 @@ class DashboardStatsApiHandler(BaseHandler):
                     "SELECT COUNT(*) FROM data_warehouse WHERE is_deep_collected=1"
                 ).fetchone()[0] or 0
 
-                # 图表数据：采集任务状态分布（柱状图）
                 status_rows = conn.execute("""
                     SELECT COALESCE(NULLIF(status,''), 'unknown') as name, COUNT(*) as value
                     FROM deep_collect_tasks GROUP BY status ORDER BY value DESC
@@ -43,7 +41,6 @@ class DashboardStatsApiHandler(BaseHandler):
                     {"name": status_map.get(r["name"], r["name"]), "value": r["value"]} for r in status_rows
                 ]
 
-                # 图表数据：近7天数据入库趋势（折线图）
                 trend_rows = conn.execute("""
                     SELECT date(collected_at) as date, COUNT(*) as count
                     FROM data_warehouse
@@ -54,7 +51,6 @@ class DashboardStatsApiHandler(BaseHandler):
                     {"date": r["date"], "count": r["count"]} for r in trend_rows
                 ]
 
-                # 图表数据：深度采集覆盖率（环形图）
                 deep_total = stats["deep_count"]
                 not_deep = max(0, stats["data_count"] - deep_total)
                 stats["deep_coverage"] = [
@@ -62,7 +58,6 @@ class DashboardStatsApiHandler(BaseHandler):
                     {"name": "未深度采集", "value": not_deep}
                 ]
 
-                # 图表数据：各表记录数明细（表格区用）
                 stats["table_details"] = {
                     "users": stats["user_count"],
                     "data_warehouse": stats["data_count"],
@@ -77,6 +72,12 @@ class DashboardStatsApiHandler(BaseHandler):
                      "task_status_bar":[], "daily_trend":[], "deep_coverage":[], "table_details":{}}
         self.write(json.dumps({"success": True, "data": stats}))
 
+
+class GestureHandler(BaseHandler):
+    """手势交互页面"""
+    @tornado.web.authenticated
+    def get(self):
+        self.render("gesture.html")
 
 class AdminIndexHandler(BaseHandler):
     @tornado.web.authenticated
