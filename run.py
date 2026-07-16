@@ -599,14 +599,13 @@ if __name__ == '__main__':
                     (admin_role["id"], de_func["id"], max_order + 1)
                 )
         
-        # 创建示例数字员工（如果表为空）
-        de_count = conn.execute("SELECT COUNT(*) FROM digital_employees").fetchone()[0]
-        if de_count == 0:
-            # 获取默认模型ID
-            default_model = conn.execute("SELECT id FROM ai_models WHERE is_default=1 LIMIT 1").fetchone()
-            model_id = default_model["id"] if default_model else None
+        # ===== 内置数字员工（逐个检查，确保启动时始终存在，非仅首次初始化） =====
+        default_model = conn.execute("SELECT id FROM ai_models WHERE is_default=1 LIMIT 1").fetchone()
+        model_id = default_model["id"] if default_model else None
 
-            # 采集专员（LLM型）
+        # 1. 采集专员（LLM型）
+        coll_emp = conn.execute("SELECT id FROM digital_employees WHERE name='采集专员'").fetchone()
+        if not coll_emp:
             conn.execute(
                 """INSERT INTO digital_employees 
                    (name, type, description, model_id, system_prompt, skills, crawl4ai_enabled, sort_order, status)
@@ -622,9 +621,11 @@ if __name__ == '__main__':
                     1, 1
                 )
             )
-            print("✓ 已创建示例数字员工：采集专员")
+            print("✓ 已内置数字员工：采集专员")
 
-            # 天气（API型）
+        # 2. 天气（API型）
+        weather_emp = conn.execute("SELECT id FROM digital_employees WHERE name='天气'").fetchone()
+        if not weather_emp:
             conn.execute(
                 """INSERT INTO digital_employees 
                    (name, type, description, api_url, api_method, api_headers, api_params, api_response_template, sort_order, status)
@@ -641,17 +642,19 @@ if __name__ == '__main__':
                     2, 1
                 )
             )
-            print("✓ 已创建示例数字员工：天气")
+            print("✓ 已内置数字员工：天气")
 
-            # @新闻（内置API型）
+        # 3. 新闻（API型-内置Mock）
+        news_emp = conn.execute("SELECT id FROM digital_employees WHERE name='新闻'").fetchone()
+        if not news_emp:
             conn.execute(
                 """INSERT INTO digital_employees 
                    (name, type, description, api_url, api_method, api_headers, api_params, api_response_template, sort_order, status)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    "@新闻",
+                    "新闻",
                     "api",
-                    "返回近2天热门新闻（≥10条），含标题、来源、时间、摘要、链接",
+                    "返回实时热门新闻（百度实时抓取，含标题、来源、时间、摘要、链接）",
                     "http://localhost:10010/api/mock/news",
                     "GET",
                     json.dumps({}, ensure_ascii=False),
@@ -660,17 +663,19 @@ if __name__ == '__main__':
                     3, 1
                 )
             )
-            print("✓ 已创建示例数字员工：@新闻")
+            print("✓ 已内置数字员工：新闻")
 
-            # @随机音乐（内置API型）
+        # 4. 随机音乐（API型-内置Mock，iTunes真实音源）
+        music_emp = conn.execute("SELECT id FROM digital_employees WHERE name='随机音乐'").fetchone()
+        if not music_emp:
             conn.execute(
                 """INSERT INTO digital_employees 
                    (name, type, description, api_url, api_method, api_headers, api_params, api_response_template, sort_order, status)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    "@随机音乐",
+                    "随机音乐",
                     "api",
-                    "随机推荐一首歌，含歌名、歌手、封面、播放链接",
+                    "随机推荐一首歌，iTunes真实音源，含歌名、歌手、封面、播放链接",
                     "http://localhost:10010/api/mock/music",
                     "GET",
                     json.dumps({}, ensure_ascii=False),
@@ -679,17 +684,19 @@ if __name__ == '__main__':
                     4, 1
                 )
             )
-            print("✓ 已创建示例数字员工：@随机音乐")
+            print("✓ 已内置数字员工：随机音乐")
 
-            # @电影（内置API型）
+        # 5. 电影（API型-内置Mock，豆瓣搜索+本地详情）
+        movie_emp = conn.execute("SELECT id FROM digital_employees WHERE name='电影'").fetchone()
+        if not movie_emp:
             conn.execute(
                 """INSERT INTO digital_employees 
                    (name, type, description, api_url, api_method, api_headers, api_params, api_response_template, sort_order, status)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    "@电影",
+                    "电影",
                     "api",
-                    "搜索电影信息（导演、演员、简介、评分、年份、播放链接）；无关键词则随机推荐",
+                    "搜索电影信息，豆瓣API匹配+本地详情，含导演、演员、简介、评分、年份、豆瓣链接",
                     "http://localhost:10010/api/mock/movie?keyword={query}",
                     "GET",
                     json.dumps({}, ensure_ascii=False),
@@ -698,7 +705,7 @@ if __name__ == '__main__':
                     5, 1
                 )
             )
-            print("✓ 已创建示例数字员工：@电影")
+            print("✓ 已内置数字员工：电影")
 
         # 迁移：更新已有天气数字员工的API配置（OpenWeatherMap → wttr.in）
         weather_emp = conn.execute("SELECT id, api_url FROM digital_employees WHERE name='天气'").fetchone()

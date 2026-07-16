@@ -27,6 +27,7 @@ D:.
     │   │   │   user_chat.py           用户侧对话API（SSE流式/意图识别/问数/报表/@技能）
     │   │   │   user_export.py         用户侧导出API（UserExportPdfApiHandler PDF导出）
     │   │   │   data_query.py          数据查询API（智能问数/数据库查询/分析）
+    │   │   │   mock_apis.py           内置Mock API型数字员工（新闻实时抓取/音乐随机推荐/电影搜索）
     │   │   │
     │   ├───parsers 数据解析器包
     │   │   │   _init_.py
@@ -99,7 +100,8 @@ D:.
     │               digital_employee_management.html 数字员工（CRUD/双型/MD上传/测试）
     │               profile_modals.html      个人信息/修改密码弹窗（嵌入模板）
     │
-    ├───config 系统配置目录（预留空目录）
+    ├───config 系统配置目录
+    │       api_keys.json           外部API密钥管理（聚合数据等）
     ├───database 数据库存储目录
     │       .gitkeep                   占位文件
     │       finderos.db                SQLite单文件数据库（自动创建）

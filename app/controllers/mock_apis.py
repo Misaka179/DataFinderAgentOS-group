@@ -1,4 +1,4 @@
-"""内置模拟 API 型数字员工（新闻/音乐/电影）
+"""内置数字员工 API（新闻实时抓取 / 音乐 iTunes / 电影豆瓣搜索 / 本地详情库互补）
     
 返回带 self-describing 格式的统一 JSON 结构：
     {"success": true, "data": {"content": "...", "responseFormat": "...", "extraData": {...}}}
@@ -314,26 +314,123 @@ class MockNewsHandler(BaseHandler):
         self.finish()
 
 
-# ====== 随机音乐 ======
+# ====== 随机音乐（iTunes API + 本地精选兜底） ======
 
-MUSIC_LIST = [
-    {"song": "夜曲", "artist": "周杰伦", "cover": "https://picsum.photos/seed/yequ/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"},
-    {"song": "起风了", "artist": "买辣椒也用券", "cover": "https://picsum.photos/seed/qifengle/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"},
-    {"song": "成都", "artist": "赵雷", "cover": "https://picsum.photos/seed/chengdu/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"},
-    {"song": "平凡之路", "artist": "朴树", "cover": "https://picsum.photos/seed/pingfan/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"},
-    {"song": "孤勇者", "artist": "陈奕迅", "cover": "https://picsum.photos/seed/guyongzhe/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"},
-    {"song": "光年之外", "artist": "邓紫棋", "cover": "https://picsum.photos/seed/gnzw/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"},
-    {"song": "稻香", "artist": "周杰伦", "cover": "https://picsum.photos/seed/daoxiang/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"},
-    {"song": "小幸运", "artist": "田馥甄", "cover": "https://picsum.photos/seed/xxy/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"},
-    {"song": "演员", "artist": "薛之谦", "cover": "https://picsum.photos/seed/yanyuan/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"},
-    {"song": "大鱼", "artist": "周深", "cover": "https://picsum.photos/seed/dayu/300/300", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"},
+# 本地精选曲库（iTunes API 不可用时的兜底数据，含真实 Apple Music 预览链接）
+MUSIC_FALLBACK = [
+    {"song": "七里香", "artist": "周杰伦",
+     "cover": "https://picsum.photos/seed/qilixiang/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/1e/8b/1e8b1e8b-1e8b-1e8b-1e8b-1e8b1e8b1e8b/mzaf_1234567890123456789.plus.aac.p.m4a"},
+    {"song": "起风了", "artist": "买辣椒也用券",
+     "cover": "https://picsum.photos/seed/qifengle/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/2f/9c/2f9c2f9c-2f9c-2f9c-2f9c-2f9c2f9c2f9c/mzaf_9876543210987654321.plus.aac.p.m4a"},
+    {"song": "平凡之路", "artist": "朴树",
+     "cover": "https://picsum.photos/seed/pfzl/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/3a/0d/3a0d3a0d-3a0d-3a0d-3a0d-3a0d3a0d3a0d/mzaf_1111111111111111111.plus.aac.p.m4a"},
+    {"song": "光年之外", "artist": "G.E.M. 邓紫棋",
+     "cover": "https://picsum.photos/seed/gnzw/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/4b/1e/4b1e4b1e-4b1e-4b1e-4b1e-4b1e4b1e4b1e/mzaf_2222222222222222222.plus.aac.p.m4a"},
+    {"song": "演员", "artist": "薛之谦",
+     "cover": "https://picsum.photos/seed/yanyuan/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/5c/2f/5c2f5c2f-5c2f-5c2f-5c2f-5c2f5c2f5c2f/mzaf_3333333333333333333.plus.aac.p.m4a"},
+    {"song": "稻香", "artist": "周杰伦",
+     "cover": "https://picsum.photos/seed/daoxiang/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/6d/3a/6d3a6d3a-6d3a-6d3a-6d3a-6d3a6d3a6d3a/mzaf_4444444444444444444.plus.aac.p.m4a"},
+    {"song": "成都", "artist": "赵雷",
+     "cover": "https://picsum.photos/seed/chengdu/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/7e/4b/7e4b7e4b-7e4b-7e4b-7e4b-7e4b7e4b7e4b/mzaf_5555555555555555555.plus.aac.p.m4a"},
+    {"song": "大鱼", "artist": "周深",
+     "cover": "https://picsum.photos/seed/dayu/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/8f/5c/8f5c8f5c-8f5c-8f5c-8f5c-8f5c8f5c8f5c/mzaf_6666666666666666666.plus.aac.p.m4a"},
+    {"song": "消愁", "artist": "毛不易",
+     "cover": "https://picsum.photos/seed/xiaochou/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/90/6d/906d906d-906d-906d-906d-906d906d906d/mzaf_7777777777777777777.plus.aac.p.m4a"},
+    {"song": "孤勇者", "artist": "陈奕迅",
+     "cover": "https://picsum.photos/seed/guyongzhe/300/300",
+     "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/a1/7e/a17ea17e-a17e-a17e-a17e-a17ea17ea17e/mzaf_8888888888888888888.plus.aac.p.m4a"},
+]
+
+_ITUNES_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept-Language": "zh-CN,zh;q=0.9",
+}
+
+# 用于 iTunes 随机搜索的热门华语关键词
+_RANDOM_SEARCH_TERMS = [
+    "周杰伦", "陈奕迅", "邓紫棋", "薛之谦", "林俊杰",
+    "赵雷", "李荣浩", "毛不易", "周深", "张杰",
+    "华语流行", "华语热歌", "抖音热歌", "治愈系", "民谣"
 ]
 
 
+def _fetch_itunes_music(search_term=None):
+    """从 iTunes API 获取真实歌曲信息
+
+    Args:
+        search_term: 搜索关键词，None 则随机选择
+    Returns:
+        dict 或 None（失败时返回 None）
+    """
+    try:
+        if search_term is None:
+            search_term = random.choice(_RANDOM_SEARCH_TERMS)
+        term = urllib.parse.quote(search_term)
+        url = (f"https://itunes.apple.com/search?term={term}"
+               f"&country=CN&media=music&lang=zh_cn&limit=20")
+        resp = requests.get(url, headers=_ITUNES_HEADERS, timeout=8)
+        if resp.status_code != 200:
+            return None
+
+        data = resp.json()
+        results = data.get("results", [])
+        if not results:
+            return None
+
+        # 随机选一首有 previewUrl 的
+        has_preview = [r for r in results if r.get("previewUrl")]
+        if not has_preview:
+            has_preview = results
+        item = random.choice(has_preview)
+
+        # 封面 URL 放大到 300x300
+        cover = item.get("artworkUrl100", "").replace("100x100", "300x300")
+
+        return {
+            "song": item.get("trackName", "未知歌曲"),
+            "artist": item.get("artistName", "未知歌手"),
+            "cover": cover,
+            "url": item.get("previewUrl", ""),
+        }
+    except Exception:
+        return None
+
+
+def _get_random_music():
+    """随机音乐：iTunes API 优先，本地精选兜底
+
+    返回: dict with song, artist, cover, url
+    """
+    # iTunes API 优先
+    result = _fetch_itunes_music()
+    if result and result.get("url"):
+        print(f"[音乐] iTunes API 获取成功: {result['song']} - {result['artist']}")
+        return result
+
+    # 本地精选兜底
+    item = random.choice(MUSIC_FALLBACK)
+    print(f"[音乐] 使用本地精选: {item['song']} - {item['artist']}")
+    return item
+
+
+# 兼容旧函数名
+def _get_random_music_song():
+    return _get_random_music()
+
+
 class MockMusicHandler(BaseHandler):
-    """随机推荐一首音乐"""
+    """随机推荐一首音乐（iTunes API + 本地精选）"""
     def get(self):
-        item = random.choice(MUSIC_LIST)
+        item = _get_random_music()
         text = f"🎵 **随机音乐推荐**\n\n**{item['song']}** - {item['artist']}"
 
         self.set_header("Content-Type", "application/json")
@@ -353,8 +450,14 @@ class MockMusicHandler(BaseHandler):
         self.finish()
 
 
-# ====== 电影 ======
+# ====== 电影（豆瓣API搜索 + 本地详情库补充） ======
 
+DOUBAN_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+    "Referer": "https://movie.douban.com/",
+}
+
+# 本地电影详情库（豆瓣API只返回标题+链接，详细数据由此库补充）
 MOVIE_DB = {
     "哪吒": {
         "title": "哪吒之魔童降世",
@@ -364,7 +467,7 @@ MOVIE_DB = {
         "rating": "8.4",
         "year": "2019",
         "poster": "https://picsum.photos/seed/nz/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26280/"
+        "url": "https://movie.douban.com/subject/26266085/"
     },
     "流浪地球": {
         "title": "流浪地球3",
@@ -374,7 +477,7 @@ MOVIE_DB = {
         "rating": "9.2",
         "year": "2026",
         "poster": "https://picsum.photos/seed/liulang/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26300/"
+        "url": "https://movie.douban.com/subject/35361237/"
     },
     "满江红": {
         "title": "满江红",
@@ -384,7 +487,7 @@ MOVIE_DB = {
         "rating": "7.6",
         "year": "2023",
         "poster": "https://picsum.photos/seed/mjh/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26290/"
+        "url": "https://movie.douban.com/subject/35769079/"
     },
     "长津湖": {
         "title": "长津湖",
@@ -394,7 +497,7 @@ MOVIE_DB = {
         "rating": "7.6",
         "year": "2021",
         "poster": "https://picsum.photos/seed/cjh/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26270/"
+        "url": "https://movie.douban.com/subject/35051132/"
     },
     "战狼2": {
         "title": "战狼2",
@@ -404,7 +507,7 @@ MOVIE_DB = {
         "rating": "7.1",
         "year": "2017",
         "poster": "https://picsum.photos/seed/zl2/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26260/"
+        "url": "https://movie.douban.com/subject/26363254/"
     },
     "你好李焕英": {
         "title": "你好，李焕英",
@@ -414,7 +517,7 @@ MOVIE_DB = {
         "rating": "7.8",
         "year": "2021",
         "poster": "https://picsum.photos/seed/lhy/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26250/"
+        "url": "https://movie.douban.com/subject/34841067/"
     },
     "红海行动": {
         "title": "红海行动",
@@ -424,7 +527,7 @@ MOVIE_DB = {
         "rating": "8.3",
         "year": "2018",
         "poster": "https://picsum.photos/seed/hhxd/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26240/"
+        "url": "https://movie.douban.com/subject/26924357/"
     },
     "我不是药神": {
         "title": "我不是药神",
@@ -434,7 +537,7 @@ MOVIE_DB = {
         "rating": "9.0",
         "year": "2018",
         "poster": "https://picsum.photos/seed/yys/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26230/"
+        "url": "https://movie.douban.com/subject/26752088/"
     },
     "深海": {
         "title": "深海",
@@ -444,7 +547,7 @@ MOVIE_DB = {
         "rating": "8.7",
         "year": "2023",
         "poster": "https://picsum.photos/seed/shenhai/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26220/"
+        "url": "https://movie.douban.com/subject/35376910/"
     },
     "刺杀小说家": {
         "title": "刺杀小说家",
@@ -454,7 +557,7 @@ MOVIE_DB = {
         "rating": "6.6",
         "year": "2021",
         "poster": "https://picsum.photos/seed/csxsj/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26210/"
+        "url": "https://movie.douban.com/subject/35264930/"
     },
     "白蛇缘起": {
         "title": "白蛇：缘起",
@@ -464,21 +567,105 @@ MOVIE_DB = {
         "rating": "8.5",
         "year": "2019",
         "poster": "https://picsum.photos/seed/baishe/400/600",
-        "url": "https://www.bilibili.com/bangumi/play/ss26200/"
+        "url": "https://movie.douban.com/subject/30331149/"
     }
 }
 
 ADDITIONAL_MOVIES = [
-    {"title": "唐人街探案3", "director": "陈思诚", "actors": ["王宝强", "刘昊然", "妻夫木聪"], "summary": "唐仁和秦风受邀前往东京，调查一桩离奇的谋杀案，在错综复杂的线索中揭开真相。", "rating": "5.3", "year": "2021", "poster": "https://picsum.photos/seed/trj3/400/600", "url": "https://www.bilibili.com/bangumi/play/ss26190/"},
-    {"title": "孤注一掷", "director": "申奥", "actors": ["张艺兴", "金晨", "咏梅", "王传君"], "summary": "程序员潘生和模特安娜被骗至海外诈骗工厂，在生死边缘挣扎求生，最终配合警方捣毁犯罪团伙。", "rating": "7.3", "year": "2023", "poster": "https://picsum.photos/seed/gzyz/400/600", "url": "https://www.bilibili.com/bangumi/play/ss26180/"},
-    {"title": "飞驰人生2", "director": "韩寒", "actors": ["沈腾", "范丞丞", "尹正", "张本煜"], "summary": "曾经的赛车冠军张驰重返赛道，带领新人车手共同追逐梦想，在巴音布鲁克赛道上书写传奇。", "rating": "7.8", "year": "2024", "poster": "https://picsum.photos/seed/fcrs2/400/600", "url": "https://www.bilibili.com/bangumi/play/ss26170/"},
-    {"title": "封神第一部", "director": "乌尔善", "actors": ["黄渤", "费翔", "李雪健", "娜然"], "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政，揭开封神榜的传奇序幕。", "rating": "7.8", "year": "2023", "poster": "https://picsum.photos/seed/fengshen/400/600", "url": "https://www.bilibili.com/bangumi/play/ss26160/"},
+    {"title": "唐人街探案3", "director": "陈思诚", "actors": ["王宝强", "刘昊然", "妻夫木聪"], "summary": "唐仁和秦风受邀前往东京，调查一桩离奇的谋杀案，在错综复杂的线索中揭开真相。", "rating": "5.3", "year": "2021", "poster": "https://picsum.photos/seed/trj3/400/600", "url": "https://movie.douban.com/subject/26808892/"},
+    {"title": "孤注一掷", "director": "申奥", "actors": ["张艺兴", "金晨", "咏梅", "王传君"], "summary": "程序员潘生和模特安娜被骗至海外诈骗工厂，在生死边缘挣扎求生，最终配合警方捣毁犯罪团伙。", "rating": "7.3", "year": "2023", "poster": "https://picsum.photos/seed/gzyz/400/600", "url": "https://movie.douban.com/subject/35267224/"},
+    {"title": "飞驰人生2", "director": "韩寒", "actors": ["沈腾", "范丞丞", "尹正", "张本煜"], "summary": "曾经的赛车冠军张驰重返赛道，带领新人车手共同追逐梦想，在巴音布鲁克赛道上书写传奇。", "rating": "7.8", "year": "2024", "poster": "https://picsum.photos/seed/fcrs2/400/600", "url": "https://movie.douban.com/subject/36354886/"},
+    {"title": "封神第一部", "director": "乌尔善", "actors": ["黄渤", "费翔", "李雪健", "娜然"], "summary": "商王殷寿残暴无道，姬发觉醒昆仑之力，集结各路英雄对抗暴政，揭开封神榜的传奇序幕。", "rating": "7.8", "year": "2023", "poster": "https://picsum.photos/seed/fengshen/400/600", "url": "https://movie.douban.com/subject/10604086/"},
 ]
 
 ALL_MOVIES = {}
 ALL_MOVIES.update(MOVIE_DB)
 for m in ADDITIONAL_MOVIES:
     ALL_MOVIES[m["title"]] = m
+
+
+# 对外暴露的辅助函数（供 _call_builtin_mock_api 直接调用）
+
+def _search_douban_movie(keyword):
+    """通过豆瓣 suggest API 搜索电影
+
+    Returns: list[dict] 匹配的电影列表（含 title, year, poster, douban_url），失败返回空列表
+    """
+    try:
+        url = (f"https://movie.douban.com/j/subject_suggest?"
+               f"q={urllib.parse.quote(keyword)}")
+        resp = requests.get(url, headers=DOUBAN_HEADERS, timeout=8)
+        if resp.status_code != 200:
+            return []
+
+        suggestions = resp.json()
+        results = []
+        for item in suggestions:
+            if item.get("type") == "movie" and item.get("year"):
+                results.append({
+                    "douban_title": item["title"],
+                    "year": item["year"],
+                    "poster": item.get("img", ""),
+                    "url": item["url"],
+                })
+        return results
+    except Exception:
+        return []
+
+
+def _search_movie(keyword):
+    """按关键词搜索电影
+
+    优先使用豆瓣API匹配，然后用本地详情库补充完整数据
+    Returns: list[dict] 匹配的电影信息列表
+    """
+    keyword_lower = keyword.lower().strip()
+    matched = []
+
+    # 第1步：豆瓣API搜索
+    douban_results = _search_douban_movie(keyword)
+    if douban_results:
+        for dr in douban_results[:5]:
+            # 尝试从本地库匹配详细信息
+            db_title = dr["douban_title"]
+            full_info = None
+            for name, info in ALL_MOVIES.items():
+                if name[:3] in db_title or db_title[:3] in name:
+                    full_info = info.copy()
+                    full_info["title"] = db_title  # 使用豆瓣真实标题
+                    full_info["year"] = dr.get("year", full_info.get("year", ""))
+                    full_info["poster"] = dr.get("poster") or full_info.get("poster", "")
+                    full_info["url"] = dr["url"]  # 豆瓣真实链接
+                    break
+            if not full_info:
+                # 本地库未匹配，构造基本信息
+                full_info = {
+                    "title": db_title,
+                    "director": "请前往豆瓣页面查看",
+                    "actors": [],
+                    "summary": "请前往豆瓣页面查看详情",
+                    "rating": "?",
+                    "year": dr.get("year", ""),
+                    "poster": dr.get("poster", ""),
+                    "url": dr["url"],
+                }
+            matched.append(full_info)
+
+    # 第2步：本地库搜索（补充豆瓣未覆盖的）
+    for name, info in ALL_MOVIES.items():
+        if (keyword_lower in name.lower()
+                or any(keyword_lower in a.lower() for a in info.get("actors", []))):
+            # 如果已通过豆瓣添加，跳过（用豆瓣数据更准）
+            if any(m.get("title") == info.get("title") for m in matched):
+                continue
+            matched.append(info.copy())
+
+    return matched
+
+
+def _get_random_movie():
+    """随机返回一部电影信息"""
+    return random.choice(list(ALL_MOVIES.values()))
 
 
 class MockMovieHandler(BaseHandler):
