@@ -5,6 +5,7 @@
 .data-table table { min-width: 700px; }
 .data-table td:last-child { white-space: nowrap; }
 .data-table .desc-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-text { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .type-badge-llm { background: #6366f1 !important; }
 .type-badge-api { background: #0ea5e9 !important; }
 .badge-llm { display:inline-block; padding:2px 10px; border-radius:4px; font-size:12px; line-height:20px; font-weight:500; background:#eef2ff; color:#4f46e5; }
@@ -504,7 +505,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                         '<td>' + rowNum + '</td>' +
                         '<td>' + (item.name || '<span class="cell-empty">-</span>') + '</td>' +
                         '<td>' + typeHtml + '</td>' +
-                        '<td><div class="cell-text" title="' + (item.description||'').replace(/"/g,'&quot;') + '">' + (item.description || '<span class="cell-empty">-</span>') + '</div></td>' +
+                        '<td><div class="cell-text">' + (item.description || '<span class="cell-empty">-</span>') + '</div></td>' +
                         '<td>' + (item.sort_order||0) + '</td>' +
                         '<td>' + statusHtml + '</td>' +
                         '<td>' + (item.created_at||'<span class="cell-empty">-</span>') + '</td>' +
