@@ -32,7 +32,7 @@ var DashboardCharts = (function () {
     }
 
     function renderLine(data) {
-        if (!lineChart) return;
+        if (!lineChart || !data || !data.length) return;
         var dates = data.map(function (d) { return d.date; });
         var counts = data.map(function (d) { return d.count; });
         lineChart.setOption({
@@ -50,7 +50,7 @@ var DashboardCharts = (function () {
     }
 
     function renderBar(data) {
-        if (!barChart) return;
+        if (!barChart || !data || !data.length) return;
         var names = data.map(function (d) { return d.name; });
         var values = data.map(function (d) { return d.value; });
         var colors = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444', '#94a3b8'];

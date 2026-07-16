@@ -9,18 +9,26 @@ from datetime import datetime, timedelta
 import time
 
 
-LLM_REVIEW_PROMPT = """你是一个安全审核专家，请判断以下对话内容是否属于真实的安全攻击。
+LLM_REVIEW_PROMPT = """你是一个安全审核专家。根据以下信息判断内容是否属于真实攻击。
 
-【匹配到的敏感词/符号】{matched_word}
-【风险类型】{category}
-【完整对话原文】{source_content}
+【敏感词】{matched_word}
+【风险类别】{category}
+【内容摘要】{source_content}
 
-请严格按以下三分类判断，只输出一行 JSON，不要额外解释：
-1. "real_attack" — 内容包含真实注入攻击（SQL注入、SSTI、代码注入、XSS、Prompt注入等恶意载荷）
-2. "false_positive" — 内容仅为正常文本、普通标点符号、占位符，无任何攻击意图
-3. "suspicious" — 内容存在模糊可疑特征，无法明确判断
+请严格按以下 JSON 格式输出，不要额外解释：
+{{"classification": "real_attack|false_positive|suspicious", "reason": "判断理由", "risk_score": 0-100}}
 
-输出格式: {{"classification": "real_attack|false_positive|suspicious", "reason": "简要说明", "risk_score": 0-100}}"""
+分类说明：
+- real_attack (风险分 70-100): 明确的安全攻击载荷，如 SQL注入、代码执行、XSS、Prompt注入等
+- false_positive (风险分 0-30): 正常文本，敏感词出现在正常语境中，无攻击意图
+- suspicious (风险分 31-69): 存在可疑特征但无法明确判断，需人工复核
+
+示例：
+输入: 敏感词="SELECT * FROM", 类别="SQL注入", 内容="SELECT * FROM users WHERE id=1"
+输出: {{"classification": "real_attack", "reason": "SQL查询语句出现在用户对话中", "risk_score": 85}}
+
+输入: 敏感词="DROP TABLE", 类别="SQL注入", 内容="常见 SQL 命令包括 SELECT、DROP TABLE 等"
+输出: {{"classification": "false_positive", "reason": "敏感词出现在教学上下文，非实际攻击", "risk_score": 15}}"""
 
 
 def llm_classify_warning(source_content, matched_word, category):
@@ -176,31 +184,6 @@ class DataScreenHandler(AdminBaseHandler):
         self.render("admin/data_screen.html", title="数智大屏", username=self.current_user)
 
 
-class DataScreenStatsApiHandler(AdminBaseHandler):
-    """数智大屏概览统计数据API"""
-    @tornado.web.authenticated
-    def get(self):
-        data = {}
-        try:
-            with get_connection() as conn:
-                data["user_count"] = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] or 0
-                data["data_count"] = conn.execute("SELECT COUNT(*) FROM data_warehouse").fetchone()[0] or 0
-                data["task_count"] = conn.execute("SELECT COUNT(*) FROM deep_collect_tasks").fetchone()[0] or 0
-                data["model_count"] = conn.execute("SELECT COUNT(*) FROM ai_models").fetchone()[0] or 0
-                data["watch_count"] = conn.execute("SELECT COUNT(*) FROM watch_sources").fetchone()[0] or 0
-                data["de_count"] = conn.execute("SELECT COUNT(*) FROM digital_employees").fetchone()[0] or 0
-                data["today_data"] = conn.execute(
-                    "SELECT COUNT(*) FROM data_warehouse WHERE date(collected_at)=date('now')"
-                ).fetchone()[0] or 0
-                data["deep_ratio"] = round(
-                    (conn.execute("SELECT COUNT(*) FROM data_warehouse WHERE is_deep_collected=1").fetchone()[0] or 0)
-                    / max(data["data_count"], 1) * 100, 1
-                )
-        except Exception:
-            data = {}
-        self.write(json.dumps({"success": True, "data": data}))
-
-
 class DataScreenWordcloudApiHandler(AdminBaseHandler):
     """数智大屏词云数据API"""
     @tornado.web.authenticated
@@ -270,7 +253,7 @@ class DataScreenSankeyApiHandler(AdminBaseHandler):
                 status_rows = conn.execute("""
                     SELECT status, COUNT(*) as value FROM deep_collect_tasks GROUP BY status
                 """).fetchall()
-                sink = {"已完成": "任务已完成", "running": "任务运行中", "pending": "任务待处理", "failed": "任务失败"}
+                sink = {"completed": "任务已完成", "running": "任务运行中", "pending": "任务待处理", "failed": "任务失败"}
                 nodes = [{"name": "数据仓库"}]
                 links = []
                 for r in source_rows:
@@ -445,7 +428,7 @@ class OpinionAcknowledgeApiHandler(AdminBaseHandler):
                 fields["status"] = body["status"]
             if "severity" in body:
                 fields["severity"] = body["severity"]
-            if body.get("user_feedback"):
+            if "user_feedback" in body:
                 fields["user_feedback"] = body["user_feedback"]
 
             if not fields:
@@ -485,6 +468,7 @@ class OpinionFeedbackApiHandler(AdminBaseHandler):
                     "UPDATE public_opinion_warnings SET user_feedback=? WHERE id=?",
                     (feedback, warning_id)
                 )
+                conn.commit()
 
             self.write(json.dumps({"success": True}))
         except Exception as e:
@@ -572,6 +556,7 @@ class OpinionScanApiHandler(AdminBaseHandler):
                                 ("user_chat", str(conv["id"]), msg_text[:500], word_text, cat, sev)
                             )
                             new_count += 1
+                conn.commit()
 
             self.write(json.dumps({"success": True, "new_count": new_count}))
         except Exception as e:

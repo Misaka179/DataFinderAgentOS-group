@@ -171,7 +171,7 @@ window.addEventListener('resize', function() {
 function loadAll() {
     // 词云
     fetch('/api/data-screen/wordcloud').then(function(r){return r.json()}).then(function(res){
-        if (!res.success || !res.data.length) return;
+        if (!res.success || !res.data || !res.data.length) return;
         wcChart.setOption({
             backgroundColor: 'transparent',
             tooltip: { show: false },
@@ -185,7 +185,7 @@ function loadAll() {
 
     // 来源分布
     fetch('/api/data-screen/source').then(function(r){return r.json()}).then(function(res){
-        if (!res.success || !res.data.length) return;
+        if (!res.success || !res.data || !res.data.length) return;
         pieChart.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
@@ -194,7 +194,7 @@ function loadAll() {
                 type: 'pie', radius: ['30%', '55%'], center: ['50%', '48%'],
                 itemStyle: { borderRadius: 4 },
                 label: { color: '#475569', fontSize: 11 },
-                data: res.data.map(function(d,i){ d.itemStyle = {color:GC[i%GC.length]}; return d; })
+                data: res.data.map(function(d,i){ return Object.assign({}, d, {itemStyle:{color:GC[i%GC.length]}}); })
             }]
         });
     });
@@ -225,7 +225,7 @@ function loadAll() {
 
     // 趋势
     fetch('/api/data-screen/trends?days=30').then(function(r){return r.json()}).then(function(res){
-        if (!res.success || !res.data.length) return;
+        if (!res.success || !res.data || !res.data.length) return;
         trendChart.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis' },

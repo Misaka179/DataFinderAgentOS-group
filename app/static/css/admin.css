@@ -697,3 +697,6 @@
     .layui-body { left: 0; }
     .layui-footer { left: 0; }
 }
+@media screen and (max-width: 640px) {
+    .dashboard-charts { grid-template-columns: 1fr; }
+}

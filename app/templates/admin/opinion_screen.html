@@ -358,6 +358,7 @@
                         <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn-mark-read" onclick="markRead()"><i class="layui-icon">&#xe642;</i> 标为已读</button>
                         <button class="layui-btn layui-btn-sm" id="btn-ack-feedback" onclick="ackWithFeedback()"><i class="layui-icon">&#xe618;</i> 确认反馈</button>
                         <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="markFalsePositive()"><i class="layui-icon">&#xe640;</i> 误报</button>
+                        <a class="layui-btn layui-btn-sm" id="btn-view-conversation" target="_blank" style="display:none;"><i class="layui-icon">&#xe60a;</i> 查看对话</a>
                         <input type="text" class="feedback-input" id="feedback-input" placeholder="输入反馈意见（选填）" style="width:160px;display:none;" />
                     </div>
                 </div>
@@ -434,6 +435,7 @@ window.addEventListener('resize', function() {
 var selectedWarnId = null;
 var warnData = [];
 
+function escHtml(s) { return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function formatTime(ts) {
     if (!ts) return '--';
     var d = new Date(ts.replace(' ', 'T') + 'Z');
@@ -484,7 +486,7 @@ function selectWarn(id) {
     if (!item) return;
     document.getElementById('detail-card').style.display = 'block';
     document.getElementById('detail-content').textContent = item.source_content || item.content || '--';
-    document.getElementById('detail-matched').innerHTML = '<span class="highlight">'+(item.matched_word||'--')+'</span>';
+    var mwEl = document.getElementById('detail-matched'); mwEl.innerHTML = ''; mwEl.className = 'highlight'; mwEl.textContent = item.matched_word||'--';
     var analysisEl = document.getElementById('detail-analysis-row');
     var scoreEl = document.getElementById('detail-score-row');
     if (item.risk_analysis) {
@@ -516,6 +518,13 @@ function selectWarn(id) {
     document.getElementById('btn-mark-read').style.display = isRead ? 'none' : '';
     document.getElementById('btn-ack-feedback').style.display = isAcked ? 'none' : '';
     document.getElementById('feedback-input').style.display = isRead && !isAcked ? '' : 'none';
+    var convBtn = document.getElementById('btn-view-conversation');
+    if (item.source_type === 'user_chat' && item.source_id) {
+        convBtn.style.display = '';
+        convBtn.href = '/admin/conversation-management';
+    } else {
+        convBtn.style.display = 'none';
+    }
 }
 
 function loadAll() {
@@ -577,7 +586,7 @@ function loadAll() {
             html += '<tr data-id="'+d.id+'" onclick="selectWarn('+d.id+')">'+
                 '<td>'+formatTime(d.created_at||d.time)+'</td>'+
                 '<td>'+(d.source_type==='user_chat'?'用户对话':d.source_type==='data_warehouse'?'采集数据':d.source_type||'--')+'</td>'+
-                '<td>'+(d.matched_word||'--')+'</td>'+
+                '<td>'+escHtml(d.matched_word||'--')+'</td>'+
                 '<td>'+severityBadge(d.severity)+'</td>'+
                 '<td>'+statusBadge(d.status)+'</td>'+
                 '<td style="font-size:10px;">'+(d.risk_analysis?'<span class="badge badge-low" style="background:rgba(34,197,94,.12);color:#22c55e;">已审核</span>':'<span class="badge badge-medium" style="background:rgba(249,115,22,.12);color:#f97316;">待审核</span>')+'</td>'+
@@ -605,7 +614,7 @@ function loadAll() {
             var f = res.data[i];
             html += '<div class="feedback-item">'+
                 '<div><span class="fb-time">'+formatTime(f.created_at)+'</span></div>'+
-                (f.user_feedback ? '<div class="fb-text">'+f.user_feedback+'</div>' : '<div class="fb-text" style="color:#64748b;">（已确认，无反馈内容）</div>')+
+                (f.user_feedback ? '<div class="fb-text">'+escHtml(f.user_feedback)+'</div>' : '<div class="fb-text" style="color:#64748b;">（已确认，无反馈内容）</div>')+
                 '</div>';
         }
         document.getElementById('feedback-section').innerHTML = html;
@@ -649,7 +658,7 @@ function markFalsePositive() {
     if (!confirm('确认将该预警标记为误报并移除？')) return;
     postJSON('/api/opinion/acknowledge', {id:selectedWarnId, action:'false_positive'})
     .then(function(r){return r.json()}).then(function(res){
-        if (res.success) { document.getElementById('detail-panel').style.display = 'none'; loadAll(); }
+        if (res.success) { document.getElementById('detail-card').style.display = 'none'; loadAll(); }
         else alert(res.message || '操作失败');
     }).catch(function(){alert('请求失败');});
 }
@@ -764,12 +773,12 @@ function loadWords() {
         for (var i=0;i<res.data.length;i++) {
             var w = res.data[i];
             html += '<tr>'+
-                '<td>'+w.word+'</td>'+
-                '<td>'+w.category+'</td>'+
+                '<td>'+escHtml(w.word)+'</td>'+
+                '<td>'+escHtml(w.category)+'</td>'+
                 '<td>'+severityBadge(w.severity)+'</td>'+
                 '<td>'+
                     '<button class="layui-btn layui-btn-sm layui-btn-normal" style="padding:2px 8px;font-size:10px;margin-right:4px;" onclick="editWord('+w.id+')">编辑</button>'+
-                    '<button class="layui-btn layui-btn-sm layui-btn-primary" style="padding:2px 8px;font-size:10px;" onclick="deleteWord('+w.id+',\''+w.word.replace(/'/g,"\\'")+'\')">删除</button>'+
+                    '<button class="layui-btn layui-btn-sm layui-btn-primary" style="padding:2px 8px;font-size:10px;" onclick="deleteWord('+w.id+')">删除</button>'+
                 '</td></tr>';
         }
         document.getElementById('word-tbody').innerHTML = html;
@@ -807,8 +816,8 @@ function saveWord() {
         btn.disabled = false;
     });
 }
-function deleteWord(id, word) {
-    if (!confirm('确认删除敏感词「'+word+'」吗？')) return;
+function deleteWord(id) {
+    if (!confirm('确认删除该敏感词吗？')) return;
     postJSON('/api/opinion/sensitive-words/delete', {id:id})
     .then(function(r){return r.json()}).then(function(res){
         if (res.success) loadWords();

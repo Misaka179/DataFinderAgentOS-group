@@ -23,7 +23,7 @@ from app.controllers.mock_apis import (
 from app.controllers.multimodal import ImageGenHandler, VideoGenHandler
 from app.controllers.user_export import UserExportPdfApiHandler
 from app.controllers.home import (IndexHandler, GestureHandler, AdminIndexHandler, DashboardStatsApiHandler,
-    DataScreenHandler, DataScreenStatsApiHandler, DataScreenWordcloudApiHandler,
+    DataScreenHandler, DataScreenWordcloudApiHandler,
     DataScreenTrendsApiHandler, DataScreenSourceApiHandler, DataScreenSankeyApiHandler,
     OpinionScreenHandler, OpinionWarningsApiHandler, OpinionStatsApiHandler,
     OpinionAIAnalyzeApiHandler, OpinionAcknowledgeApiHandler, OpinionFeedbackApiHandler,
@@ -185,7 +185,6 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/admin/index", AdminIndexHandler),
         (r"/api/dashboard/stats", DashboardStatsApiHandler),
         (r"/admin/data-screen", DataScreenHandler),
-        (r"/api/data-screen/stats", DataScreenStatsApiHandler),
         (r"/api/data-screen/wordcloud", DataScreenWordcloudApiHandler),
         (r"/api/data-screen/trends", DataScreenTrendsApiHandler),
         (r"/api/data-screen/source", DataScreenSourceApiHandler),
