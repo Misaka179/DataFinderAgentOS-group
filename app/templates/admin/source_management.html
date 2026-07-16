@@ -313,36 +313,21 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
             },
             success: function(res) {
                 if (!res || !res.data) {
-<<<<<<< HEAD
-                    $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">数据格式错误</td></tr>');
-=======
-                    $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">数据格式错误</td></tr>');
->>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
+                    $('#sourceTableBody').html('<tr><td colspan="9" class="text-muted" style="text-align:center;color:#dc2626;">数据格式错误</td></tr>');
                     return;
                 }
                 var html = '';
                 if (res.data.length === 0) {
-<<<<<<< HEAD
-                    html = '<tr><td colspan="9" style="text-align: center; color: #999;">暂无数据</td></tr>';
-=======
-                    html = '<tr><td colspan="8" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
->>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
+                    html = '<tr><td colspan="9" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
                 } else {
                     res.data.forEach(function(source) {
                         var statusHtml = source.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                         html += '<tr>' +
-<<<<<<< HEAD
-                            '<td>' + source.id + '</td>' +
-                            '<td>' + (source.name || '-') + '</td>' +
-                            '<td>' + (source.source_type || 'baidu_news') + '</td>' +
-                            '<td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + (source.url_template || '') + '">' + (source.url_template || '-') + '</td>' +
-                            '<td>' + (source.keyword_param || '-') + '</td>' +
-=======
                             '<td class="col-id">' + source.id + '</td>' +
                             '<td>' + (source.name || '<span class="cell-empty">-</span>') + '</td>' +
+                            '<td>' + (source.source_type || 'baidu_news') + '</td>' +
                             '<td class="col-url" title="' + (source.url_template || '') + '"><span class="cell-url">' + (source.url_template || '<span class="cell-empty">-</span>') + '</span></td>' +
                             '<td>' + (source.keyword_param || '<span class="cell-empty">-</span>') + '</td>' +
->>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
                             '<td>' + (source.page_param || '-') + ' (' + (source.page_step || 0) + ')</td>' +
                             '<td class="col-status">' + statusHtml + '</td>' +
                             '<td>' + source.created_at + '</td>' +
@@ -357,11 +342,7 @@ layui.use(['form', 'layer', 'element', 'jquery'], function(){
                 renderPagination(res.total, res.page, res.page_size);
             },
             error: function(xhr, status, error) {
-<<<<<<< HEAD
-                $('#sourceTableBody').html('<tr><td colspan="9" style="text-align: center; color: red;">加载失败: ' + error + '</td></tr>');
-=======
-                $('#sourceTableBody').html('<tr><td colspan="8" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
->>>>>>> c118085dafe560070928bbd2a6e15b17d7603fb5
+                $('#sourceTableBody').html('<tr><td colspan="9" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
             }
         });
     }
