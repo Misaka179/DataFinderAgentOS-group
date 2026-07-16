@@ -1061,7 +1061,7 @@ def _migrate_skill_function(conn):
         parent_id = hub_func["id"] if hub_func else 0
         conn.execute(
             "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ("技能管理", "skill_management", "layui-icon-util", "/admin/skill-management", 6, parent_id, 1)
+            ("技能管理", "skill_management", "layui-icon-app", "/admin/skill-management", 6, parent_id, 1)
         )
         func = conn.execute("SELECT id FROM functions WHERE code='skill_management'").fetchone()
 

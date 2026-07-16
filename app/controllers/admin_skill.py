@@ -22,7 +22,7 @@ class SkillListApiHandler(BaseHandler):
         status = self.get_argument("status", "")
 
         total, rows = SkillRepository.get_all(page, size, keyword, status)
-        self.write_json({"success": True, "data": rows, "total": total, "page": page, "size": size})
+        self.write(json.dumps({"success": True, "data": rows, "total": total, "page": page, "size": size}, ensure_ascii=False))
 
 
 class SkillGetApiHandler(BaseHandler):
@@ -31,13 +31,13 @@ class SkillGetApiHandler(BaseHandler):
     def get(self):
         skill_id = self.get_argument("id", "")
         if not skill_id:
-            self.write_json({"success": False, "error": "缺少id"})
+            self.write(json.dumps({"success": False, "error": "缺少id"}))
             return
         skill = SkillRepository.get_by_id(int(skill_id))
         if not skill:
-            self.write_json({"success": False, "error": "技能不存在"})
+            self.write(json.dumps({"success": False, "error": "技能不存在"}))
             return
-        self.write_json({"success": True, "data": skill})
+        self.write(json.dumps({"success": True, "data": skill}, ensure_ascii=False))
 
 
 class SkillEnabledListApiHandler(BaseHandler):
@@ -45,7 +45,7 @@ class SkillEnabledListApiHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         skills = SkillRepository.get_enabled_list()
-        self.write_json({"success": True, "data": skills})
+        self.write(json.dumps({"success": True, "data": skills}, ensure_ascii=False))
 
 
 class SkillCreateApiHandler(BaseHandler):
@@ -55,13 +55,13 @@ class SkillCreateApiHandler(BaseHandler):
         data = self._get_form_data()
         existing = SkillRepository.get_by_code(data["code"])
         if existing:
-            self.write_json({"success": False, "error": "编码已存在"})
+            self.write(json.dumps({"success": False, "error": "编码已存在"}))
             return
         try:
             SkillRepository.create(data)
-            self.write_json({"success": True})
+            self.write(json.dumps({"success": True}))
         except Exception as e:
-            self.write_json({"success": False, "error": str(e)})
+            self.write(json.dumps({"success": False, "error": str(e)}))
 
     def _get_form_data(self):
         data = {
@@ -93,13 +93,13 @@ class SkillUpdateApiHandler(SkillCreateApiHandler):
         data["id"] = int(self.get_argument("id"))
         existing = SkillRepository.get_by_id(data["id"])
         if not existing:
-            self.write_json({"success": False, "error": "技能不存在"})
+            self.write(json.dumps({"success": False, "error": "技能不存在"}))
             return
         try:
             SkillRepository.update(data)
-            self.write_json({"success": True})
+            self.write(json.dumps({"success": True}))
         except Exception as e:
-            self.write_json({"success": False, "error": str(e)})
+            self.write(json.dumps({"success": False, "error": str(e)}))
 
 
 class SkillDeleteApiHandler(BaseHandler):
@@ -108,13 +108,13 @@ class SkillDeleteApiHandler(BaseHandler):
     def post(self):
         skill_id = int(self.get_argument("id", 0))
         if not skill_id:
-            self.write_json({"success": False, "error": "缺少id"})
+            self.write(json.dumps({"success": False, "error": "缺少id"}))
             return
         try:
             SkillRepository.delete(skill_id)
-            self.write_json({"success": True})
+            self.write(json.dumps({"success": True}))
         except Exception as e:
-            self.write_json({"success": False, "error": str(e)})
+            self.write(json.dumps({"success": False, "error": str(e)}))
 
 
 class SkillToggleApiHandler(BaseHandler):
@@ -124,6 +124,6 @@ class SkillToggleApiHandler(BaseHandler):
         skill_id = int(self.get_argument("id", 0))
         new_status = SkillRepository.toggle_status(skill_id)
         if new_status is not None:
-            self.write_json({"success": True, "status": new_status})
+            self.write(json.dumps({"success": True, "status": new_status}))
         else:
-            self.write_json({"success": False, "error": "技能不存在"})
+            self.write(json.dumps({"success": False, "error": "技能不存在"}))
