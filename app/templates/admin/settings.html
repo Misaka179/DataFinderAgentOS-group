@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 28px 32px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    border: 1px solid rgba(226,232,240,.5);
+}
+.settings-header .header-left { display:flex; align-items:center; gap:16px; }
+.settings-header .header-icon {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #eef3ff 0%, #dbe7fe 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #2563eb; flex-shrink: 0;
+}
+.settings-header .header-title { color:#0f172a; font-size:22px; font-weight:700; }
+.settings-header .header-subtitle { color:#64748b; font-size:13px; margin-top:2px; }
+
+.settings-section {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+    border: 1px solid rgba(226,232,240,.5);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.settings-section .section-title {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.settings-form { max-width: 600px; }
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+.form-group label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.form-group label .tip {
+    font-weight: 400;
+    font-size: 12px;
+    color: #94a3b8;
+}
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="password"] {
+    height: 40px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0 14px;
+    color: #334155;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.form-group input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+.form-group input:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.switch-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.switch-wrap label { margin-bottom: 0; }
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    cursor: pointer;
+}
+.toggle-switch input { display: none; }
+.toggle-switch .switch-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #e2e8f0;
+    border-radius: 14px;
+    transition: background .3s ease;
+}
+.toggle-switch input:checked + .switch-bg { background: #2563eb; }
+.toggle-switch .switch-handle {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    transition: left .3s ease;
+}
+.toggle-switch input:checked + .switch-bg + .switch-handle { left: 24px; }
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+}
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+.btn-primary {
+    background: #2563eb;
+    color: #fff;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.btn-secondary:hover { background: #e2e8f0; }
+
+.info-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #166534;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.info-card.warning {
+    background: #fffbeb;
+    border-color: #fed7aa;
+    color: #92400e;
+}
+</style>
+
+<div class="settings-header">
+    <div class="header-left">
+        <div class="header-icon">⚙️</div>
+        <div>
+            <div class="header-title">系统设置</div>
+            <div class="header-subtitle">管理系统基础配置与运行参数</div>
+        </div>
+    </div>
+</div>
+
+<div class="settings-section">
+    <div class="section-title">基本信息</div>
+    <form class="settings-form" id="settingsForm">
+        <div class="form-group">
+            <label>系统名称</label>
+            <input type="text" id="systemName" value="{{ settings.get('system_name', '') }}" placeholder="请输入系统名称">
+        </div>
+
+        <div class="form-group">
+            <label>系统简称</label>
+            <input type="text" id="systemShortName" value="{{ settings.get('system_short_name', '') }}" placeholder="请输入系统简称">
+        </div>
+
+        <div class="form-group">
+            <label>服务端口</label>
+            <input type="number" id="port" value="{{ settings.get('port', 10010) }}" disabled>
+            <div class="info-card warning">
+                ⚠️ 端口修改需要修改配置文件并重启服务
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="settings-section">
+    <div class="section-title">运行模式</div>
+    <form class="settings-form" id="settingsForm">
+        <div class="form-group">
+            <div class="switch-wrap">
+                <label>调试模式</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="debug" {{ 'checked' if settings.get('debug') else '' }}>
+                    <span class="switch-bg"></span>
+                    <span class="switch-handle"></span>
+                </label>
+            </div>
+            <div class="info-card">
+                💡 开启调试模式会显示详细错误信息，生产环境建议关闭
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="switch-wrap">
+                <label>自动重载</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoreload" {{ 'checked' if settings.get('autoreload') else '' }}>
+                    <span class="switch-bg"></span>
+                    <span class="switch-handle"></span>
+                </label>
+            </div>
+            <div class="info-card">
+                💡 开启后修改代码会自动重启服务，开发环境建议开启
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="settings-section">
+    <div class="section-title">安全配置</div>
+    <form class="settings-form" id="settingsForm">
+        <div class="form-group">
+            <label>加密密钥</label>
+            <input type="password" id="encryptionKey" value="{{ settings.get('encryption_key', '') }}" disabled>
+            <div class="info-card warning">
+                ⚠️ 加密密钥用于加密存储敏感数据（如API Key），请勿泄露
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Cookie密钥</label>
+            <input type="password" id="cookieSecret" value="{{ settings.get('cookie_secret', '') }}" disabled>
+            <div class="info-card warning">
+                ⚠️ Cookie密钥用于加密会话数据，修改后会导致所有用户登出
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>数据库路径</label>
+            <input type="text" id="dbPath" value="{{ settings.get('db_path', '') }}" disabled>
+        </div>
+    </form>
+</div>
+
+<div class="settings-section">
+    <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+        <button class="btn btn-secondary" onclick="resetSettings()">重置</button>
+    </div>
+</div>
+
+<script>
+function saveSettings() {
+    var data = {
+        system_name: document.getElementById('systemName').value,
+        system_short_name: document.getElementById('systemShortName').value,
+        debug: document.getElementById('debug').checked,
+        autoreload: document.getElementById('autoreload').checked
+    };
+
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
+        if (result.success) {
+            alert(result.message);
+        } else {
+            alert('保存失败: ' + result.message);
+        }
+    })
+    .catch(function() {
+        alert('请求失败');
+    });
+}
+
+function resetSettings() {
+    fetch('/api/settings')
+    .then(function(res) { return res.json(); })
+    .then(function(result) {
+        if (result.success) {
+            document.getElementById('systemName').value = result.data.system_name || '';
+            document.getElementById('systemShortName').value = result.data.system_short_name || '';
+            document.getElementById('debug').checked = result.data.debug || false;
+            document.getElementById('autoreload').checked = result.data.autoreload || false;
+        }
+    });
+}
+</script>
+{% end %}

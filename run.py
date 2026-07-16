@@ -149,6 +149,10 @@ from app.controllers.admin_digital_employee import (
     DigitalEmployeeSkillsApiHandler,
     DigitalEmployeeTestApiHandler
 )
+from app.controllers.admin_settings import (
+    SettingsManagementHandler,
+    SettingsApiHandler
+)
 from app.models.db import init_db, run_runtime_checks
 from app.models.migrations import run_migrations
 from app.utils.logger import logger
@@ -285,6 +289,8 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/models/chat", ModelChatApiHandler),
         (r"/admin/digital-employee", DigitalEmployeeManagementHandler),
         (r"/admin/digital-employee-management", DigitalEmployeeManagementHandler),
+        (r"/admin/settings", SettingsManagementHandler),
+        (r"/api/settings", SettingsApiHandler),
         (r"/api/digital-employees/list", DigitalEmployeeListApiHandler),
         (r"/api/digital-employees/get", DigitalEmployeeGetApiHandler),
         (r"/api/digital-employees/create", DigitalEmployeeCreateApiHandler),
