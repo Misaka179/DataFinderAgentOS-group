@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="/chat" style="color: #fff;">
+                    <i class="layui-icon layui-icon-chat"></i> 前往对话
+                </a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <div class="search-bar">
+            <form class="layui-form" lay-filter="searchForm">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">搜索</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="search" placeholder="会话标题 / 用户名" class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">
+                        <div class="layui-form-item" style="margin-bottom:0;">
+                            <label class="layui-form-label">&nbsp;</label>
+                            <div class="layui-input-block">
+                                <div class="search-actions">
+                                    <button class="layui-btn btn-search" type="button" id="searchBtn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                                    <button type="button" class="layui-btn layui-btn-primary" id="resetBtn"><i class="layui-icon layui-icon-refresh"></i> 重置</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="data-table">
+            <table class="layui-table" lay-skin="line" id="convTable">
+                <thead>
+                    <tr>
+                        <th class="col-id">ID</th>
+                        <th>所属用户</th>
+                        <th>会话标题</th>
+                        <th class="col-id">消息数</th>
+                        <th class="col-time">创建时间</th>
+                        <th class="col-time">更新时间</th>
+                        <th class="col-actions">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="convTableBody">
+                    <tr><td colspan="7" style="text-align: center;">加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-bar">
+            <div id="pagination"></div>
+        </div>
+    </div>
+
+    <div class="layui-footer text-xs">
+        © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
+    </div>
+</div>
+
+<!-- 消息查看模态框 -->
+<div style="display: none;" id="messagesModal">
+    <div style="padding: 12px 0;">
+        <div style="margin-bottom: 10px; color: #64748b; font-size: 13px;">
+            会话：<strong id="msgModalTitle" style="color: #1e293b;">-</strong>
+            &nbsp;|&nbsp; 用户：<strong id="msgModalUser" style="color: #1e293b;">-</strong>
+            &nbsp;|&nbsp; 共 <strong id="msgModalCount" style="color: #1e293b;">0</strong> 条消息
+        </div>
+        <div id="messagesList" style="max-height: 480px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+<script>
+layui.use(['form', 'layer', 'element', 'jquery'], function(){
+    var form = layui.form;
+    var layer = layui.layer;
+    var element = layui.element;
+    var $ = layui.$;
+
+    // 个人信息弹窗
+    window.showProfile = function() {
+        $.ajax({
+            url: '/api/profile', type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    var u = res.data;
+                    $('#profileUsername').text(u.username || '-');
+                    $('#profileRole').text(u.role_name || '-');
+                    $('#profileStatus').text(u.status == 1 ? '启用' : '禁用');
+                    $('#profileCreated').text(u.created_at || '-');
+                    layer.open({ type: 1, title: '个人信息', area: ['500px'], content: $('#profileModal') });
+                }
+            },
+            error: function() { layer.msg('获取个人信息失败', {icon: 2}); }
+        });
+    }
+
+    window.showChangePwd = function() {
+        layer.open({
+            type: 1, title: '修改密码', area: ['500px'], content: $('#changePwdModal'),
+            btn: ['保存', '取消'],
+            yes: function(index) {
+                var oldPwd = $('input[name="old_password"]').val();
+                var newPwd = $('input[name="new_password"]').val();
+                var confirmPwd = $('input[name="confirm_password"]').val();
+                if (!oldPwd || !newPwd || !confirmPwd) { layer.msg('请填写完整', {icon: 2}); return; }
+                if (newPwd !== confirmPwd) { layer.msg('两次密码输入不一致', {icon: 2}); return; }
+                if (newPwd.length < 6) { layer.msg('新密码长度不能少于6位', {icon: 2}); return; }
+                $.ajax({
+                    url: '/api/profile/change-password', type: 'POST', dataType: 'json',
+                    data: {old_password: oldPwd, new_password: newPwd},
+                    headers: {'X-XSRFToken': getXsrfToken()},
+                    success: function(res) {
+                        if (res.success) {
+                            layer.msg('密码修改成功，请重新登录', {icon: 1}, function() {
+                                document.getElementById('admin-logout-form').submit();
+                            });
+                            layer.close(index);
+                        } else { layer.msg(res.message, {icon: 2}); }
+                    },
+                    error: function() { layer.msg('请求失败', {icon: 2}); }
+                });
+            },
+            end: function() {
+                $('input[name="old_password"]').val('');
+                $('input[name="new_password"]').val('');
+                $('input[name="confirm_password"]').val('');
+            }
+        });
+    }
+
+    var currentPage = 1;
+    var pageSize = 20;
+
+    function getXsrfToken() {
+        var match = document.cookie.match(/(_xsrf=([^;]*)|$)/);
+        return match ? decodeURIComponent(match[2]) : '';
+    }
+
+    // 加载会话列表
+    function loadConversations(page, search) {
+        $.ajax({
+            url: '/api/admin/conversations/list',
+            type: 'GET', dataType: 'json',
+            data: { page: page || currentPage, page_size: pageSize, search: search || '' },
+            success: function(res) {
+                var html = '';
+                if (!res || !res.data || res.data.length === 0) {
+                    html = '<tr><td colspan="7" class="text-muted" style="text-align:center;">暂无数据</td></tr>';
+                } else {
+                    res.data.forEach(function(conv) {
+                        var title = conv.title || '新对话';
+                        html += '<tr>' +
+                            '<td class="col-id">' + conv.id + '</td>' +
+                            '<td>' + (conv.username || '<span class="cell-empty">-</span>') + '</td>' +
+                            '<td>' + title + '</td>' +
+                            '<td class="col-id">' + (conv.msg_count || 0) + '</td>' +
+                            '<td>' + (conv.created_at || '-') + '</td>' +
+                            '<td>' + (conv.updated_at || '-') + '</td>' +
+                            '<td class="col-actions"><div class="action-btns">' +
+                                '<button class="layui-btn layui-btn-xs layui-btn-normal" onclick="viewMessages(' + conv.id + ', \'' + title.replace(/'/g, "\\'") + '\', \'' + (conv.username || '').replace(/'/g, "\\'") + '\')">查看消息</button>' +
+                                '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteConversation(' + conv.id + ', \'' + title.replace(/'/g, "\\'") + '\')">删除</button>' +
+                            '</div></td>' +
+                        '</tr>';
+                    });
+                }
+                $('#convTableBody').html(html);
+                renderPagination(res.total || 0, res.page || 1, res.page_size || pageSize);
+            },
+            error: function(xhr, status, error) {
+                $('#convTableBody').html('<tr><td colspan="7" style="text-align:center;color:#dc2626;">加载失败: ' + error + '</td></tr>');
+            }
+        });
+    }
+
+    // 渲染分页
+    function renderPagination(total, current, size) {
+        var pages = Math.ceil(total / size);
+        var html = '<div class="layui-box layui-laypage layui-laypage-default">';
+        html += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
+        for (var i = 1; i <= pages; i++) {
+            html += '<a href="javascript:;" class="layui-laypage-em ' + (i == current ? 'current' : '') + '" data-page="' + i + '">' + i + '</a>';
+        }
+        html += '</div>';
+        $('#pagination').html(html);
+        $('#pagination a').on('click', function() {
+            currentPage = $(this).data('page');
+            loadConversations(currentPage);
+        });
+    }
+
+    // 搜索
+    $('#searchBtn').on('click', function() {
+        currentPage = 1;
+        var search = $('input[name="search"]').val();
+        loadConversations(1, search);
+    });
+
+    // 回车触发搜索
+    $('input[name="search"]').on('keydown', function(e) {
+        if (e.keyCode === 13) {
+            e.preventDefault();
+            $('#searchBtn').click();
+        }
+    });
+
+    // 重置
+    $('#resetBtn').on('click', function() {
+        $('input[name="search"]').val('');
+        currentPage = 1;
+        loadConversations(1, '');
+    });
+
+    // 查看消息
+    window.viewMessages = function(convId, title, username) {
+        $('#msgModalTitle').text(title);
+        $('#msgModalUser').text(username);
+        $('#msgModalCount').text('加载中...');
+        $('#messagesList').html('<div style="text-align:center;color:#94a3b8;padding:20px;">加载中...</div>');
+
+        layer.open({
+            type: 1,
+            title: '会话消息',
+            area: ['750px', '550px'],
+            content: $('#messagesModal')
+        });
+
+        $.ajax({
+            url: '/api/admin/conversations/messages',
+            type: 'GET', dataType: 'json',
+            data: { id: convId },
+            success: function(res) {
+                if (res.success && res.data) {
+                    var messages = res.data.messages || [];
+                    $('#msgModalCount').text(messages.length);
+                    var html = '';
+                    if (messages.length === 0) {
+                        html = '<div style="text-align:center;color:#94a3b8;padding:20px;">暂无消息</div>';
+                    } else {
+                        messages.forEach(function(msg, i) {
+                            var roleLabel = msg.role === 'user' ? '用户' : 'AI';
+                            var roleColor = msg.role === 'user' ? '#3b82f6' : '#22c55e';
+                            var content = msg.content || '';
+                            // 截取显示（markdown 原文）
+                            var displayContent = content.length > 200 ? content.substring(0, 200) + '...' : content;
+                            var metaHtml = '';
+                            if (msg.tokens) metaHtml += ' | Tokens: ' + msg.tokens;
+                            if (msg.time_ms) metaHtml += ' | 响应: ' + msg.time_ms + 'ms';
+                            if (msg.employee_name) metaHtml += ' | ' + msg.employee_name;
+
+                            html += '<div class="msg-item" style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#f8fafc;">' +
+                                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                                    '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;color:#fff;background:' + roleColor + ';">' + roleLabel + '</span>' +
+                                    '<span style="font-size:11px;color:#94a3b8;">#' + (i + 1) + metaHtml + '</span>' +
+                                '</div>' +
+                                '<div class="msg-content" style="font-size:13px;color:#334155;line-height:1.6;white-space:pre-wrap;word-break:break-word;">' +
+                                    escapeHtml(displayContent) +
+                                '</div>' +
+                                '<div style="margin-top:8px;text-align:right;">' +
+                                    '<button class="layui-btn layui-btn-xs layui-btn-danger" onclick="deleteMessage(' + convId + ', ' + i + ')">删除此消息</button>' +
+                                '</div>' +
+                            '</div>';
+                        });
+                    }
+                    $('#messagesList').html(html);
+                } else {
+                    $('#messagesList').html('<div style="text-align:center;color:#dc2626;padding:20px;">加载失败</div>');
+                }
+            },
+            error: function() {
+                $('#messagesList').html('<div style="text-align:center;color:#dc2626;padding:20px;">加载失败</div>');
+            }
+        });
+    };
+
+    // HTML转义
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // 删除消息
+    window.deleteMessage = function(convId, msgIndex) {
+        layer.confirm('确定要删除第 ' + (msgIndex + 1) + ' 条消息吗？此操作不可恢复。', function(index) {
+            $.ajax({
+                url: '/api/admin/conversations/messages/delete',
+                type: 'POST', dataType: 'json',
+                data: { conv_id: convId, msg_index: msgIndex },
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    if (res.success) {
+                        layer.msg('消息已删除', {icon: 1});
+                        layer.close(index);
+                        // 重新加载消息列表
+                        var title = $('#msgModalTitle').text();
+                        var username = $('#msgModalUser').text();
+                        viewMessages(convId, title, username);
+                        // 同时刷新会话列表（消息数变化）
+                        loadConversations(currentPage);
+                    } else {
+                        layer.msg(res.message, {icon: 2});
+                    }
+                },
+                error: function() { layer.msg('删除失败', {icon: 2}); }
+            });
+        });
+    };
+
+    // 删除会话
+    window.deleteConversation = function(convId, title) {
+        layer.confirm('确定要删除会话 "' + title + '" 吗？该会话下的所有消息将被删除，此操作不可恢复。', function(index) {
+            $.ajax({
+                url: '/api/admin/conversations/delete',
+                type: 'POST', dataType: 'json',
+                data: { id: convId },
+                headers: {'X-XSRFToken': getXsrfToken()},
+                success: function(res) {
+                    if (res.success) {
+                        layer.msg('会话已删除', {icon: 1});
+                        layer.close(index);
+                        loadConversations(currentPage);
+                    } else {
+                        layer.msg(res.message, {icon: 2});
+                    }
+                },
+                error: function() { layer.msg('删除失败', {icon: 2}); }
+            });
+        });
+    };
+
+    // 初始加载
+    loadConversations(1);
+});
+</script>
+{% end %}

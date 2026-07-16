@@ -29,6 +29,15 @@ from app.controllers.admin_user import (
     UserUpdateApiHandler,
     UserDeleteApiHandler
 )
+from app.controllers.admin_conversation import (
+    ConversationManagementHandler,
+    MessageManagementHandler,
+    ConversationListApiHandler,
+    ConversationMessagesApiHandler,
+    ConversationDeleteApiHandler,
+    ConversationDeleteMessageApiHandler,
+    ConversationMessagesAllApiHandler
+)
 from app.controllers.admin_role import (
     RoleManagementHandler,
     RoleListApiHandler,
@@ -170,6 +179,14 @@ def webapp():
         (r"/api/users/create", UserCreateApiHandler),
         (r"/api/users/update", UserUpdateApiHandler),
         (r"/api/users/delete", UserDeleteApiHandler),
+        # 会话管理 & 对话管理
+        (r"/admin/conversation-management", ConversationManagementHandler),
+        (r"/admin/message-management", MessageManagementHandler),
+        (r"/api/admin/conversations/list", ConversationListApiHandler),
+        (r"/api/admin/conversations/messages", ConversationMessagesApiHandler),
+        (r"/api/admin/conversations/delete", ConversationDeleteApiHandler),
+        (r"/api/admin/conversations/messages/delete", ConversationDeleteMessageApiHandler),
+        (r"/api/admin/conversations/messages-all", ConversationMessagesAllApiHandler),
         # 角色管理
         (r"/admin/role-management", RoleManagementHandler),
         (r"/api/roles/list", RoleListApiHandler),
@@ -727,6 +744,26 @@ if __name__ == '__main__':
             for word, cat, sev in new_words:
                 conn.execute("INSERT OR IGNORE INTO sensitive_words (word, category, severity) VALUES (?, ?, ?)", (word, cat, sev))
             print("✓ 已迁移敏感词库为攻击防护词库（共 {} 个）".format(len(new_words)))
+
+        # 创建会话管理和对话管理功能（如果不存在）
+        mgmt = conn.execute("SELECT id FROM functions WHERE code='management'").fetchone()
+        mgmt_id = mgmt["id"] if mgmt else 0
+
+        conv_func = conn.execute("SELECT id FROM functions WHERE code='conversation_management'").fetchone()
+        if not conv_func:
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("会话管理", "conversation_management", "layui-icon-dialogue", "/admin/conversation-management", 5, mgmt_id, 1)
+            )
+            print("✓ 已创建「会话管理」功能")
+
+        msg_func = conn.execute("SELECT id FROM functions WHERE code='message_management'").fetchone()
+        if not msg_func:
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("对话管理", "message_management", "layui-icon-chat", "/admin/message-management", 6, mgmt_id, 1)
+            )
+            print("✓ 已创建「对话管理」功能")
 
         # ============================================================
         # 通用保障：确保所有已启用的功能都已分配给admin角色并创建菜单
