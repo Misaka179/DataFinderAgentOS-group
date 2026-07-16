@@ -4,7 +4,7 @@
    ======================================== */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg-body); color: var(--text-primary); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg-page); color: var(--text-primary); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 
 /* ========================================
    LAYOUT - 左右布局
@@ -14,10 +14,10 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 /* ---- 左侧边栏 ---- */
 .sidebar {
   width: var(--sidebar-width); min-width: var(--sidebar-width);
-  background: var(--bg-sidebar); border-right: 1px solid var(--border-color);
+  background: #fff; border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column; height: 100vh;
   position: relative; z-index: 100;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+  box-shadow: 2px 0 16px rgba(0,0,0,0.04);
   transition: var(--transition);
 }
 
@@ -29,60 +29,62 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   gap: 12px;
 }
 .sidebar-logo {
-  width: 34px; height: 34px;
+  width: 36px; height: 36px;
   background: linear-gradient(135deg, var(--primary), #4a7cf7);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 18px; font-weight: 700;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(43,95,217,0.25);
 }
 .sidebar-title {
   font-size: 16px; font-weight: 600; color: var(--text-primary);
-  letter-spacing: 0.5px; white-space: nowrap;
+  letter-spacing: 0.3px; white-space: nowrap;
 }
 .sidebar-title small {
   display: block; font-size: 11px; font-weight: 400;
-  color: var(--text-tertiary); letter-spacing: 1px;
+  color: var(--text-tertiary); letter-spacing: 0.5px;
   margin-top: -1px;
 }
 
 /* B区 - 模型切换 */
 .sidebar-model {
-  padding: 14px 20px 10px;
+  padding: 16px 20px 12px;
   border-bottom: 1px solid var(--border-color);
 }
 .sidebar-model label {
-  font-size: 12px; font-weight: 500; color: var(--text-tertiary);
-  display: block; margin-bottom: 6px; text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+  display: block; margin-bottom: 8px; text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 .sidebar-model select {
-  width: 100%; padding: 8px 12px;
-  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border-color); border-radius: 8px;
   font-size: 13px; color: var(--text-primary);
-  background: var(--bg-body);
+  background: var(--bg-muted);
   cursor: pointer; outline: none;
   transition: var(--transition);
   appearance: auto;
 }
 .sidebar-model select:focus {
-  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,95,217,0.1);
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,95,217,0.12);
 }
 
 /* C区 - 任务/历史列表 */
 .sidebar-tasks {
-  flex: 1; overflow-y: auto; padding: 12px 0;
+  flex: 1; overflow-y: auto; padding: 8px 0;
 }
 .sidebar-tasks-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 4px 20px 8px;
-  font-size: 12px; font-weight: 500; color: var(--text-tertiary);
-  text-transform: uppercase; letter-spacing: 1px;
+  padding: 8px 20px 10px;
+  font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.8px;
 }
 .sidebar-tasks-header button {
   background: none; border: none; color: var(--primary);
   font-size: 12px; cursor: pointer;
-  padding: 2px 8px; border-radius: 4px;
+  padding: 4px 10px; border-radius: 6px;
+  font-weight: 500;
 }
 .sidebar-tasks-header button:hover { background: var(--primary-light); }
 
@@ -91,6 +93,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   padding: 10px 20px; cursor: pointer;
   transition: var(--transition);
   border-left: 3px solid transparent;
+  margin: 1px 0;
 }
 .task-item:hover { background: var(--primary-light); }
 .task-item.active {
@@ -98,10 +101,11 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border-left-color: var(--primary);
 }
 .task-item .task-icon {
-  width: 28px; height: 28px; border-radius: 6px;
-  background: var(--bg-body); display: flex;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--bg-muted); display: flex;
   align-items: center; justify-content: center;
   font-size: 14px; flex-shrink: 0;
+  transition: var(--transition);
 }
 .task-item.active .task-icon { background: var(--primary); color: #fff; }
 .task-item .task-info { flex: 1; min-width: 0; }
@@ -110,16 +114,16 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .task-item .task-meta {
-  font-size: 11px; color: var(--text-tertiary); margin-top: 1px;
+  font-size: 11px; color: var(--text-tertiary); margin-top: 2px;
 }
 .task-item .task-delete {
   opacity: 0; background: none; border: none;
   color: var(--text-tertiary); cursor: pointer;
-  font-size: 14px; padding: 2px 4px; border-radius: 4px;
+  font-size: 14px; padding: 4px 6px; border-radius: 6px;
   transition: var(--transition);
 }
 .task-item:hover .task-delete { opacity: 1; }
-.task-item .task-delete:hover { color: #e74c3c; background: #fef0f0; }
+.task-item .task-delete:hover { color: #ef4444; background: #fef2f2; }
 
 /* ---- 右侧工作区 ---- */
 .main-content {
@@ -147,25 +151,22 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   to { opacity: 1; transform: translateY(0); }
 }
 
-.message.ai {
-  flex-direction: row;
-}
-.message.user {
-  flex-direction: row-reverse;
-}
+.message.ai { flex-direction: row; }
+.message.user { flex-direction: row-reverse; }
 
 .message-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; font-weight: 600;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 .message.ai .message-avatar {
   background: linear-gradient(135deg, var(--primary), #4a7cf7);
   color: #fff;
 }
 .message.user .message-avatar {
-  background: #e8ecf1; color: var(--text-secondary);
+  background: #e2e8f0; color: var(--text-secondary);
 }
 
 .message-content {
@@ -176,19 +177,20 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 }
 .message.ai .message-content {
   background: var(--bg-ai-msg);
-  border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: 6px 16px 16px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
 }
 .message.user .message-content {
-  background: var(--bg-user-msg);
-  border-radius: var(--radius-lg) 0 var(--radius-lg) var(--radius-lg);
+  background: linear-gradient(135deg, var(--bg-user-msg), #1d4ed8);
+  border-radius: 16px 6px 16px 16px;
   color: #fff;
 }
 
 .message-content pre {
-  background: #f5f7fa; border-radius: var(--radius-sm);
-  padding: 12px 16px; overflow-x: auto;
+  background: var(--bg-muted); border-radius: 8px;
+  padding: 14px 18px; overflow-x: auto;
   font-size: 13px; margin: 10px 0;
   border: 1px solid var(--border-color);
 }
@@ -197,14 +199,14 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border-color: rgba(255,255,255,0.2);
 }
 .message-content code {
-  font-family: "SF Mono", "Fira Code", monospace;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
   font-size: 13px;
 }
 .message-content p { margin-bottom: 8px; }
 .message-content p:last-child { margin-bottom: 0; }
 .message-content ul, .message-content ol { padding-left: 20px; margin: 8px 0; }
 .message-content h1, .message-content h2, .message-content h3,
-.message-content h4 { margin: 12px 0 6px; font-weight: 600; }
+.message-content h4 { margin: 14px 0 8px; font-weight: 600; }
 .message-content table {
   border-collapse: collapse; width: 100%; margin: 10px 0;
   font-size: 13px;
@@ -212,11 +214,17 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .message-content th, .message-content td {
   border: 1px solid var(--border-color); padding: 8px 12px; text-align: left;
 }
-.message-content th { background: #f5f7fa; font-weight: 600; }
+.message-content th { background: var(--bg-muted); font-weight: 600; }
 .message.user .message-content th { background: rgba(255,255,255,0.1); }
 .message.user .message-content table th,
 .message.user .message-content table td {
   border-color: rgba(255,255,255,0.2);
+}
+.message-content blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--text-secondary);
 }
 
 /* AI消息中的员工标签 */
@@ -224,7 +232,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   display: inline-block;
   background: var(--primary-light); color: var(--primary);
   font-size: 11px; font-weight: 500;
-  padding: 2px 8px; border-radius: 4px;
+  padding: 3px 10px; border-radius: 4px;
   margin-bottom: 6px;
 }
 
@@ -234,7 +242,8 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border-radius: 12px;
   color: #fff;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.25);
 }
 .weather-card-header {
   padding: 12px 16px;
@@ -243,23 +252,15 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   background: rgba(255,255,255,0.1);
   border-bottom: 1px solid rgba(255,255,255,0.15);
 }
-.weather-card-body {
-  padding: 16px;
-}
+.weather-card-body { padding: 16px; }
 .weather-card-main {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 14px;
 }
-.weather-card-temp {
-  font-size: 36px;
-  font-weight: 700;
-}
-.weather-card-desc {
-  font-size: 16px;
-  opacity: 0.9;
-}
+.weather-card-temp { font-size: 36px; font-weight: 700; }
+.weather-card-desc { font-size: 16px; opacity: 0.9; }
 .weather-card-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -281,7 +282,8 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   border-radius: 12px;
   color: #fff;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(30,58,95,0.25);
 }
 .data-card-header {
   padding: 10px 14px;
@@ -304,23 +306,15 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   font-size: 13px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.data-card-label {
-  color: rgba(255,255,255,0.7);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.data-card-value {
-  font-weight: 600;
-  font-size: 14px;
-  text-align: right;
-}
+.data-card-label { color: rgba(255,255,255,0.7); font-size: 12px; white-space: nowrap; }
+.data-card-value { font-weight: 600; font-size: 14px; text-align: right; }
 
-/* 消息元数据（响应时间、token用量） */
+/* 消息元数据 */
 .message-meta {
   font-size: 11px;
   color: var(--text-tertiary);
-  margin-top: 8px;
-  padding-top: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -329,79 +323,84 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   width: 100%;
   min-height: 300px;
   border-radius: 8px;
-  background: #fafbfc;
+  background: var(--bg-muted);
   border: 1px solid var(--border-color);
 }
 
 /* 欢迎消息 */
 .welcome-message {
-  text-align: center; padding: 60px 20px 40px;
+  text-align: center; padding: 80px 20px 40px;
   color: var(--text-tertiary);
 }
 .welcome-message .welcome-icon {
-  font-size: 48px; margin-bottom: 16px;
+  font-size: 56px; margin-bottom: 20px;
+  opacity: 0.8;
 }
 .welcome-message h2 {
-  font-size: 22px; font-weight: 600; color: var(--text-primary);
+  font-size: 24px; font-weight: 700; color: var(--text-primary);
   margin-bottom: 8px;
 }
 .welcome-message p {
   font-size: 14px; color: var(--text-secondary);
-  max-width: 480px; margin: 0 auto 20px;
+  max-width: 480px; margin: 0 auto 24px;
 }
 .welcome-suggestions {
   display: flex; gap: 10px; justify-content: center;
   flex-wrap: wrap; margin-top: 16px;
 }
 .welcome-suggestion-chip {
-  padding: 8px 16px; background: var(--bg-sidebar);
-  border: 1px solid var(--border-color); border-radius: var(--radius-xl);
+  padding: 10px 20px; background: var(--bg-surface);
+  border: 1px solid var(--border-color); border-radius: 999px;
   font-size: 13px; color: var(--text-secondary);
   cursor: pointer; transition: var(--transition);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 .welcome-suggestion-chip:hover {
   border-color: var(--primary); color: var(--primary);
   background: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43,95,217,0.12);
 }
 
 /* E区 - 输入区域 */
 .input-area {
   border-top: 1px solid var(--border-color);
-  background: var(--bg-sidebar);
+  background: var(--bg-surface);
   padding: 16px 24px 20px;
 }
 .input-container {
   max-width: 860px; margin: 0 auto;
-  background: var(--bg-body);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  background: var(--bg-chat);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
   padding: 4px;
   transition: var(--transition);
   position: relative;
 }
 .input-container:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(43,95,217,0.1);
+  box-shadow: 0 0 0 3px rgba(43,95,217,0.12);
 }
 
 /* 快捷菜单弹出层 */
 .quick-menu {
   position: absolute; bottom: 100%; left: 0; right: 0;
-  margin-bottom: 4px; padding: 8px;
-  background: var(--bg-sidebar); border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg); border: 1px solid var(--border-color);
+  margin-bottom: 6px; padding: 8px;
+  background: var(--bg-surface); border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
   max-height: 260px; overflow-y: auto;
   display: none; z-index: 200;
 }
 .quick-menu.active { display: block; }
 .quick-menu .menu-title {
-  font-size: 11px; font-weight: 500; color: var(--text-tertiary);
-  text-transform: uppercase; letter-spacing: 1px;
-  padding: 4px 8px 6px;
+  font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 4px 8px 8px;
 }
 .quick-menu .menu-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px; border-radius: var(--radius-sm);
+  padding: 8px 10px; border-radius: 8px;
   cursor: pointer; transition: var(--transition);
 }
 .quick-menu .menu-item:hover,
@@ -412,7 +411,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   width: 28px; height: 28px; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px;
-  background: var(--bg-body); flex-shrink: 0;
+  background: var(--bg-muted); flex-shrink: 0;
 }
 .quick-menu .menu-item .item-name {
   font-size: 13px; font-weight: 500; color: var(--text-primary);
@@ -422,17 +421,17 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 }
 .quick-menu .menu-item .item-shortcut {
   margin-left: auto; font-size: 11px;
-  color: var(--text-tertiary); background: var(--bg-body);
+  color: var(--text-tertiary); background: var(--bg-muted);
   padding: 2px 6px; border-radius: 4px;
 }
 
 .input-row {
   display: flex; align-items: flex-end; gap: 8px;
-  padding: 4px 8px;
+  padding: 6px 10px;
 }
 .input-row textarea {
   flex: 1; border: none; background: transparent;
-  padding: 8px 4px; font-size: 14px; line-height: 1.5;
+  padding: 8px 4px; font-size: 14px; line-height: 1.6;
   color: var(--text-primary); resize: none;
   outline: none; font-family: inherit;
   min-height: 24px; max-height: 160px;
@@ -450,20 +449,21 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   display: flex; align-items: center; justify-content: center;
   transition: var(--transition);
 }
-.input-actions button:hover { background: var(--bg-body); color: var(--text-secondary); }
+.input-actions button:hover { background: var(--bg-chat); color: var(--text-secondary); }
 .input-actions .btn-send {
   background: var(--primary); color: #fff;
   width: 40px; height: 40px; font-size: 18px;
+  box-shadow: 0 2px 6px rgba(43,95,217,0.25);
 }
-.input-actions .btn-send:hover { background: var(--primary-dark); }
-.input-actions .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-actions .btn-send:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(43,95,217,0.35); }
+.input-actions .btn-send:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-/* 输入提示（当前激活的@员工） */
+/* 输入提示 */
 .input-tag {
   display: inline-flex; align-items: center; gap: 4px;
   background: var(--primary-light); color: var(--primary);
   font-size: 12px; font-weight: 500;
-  padding: 2px 8px 2px 6px; border-radius: 4px;
+  padding: 3px 10px 3px 8px; border-radius: 6px;
   margin: 4px 4px 4px 8px;
 }
 .input-tag .tag-close {
@@ -485,22 +485,20 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 /* 停止生成按钮 */
 .stop-generate {
   display: none; align-items: center; gap: 6px;
-  padding: 6px 16px; background: var(--bg-sidebar);
-  border: 1px solid var(--border-color); border-radius: var(--radius-xl);
+  padding: 8px 20px; background: var(--bg-surface);
+  border: 1px solid var(--border-color); border-radius: 999px;
   font-size: 13px; color: var(--text-secondary);
   cursor: pointer; margin: 0 auto 12px;
   transition: var(--transition); box-shadow: var(--shadow-sm);
 }
-.stop-generate:hover { border-color: #e74c3c; color: #e74c3c; }
+.stop-generate:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 .stop-generate.active { display: inline-flex; }
 
-/* ========================================
-   深色滚动条
-   ======================================== */
+/* 滚动条 */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #b0b6c0; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* ========================================
    响应式设计
@@ -549,7 +547,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
    ======================================== */
 .auth-page {
   display: flex; min-height: 100vh;
-  background: linear-gradient(135deg, #f0f4ff 0%, #f5f7fa 50%, #eef3ff 100%);
+  background: linear-gradient(135deg, #eef2ff 0%, #f0f4f8 50%, #eef3ff 100%);
 }
 .auth-left {
   flex: 1; display: flex; align-items: center; justify-content: center;
@@ -574,7 +572,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .auth-right-content { position: relative; z-index: 1; max-width: 400px; }
 .auth-right-content h1 {
   font-size: 32px; font-weight: 700; margin-bottom: 12px;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .auth-right-content p {
   font-size: 15px; opacity: 0.85; line-height: 1.7;
@@ -595,8 +593,9 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 
 .auth-card {
   width: 100%; max-width: 420px;
-  background: #fff; border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg); padding: 40px;
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04);
+  padding: 40px;
 }
 .auth-card .auth-logo {
   display: flex; align-items: center; gap: 10px;
@@ -605,50 +604,54 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .auth-card .auth-logo .logo-icon {
   width: 40px; height: 40px;
   background: linear-gradient(135deg, var(--primary), #4a7cf7);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 20px; font-weight: 700;
+  box-shadow: 0 2px 6px rgba(43,95,217,0.25);
 }
 .auth-card .auth-logo .logo-text {
-  font-size: 20px; font-weight: 600; color: var(--text-primary);
+  font-size: 20px; font-weight: 700; color: var(--text-primary);
 }
-.auth-card h2 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.auth-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
 .auth-card .auth-subtitle {
   font-size: 14px; color: var(--text-secondary); margin-bottom: 28px;
 }
 
 .form-group { margin-bottom: 20px; }
 .form-group label {
-  display: block; font-size: 13px; font-weight: 500;
+  display: block; font-size: 13px; font-weight: 600;
   color: var(--text-primary); margin-bottom: 6px;
 }
 .form-group input[type="text"],
 .form-group input[type="password"] {
-  width: 100%; padding: 10px 14px;
-  border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border-color); border-radius: 8px;
   font-size: 14px; color: var(--text-primary);
-  background: #fafbfc; outline: none;
+  background: var(--bg-muted); outline: none;
   transition: var(--transition);
 }
 .form-group input:focus {
   border-color: var(--primary); background: #fff;
-  box-shadow: 0 0 0 3px rgba(43,95,217,0.08);
+  box-shadow: 0 0 0 3px rgba(43,95,217,0.1);
 }
 
 .auth-btn {
-  width: 100%; padding: 11px 20px;
-  background: var(--primary); color: #fff; border: none;
-  border-radius: var(--radius-sm); font-size: 15px; font-weight: 500;
+  width: 100%; padding: 12px 20px;
+  background: linear-gradient(135deg, var(--primary), #1d4ed8);
+  color: #fff; border: none;
+  border-radius: 8px; font-size: 15px; font-weight: 600;
   cursor: pointer; transition: var(--transition);
+  box-shadow: 0 2px 6px rgba(43,95,217,0.25);
 }
-.auth-btn:hover { background: var(--primary-dark); }
-.auth-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-btn:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(43,95,217,0.35); }
+.auth-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 
 .auth-error {
   background: #fef2f2; color: #dc2626;
-  padding: 10px 14px; border-radius: var(--radius-sm);
+  padding: 10px 14px; border-radius: 8px;
   font-size: 13px; margin-bottom: 16px;
   display: none;
+  border: 1px solid #fecaca;
 }
 .auth-error.active { display: block; }
 
@@ -657,7 +660,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   font-size: 13px; color: var(--text-secondary);
 }
 .auth-footer a {
-  color: var(--primary); text-decoration: none; font-weight: 500;
+  color: var(--primary); text-decoration: none; font-weight: 600;
 }
 .auth-footer a:hover { text-decoration: underline; }
 

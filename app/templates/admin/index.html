@@ -149,14 +149,19 @@
         </div>
 
         <div class="dashboard-panel">
-            <h3>系统概览 <span style="font-size:12px;color:#94a3b8;font-weight:normal;" id="refresh-time"></span></h3>
-            <blockquote class="layui-elem-quote">
-                当前系统运行正常，所有服务状态良好。数据采集任务每日定时执行，您可以在各功能模块中查看详情。
-            </blockquote>
+            <h3 style="display:flex;align-items:center;justify-content:space-between;">
+                <span>系统概览</span>
+                <span class="text-xs text-muted" id="refresh-time"></span>
+            </h3>
+            <div class="dashboard-notice">
+                <i class="layui-icon layui-icon-about" style="color:#2563eb;"></i>
+                <span>当前系统运行正常，所有服务状态良好。数据采集任务每日定时执行，您可以在各功能模块中查看详情。</span>
+            </div>
+            <div class="data-table">
             <table class="layui-table">
                 <colgroup>
                     <col width="200">
-                    <col width="200">
+                    <col width="160">
                     <col>
                 </colgroup>
                 <thead>
@@ -169,36 +174,37 @@
                 <tbody>
                     <tr>
                         <td>用户系统</td>
-                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td><span class="tag-success">正常</span></td>
                         <td>共 <strong>{{ stats.get('user_count', 0) }}</strong> 个注册用户</td>
                     </tr>
                     <tr>
                         <td>瞭望采集服务</td>
-                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td><span class="tag-success">正常</span></td>
                         <td>共 <strong>{{ stats.get('watch_count', 0) }}</strong> 个瞭源，今日已采集 <strong>{{ stats.get('today_task_count', 0) }}</strong> 条数据</td>
                     </tr>
                     <tr>
                         <td>数据仓库</td>
-                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td><span class="tag-success">正常</span></td>
                         <td>共 <strong>{{ stats.get('data_count', 0) }}</strong> 条数据记录，其中 <strong>{{ stats.get('deep_count', 0) }}</strong> 条已完成深度采集</td>
                     </tr>
                     <tr>
                         <td>模型引擎服务</td>
-                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td><span class="tag-success">正常</span></td>
                         <td>共配置 <strong>{{ stats.get('model_count', 0) }}</strong> 个AI模型</td>
                     </tr>
                     <tr>
                         <td>数字员工</td>
-                        <td><span class="layui-badge layui-bg-green">正常</span></td>
+                        <td><span class="tag-success">正常</span></td>
                         <td>共 <strong>{{ stats.get('de_count', 0) }}</strong> 个数字员工</td>
                     </tr>
                     <tr>
                         <td>深度采集任务</td>
-                        <td><span class="layui-badge layui-bg-blue">运行中</span></td>
+                        <td><span class="tag-primary">运行中</span></td>
                         <td>累计 <strong>{{ stats.get('task_count', 0) }}</strong> 次采集任务</td>
                     </tr>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 

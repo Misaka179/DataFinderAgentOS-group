@@ -1,4 +1,5 @@
-import os
+import os, sys
+sys.stdout.reconfigure(encoding='utf-8')
 import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer

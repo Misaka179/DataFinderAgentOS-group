@@ -1,14 +1,17 @@
-*{
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
 html, body {
     height: 100%;
     width: 100%;
-    font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "WenQuanYi Micro Hei", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
     font-size: 14px;
     color: #333;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
@@ -19,29 +22,46 @@ html, body {
     align-items: center;
 }
 
-/* 导航图标统一大小 */
-.layui-nav-tree .layui-nav-item a i {
-    font-size: 16px !important;
-}
-
 /* 顶部导航栏下拉菜单样式 */
 .layui-layout-admin .layui-header .layui-nav .layui-nav-child {
     background: #fff !important;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.1), 0 4px 10px rgba(0,0,0,.06);
+    padding: 4px;
+}
+.layui-layout-admin .layui-header .layui-nav .layui-nav-child dd {
+    border-radius: 4px;
 }
 .layui-layout-admin .layui-header .layui-nav .layui-nav-child dd a {
     color: #333 !important;
     background: #fff !important;
+    border-radius: 4px;
+    padding: 0 16px;
 }
 .layui-layout-admin .layui-header .layui-nav .layui-nav-child dd a:hover {
     background: #f1f5f9 !important;
     color: #2563eb !important;
 }
 
-/* 响应式布局 - 缩小窗口时保持可用 */
+/* ===== 全局滚动条美化 ===== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ===== 响应式 ===== */
 @media screen and (max-width: 1200px) {
-    /* 表格容器水平滚动 */
     .data-table {
         overflow-x: auto !important;
     }
@@ -77,25 +97,15 @@ html, body {
     .layui-nav-tree .layui-nav-item .layui-nav-child {
         display: none !important;
     }
-    .layui-side-scroll::-webkit-scrollbar {
-        width: 4px;
-    }
-    .layui-side-scroll::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,.2);
-        border-radius: 2px;
-    }
-    /* 搜索栏按钮换行 */
     .search-bar .layui-input-block .layui-btn {
         margin-bottom: 5px;
     }
-    /* 控制台卡片自适应 */
     .dashboard-cards {
         grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
 @media screen and (max-width: 768px) {
-    /* 中间断点：侧栏继续窄化或隐藏 */
     .layui-layout-admin .layui-side {
         width: 50px !important;
     }
@@ -116,7 +126,6 @@ html, body {
     .dashboard-cards {
         grid-template-columns: 1fr 1fr !important;
     }
-    /* 弹窗区域自适应 */
     .layui-layer-page .layui-layer-content {
         overflow-x: auto !important;
     }
@@ -128,7 +137,7 @@ html, body {
     }
     .layui-layout-admin .layui-body {
         left: 0 !important;
-        padding: 10px !important;
+        padding: 12px !important;
     }
     .layui-layout-admin .layui-footer {
         left: 0 !important;
@@ -140,7 +149,6 @@ html, body {
     .layui-layout-admin .layui-header .layui-nav .layui-nav-item a {
         padding: 0 10px !important;
     }
-    /* 控制台卡片单列 */
     .dashboard-cards {
         grid-template-columns: 1fr !important;
         gap: 10px !important;
@@ -160,7 +168,6 @@ html, body {
     .dashboard-panel {
         padding: 16px !important;
     }
-    /* 搜索栏堆叠 */
     .search-bar .layui-col-md4,
     .search-bar .layui-col-md6 {
         width: 100% !important;
@@ -172,15 +179,14 @@ html, body {
         margin-left: 100px !important;
     }
     .search-bar {
-        padding: 10px !important;
+        padding: 12px !important;
     }
     .data-table {
-        padding: 10px !important;
+        padding: 12px !important;
     }
     .pagination-bar {
-        padding: 10px !important;
+        padding: 12px !important;
     }
-    /* 弹窗全屏 */
     .layui-layer-page {
         width: auto !important;
         left: 10px !important;

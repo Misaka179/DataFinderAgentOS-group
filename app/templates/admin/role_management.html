@@ -52,10 +52,8 @@
 
     <div class="layui-body">
         <div class="search-bar">
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button class="layui-btn" id="addRoleBtn"><i class="layui-icon layui-icon-addition"></i> 新增角色</button>
-                </div>
+            <div class="search-actions">
+                <button class="layui-btn layui-btn-normal" id="addRoleBtn"><i class="layui-icon layui-icon-addition"></i> 新增角色</button>
             </div>
         </div>
 
@@ -63,16 +61,16 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>角色名称</th>
                         <th>角色编码</th>
                         <th>描述</th>
-                        <th>状态</th>
-                        <th>操作</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="roleTableBody">
-                    <tr><td colspan="6" style="text-align: center;">加载中...</td></tr>
+                    <tr><td colspan="6" class="text-muted" style="text-align:center;">加载中...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -82,7 +80,7 @@
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -233,26 +231,27 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var data = res && res.data ? res.data : [];
                 var html = '';
                 data.forEach(function(role) {
-                    var statusHtml = role.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    var statusHtml = role.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
                     var isDefault = role.code === 'admin' || role.code === 'user';
+                    var descHtml = role.description ? role.description : '<span class="cell-empty">-</span>';
                     html += '<tr>' +
                         '<td>' + role.id + '</td>' +
                         '<td>' + role.name + '</td>' +
                         '<td>' + role.code + '</td>' +
-                        '<td>' + (role.description || '-') + '</td>' +
+                        '<td>' + descHtml + '</td>' +
                         '<td>' + statusHtml + '</td>' +
-                        '<td>' +
-                            (!isDefault ? '<button class="layui-btn layui-btn-xs" onclick="editRole(' + role.id + ')">编辑</button> ' : '') +
-                            (!isDefault ? '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteRole(' + role.id + ', \'' + role.name + '\')">删除</button> ' : '') +
+                        '<td><div class="action-btns">' +
+                            (!isDefault ? '<button class="layui-btn layui-btn-xs" onclick="editRole(' + role.id + ')">编辑</button>' : '') +
+                            (!isDefault ? '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteRole(' + role.id + ', \'' + role.name + '\')">删除</button>' : '') +
                             '<button class="layui-btn layui-btn-normal layui-btn-xs" onclick="assignFunctions(' + role.id + ', \'' + role.name + '\')">分配功能</button>' +
-                        '</td>' +
+                        '</div></td>' +
                     '</tr>';
                 });
-                $('#roleTableBody').html(html || '<tr><td colspan="6" style="text-align: center; color: #999;">暂无数据</td></tr>');
+                $('#roleTableBody').html(html || '<tr><td colspan="6" class="text-muted" style="text-align:center;">暂无数据</td></tr>');
                 
                 // 渲染分页
                 var total = data.length;
-                var pages = Math.ceil(total / 20);
+                var pages = Math.max(Math.ceil(total / 20), 1);
                 var paginationHtml = '<div class="layui-box layui-laypage layui-laypage-default">';
                 paginationHtml += '<span class="layui-laypage-count">共 ' + total + ' 条</span>';
                 for (var i = 1; i <= pages; i++) {
@@ -263,7 +262,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Roles API Error:', status, error);
-                $('#roleTableBody').html('<tr><td colspan="6" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#roleTableBody').html('<tr><td colspan="6" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }
@@ -423,7 +422,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var checked = assignedIds.indexOf(pf.id) > -1 ? 'checked' : '';
                 html += '<div style="margin: 8px 0;"><label style="font-weight: bold; cursor: pointer;">' +
                     '<input type="checkbox" class="func-checkbox" value="' + pf.id + '" ' + checked + '> ' +
-                    (pf.icon ? '<i class="layui-icon ' + pf.icon + '"></i> ' : '') + pf.name +
+                    (pf.icon ? '<i class="icon-base layui-icon ' + pf.icon + '"></i> ' : '') + pf.name +
                     '</label></div>';
                 // 子功能
                 var childFuncs = funcs.filter(function(f) { return f.parent_id == pf.id; });
@@ -431,7 +430,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
                     var checked2 = assignedIds.indexOf(cf.id) > -1 ? 'checked' : '';
                     html += '<div style="margin: 4px 0 4px 30px;"><label style="cursor: pointer;">' +
                         '<input type="checkbox" class="func-checkbox" value="' + cf.id + '" ' + checked2 + '> ' +
-                        (cf.icon ? '<i class="layui-icon ' + cf.icon + '"></i> ' : '') + cf.name +
+                        (cf.icon ? '<i class="icon-base layui-icon ' + cf.icon + '"></i> ' : '') + cf.name +
                         '</label></div>';
                 });
             });

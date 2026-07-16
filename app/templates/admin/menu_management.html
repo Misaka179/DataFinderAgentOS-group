@@ -68,10 +68,10 @@
                         </div>
                     </div>
                     <div class="layui-col-md6">
-                        <div class="layui-form-item">
+                        <div class="layui-form-item" style="margin-bottom:0;">
                             <label class="layui-form-label">&nbsp;</label>
                             <div class="layui-input-block">
-                                <button class="layui-btn" lay-submit lay-filter="loadMenuBtn"><i class="layui-icon layui-icon-search"></i> 加载菜单</button>
+                                <button class="layui-btn btn-search" lay-submit lay-filter="loadMenuBtn"><i class="layui-icon layui-icon-search"></i> 加载菜单</button>
                                 <button class="layui-btn layui-btn-normal" type="button" id="addMenuItemBtn"><i class="layui-icon layui-icon-addition"></i> 添加菜单项</button>
                             </div>
                         </div>
@@ -84,23 +84,23 @@
             <table class="layui-table" lay-skin="line">
                 <thead>
                     <tr>
-                        <th style="width:50px;">排序</th>
+                        <th>排序</th>
                         <th>功能名称</th>
-                        <th style="width:60px;">层级</th>
+                        <th>层级</th>
                         <th>图标</th>
                         <th>路由</th>
-                        <th style="width:50px;">状态</th>
-                        <th style="width:60px;">操作</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-actions">操作</th>
                     </tr>
                 </thead>
                 <tbody id="menuTableBody">
-                    <tr><td colspan="7" style="text-align: center; color: #999;">请选择角色并点击"加载菜单"</td></tr>
+                    <tr><td colspan="7" class="text-muted" style="text-align:center;">请选择角色并点击"加载菜单"</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="layui-footer">
+    <div class="layui-footer text-xs">
         © 2024 智能瞭望与问数系统 - 政务数据智能分析平台
     </div>
 </div>
@@ -248,21 +248,21 @@ layui.use(['form', 'layer', 'jquery'], function(){
                 var data = res && res.data ? res.data : [];
                 var html = '';
                 if (data.length === 0) {
-                    html = '<tr><td colspan="7" style="text-align: center; color: #999;">暂无菜单</td></tr>';
+                    html = '<tr><td colspan="7" class="text-muted" style="text-align:center;">暂无菜单</td></tr>';
                 } else {
                     data.forEach(function(menu) {
-                        var statusHtml = menu.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : '<span class="layui-badge layui-bg-gray">禁用</span>';
-                        var levelHtml = menu.func_parent_id == 0 ? '<span class="layui-badge layui-bg-blue">一级</span>' : '<span class="layui-badge layui-bg-cyan">二级</span>';
+                        var statusHtml = menu.status == 1 ? '<span class="badge-active">启用</span>' : '<span class="badge-inactive">禁用</span>';
+                        var levelHtml = menu.func_parent_id == 0 ? '<span class="badge-active" style="background:#eef2ff;color:#4f46e5;">一级</span>' : '<span class="badge-active" style="background:#e0f2fe;color:#0284c7;">二级</span>';
                         html += '<tr>' +
                             '<td>' + menu.sort_order + '</td>' +
                             '<td>' + menu.func_name + '</td>' +
                             '<td>' + levelHtml + '</td>' +
-                            '<td>' + (menu.func_icon ? '<i class="layui-icon ' + menu.func_icon + '" style="font-size:18px;"></i>' : '-') + '</td>' +
-                            '<td>' + (menu.func_route || '-') + '</td>' +
+                            '<td class="icon-cell">' + (menu.func_icon ? '<i class="icon-base layui-icon ' + menu.func_icon + '"></i>' : '<span class="cell-empty">-</span>') + '</td>' +
+                            '<td style="max-width:180px;"><span class="cell-url" title="' + (menu.func_route || '') + '">' + (menu.func_route || '<span class="cell-empty">-</span>') + '</span></td>' +
                             '<td>' + statusHtml + '</td>' +
-                            '<td>' +
+                            '<td><div class="action-btns">' +
                                 '<button class="layui-btn layui-btn-danger layui-btn-xs" onclick="deleteMenuItem(' + menu.id + ')">删除</button>' +
-                            '</td>' +
+                            '</div></td>' +
                         '</tr>';
                     });
                 }
@@ -270,7 +270,7 @@ layui.use(['form', 'layer', 'jquery'], function(){
             },
             error: function(xhr, status, error) {
                 console.error('Menus API Error:', status, error);
-                $('#menuTableBody').html('<tr><td colspan="7" style="text-align: center; color: red;">加载失败</td></tr>');
+                $('#menuTableBody').html('<tr><td colspan="7" style="text-align:center;color:#dc2626;">加载失败</td></tr>');
             }
         });
     }
