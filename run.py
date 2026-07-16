@@ -120,7 +120,7 @@ def webapp():
     settings = dict(
         template_path=os.path.join(base_dir, "app", "templates"),
         static_path=os.path.join(base_dir, "app", "static"),
-        cookie_secret=config.COOKIE_SECRET,
+cookie_secret=config.COOKIE_SECRET,
         login_url="/",
         xsrf_cookies=True,
         debug=config.DEBUG,

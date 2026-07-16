@@ -21,6 +21,6 @@ app.db
 # 日志文件
 *.log
 
-# 数据库文件
+# 数据库文件（演示库已提交v1，后续不再跟踪，首次运行自动生成）
 database/*
 !database/.gitkeep
