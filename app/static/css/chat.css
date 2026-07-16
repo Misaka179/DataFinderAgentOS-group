@@ -80,13 +80,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   font-size: 11px; font-weight: 600; color: var(--text-tertiary);
   text-transform: uppercase; letter-spacing: 0.8px;
 }
-.sidebar-tasks-header button {
-  background: none; border: none; color: var(--primary);
-  font-size: 12px; cursor: pointer;
-  padding: 4px 10px; border-radius: 6px;
-  font-weight: 500;
-}
-.sidebar-tasks-header button:hover { background: var(--primary-light); }
+/* 头部按钮样式统一定义在 .sidebar-tasks-actions button（见 PDF 导出 UI 区块） */
 
 .task-item {
   display: flex; align-items: center; gap: 10px;
@@ -728,13 +722,20 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .sidebar-tasks-actions {
   display: flex; align-items: center; gap: 4px;
 }
+/* 统一导出/清空/新建按钮：等高、文字水平垂直居中 */
+.sidebar-tasks-actions button {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 24px; padding: 0 10px; line-height: 1;
+  font-size: 12px; font-weight: 500;
+  background: none; border: 1px solid transparent;
+  border-radius: 6px; color: var(--primary); cursor: pointer;
+  transition: var(--transition);
+}
+.sidebar-tasks-actions button:hover { background: var(--primary-light); }
 
 /* 导出按钮 */
 #exportModeBtn {
-  background: none; border: 1px solid var(--primary);
-  border-radius: 6px; padding: 3px 10px; font-size: 12px;
-  color: var(--primary); cursor: pointer;
-  transition: var(--transition);
+  border-color: var(--primary);
 }
 #exportModeBtn:hover {
   background: var(--primary); color: #fff;
