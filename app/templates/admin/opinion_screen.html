@@ -1,0 +1,776 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+.layui-layout-admin .layui-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.layui-layout-admin .layui-logo {
+    color: #fff !important;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: normal;
+    width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 0 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.layui-side {
+    background: #1e293b !important;
+    top: 60px;
+}
+.layui-side-scroll { width: 220px; }
+.layui-nav-tree { background: #1e293b !important; }
+.layui-nav-tree .layui-nav-item a {
+    color: rgba(255,255,255,.75);
+    height: 46px;
+    line-height: 46px;
+}
+.layui-nav-tree .layui-nav-item a:hover {
+    background: rgba(255,255,255,.08);
+    color: #fff;
+}
+.layui-nav-tree .layui-nav-item.layui-this a {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: #fff;
+}
+.layui-nav-tree .layui-nav-child a {
+    color: rgba(255,255,255,.7);
+    height: 46px;
+    line-height: 46px;
+}
+.layui-nav-tree .layui-nav-child a:hover { color: #fff; }
+.layui-nav-tree .layui-nav-item a i { font-size: 16px !important; }
+.layui-body {
+    top: 60px;
+    left: 220px;
+    background: #020617;
+    padding: 0;
+    overflow: hidden;
+}
+.layui-footer {
+    left: 220px;
+    background: rgba(15,23,42,.9);
+    border-top: 1px solid rgba(59,130,246,.15);
+    color: #64748b;
+    text-align: center;
+    line-height: 50px;
+}
+.screen-main {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    gap: 16px;
+    padding: 16px 20px;
+    background: radial-gradient(ellipse at 20% 50%,rgba(59,130,246,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(139,92,246,.06) 0%,transparent 60%);
+}
+.chart-panel {
+    background: rgba(15,23,42,.85);
+    border: 1px solid rgba(59,130,246,.12);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.chart-panel .panel-title {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    padding-left: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.chart-panel .panel-title i { margin-right: 6px; }
+.chart-panel .chart-body { flex: 1; min-height: 0; }
+.left-col { display:flex; flex-direction:column; gap:16px; }
+.left-col .chart-panel { flex:0 0 auto; }
+.left-col .chart-panel:last-child { flex:1; }
+.center-col { display:flex; flex-direction:column; gap:16px; min-height:0; }
+.center-col .chart-panel { flex:1; min-height:0; }
+.right-col { display:flex; flex-direction:column; gap:16px; }
+.right-col .chart-panel { flex:1; }
+.top-bar {
+    background: rgba(15,23,42,.85);
+    border: 1px solid rgba(59,130,246,.12);
+    border-radius: 10px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+.top-bar .bar-title { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+.top-bar .bar-title i { color: #3b82f6; margin-right: 8px; }
+.top-bar .bar-clock { font-size: 22px; font-weight: 700; color: #e2e8f0; letter-spacing: 2px; }
+.top-bar .bar-clock i { color: #22c55e; margin-right: 8px; font-size: 20px; }
+.top-bar .bar-actions { display: flex; gap: 10px; }
+.stat-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.stat-card {
+    background: rgba(30,41,59,.6);
+    border: 1px solid rgba(148,163,184,.12);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+}
+.stat-card .stat-value { font-size: 26px; font-weight: 700; color: #e2e8f0; line-height: 1.2; }
+.stat-card .stat-label { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+.stat-card .stat-icon { font-size: 20px; margin-bottom: 6px; }
+.stat-card.full { grid-column: 1 / -1; }
+.warn-table-wrap { overflow-y: auto; flex:1; min-height:0; }
+.warn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.warn-table th {
+    color: #94a3b8;
+    text-align: left;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(148,163,184,.12);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    background: rgba(15,23,42,.95);
+}
+.warn-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(148,163,184,.06);
+    color: #e2e8f0;
+}
+.warn-table tr { cursor: pointer; transition: background .15s; }
+.warn-table tr:hover { background: rgba(59,130,246,.08); }
+.warn-table tr.active { background: rgba(59,130,246,.15); }
+.badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.badge-high { background: rgba(239,68,68,.15); color: #ef4444; }
+.badge-medium { background: rgba(249,115,22,.15); color: #f97316; }
+.badge-low { background: rgba(34,197,94,.15); color: #22c55e; }
+.badge-unread { border:1px solid #ef4444; color:#ef4444; background:transparent; }
+.badge-read { border:1px solid #3b82f6; color:#3b82f6; background:transparent; }
+.badge-acknowledged { border:1px solid #22c55e; color:#22c55e; background:transparent; }
+.detail-card {
+    background: rgba(30,41,59,.6);
+    border: 1px solid rgba(148,163,184,.12);
+    border-radius: 12px;
+    padding: 14px;
+    flex-shrink: 0;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.detail-card .detail-row {
+    display: flex;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.detail-card .detail-label {
+    color: #94a3b8;
+    width: 76px;
+    flex-shrink: 0;
+}
+.detail-card .detail-value {
+    color: #e2e8f0;
+    flex: 1;
+    word-break: break-all;
+}
+.detail-card .detail-value .highlight {
+    color: #f97316;
+    font-weight: 700;
+}
+.score-bar {
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.score-bar .bar-track {
+    flex:1;
+    height:6px;
+    background:rgba(148,163,184,.15);
+    border-radius:3px;
+    overflow:hidden;
+}
+.score-bar .bar-fill {
+    height:100%;
+    border-radius:3px;
+    transition:width .3s;
+}
+.score-bar .bar-label {
+    font-size:13px;
+    font-weight:700;
+    min-width:32px;
+    text-align:right;
+}
+.btn {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:5px 14px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+    transition:all .15s;
+}
+.btn-primary { background:#3b82f6; color:#fff; }
+.btn-primary:hover { background:#2563eb; }
+.btn-success { background:#22c55e; color:#fff; }
+.btn-success:hover { background:#16a34a; }
+.btn-warning { background:#f97316; color:#fff; }
+.btn-warning:hover { background:#ea580c; }
+.btn-outline { background:transparent; border:1px solid rgba(148,163,184,.3); color:#94a3b8; }
+.btn-outline:hover { border-color:#3b82f6; color:#3b82f6; }
+.btn-sm { padding:3px 10px; font-size:11px; }
+.detail-actions { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+.feedback-input {
+    background:rgba(15,23,42,.6);
+    border:1px solid rgba(148,163,184,.15);
+    border-radius:6px;
+    padding:6px 10px;
+    color:#e2e8f0;
+    font-size:12px;
+    width:100%;
+    outline:none;
+    transition:border-color .15s;
+    box-sizing:border-box;
+}
+.feedback-input:focus { border-color:#3b82f6; }
+.feedback-input::placeholder { color:#64748b; }
+.feedback-section { padding:4px 0; }
+.feedback-item {
+    font-size:11px;
+    color:#94a3b8;
+    padding:6px 0;
+    border-bottom:1px solid rgba(148,163,184,.06);
+}
+.feedback-item:last-child { border-bottom:none; }
+.feedback-item .fb-time { color:#64748b; font-size:10px; }
+.feedback-item .fb-text { color:#e2e8f0; margin-top:2px; }
+.empty-state {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    color:#64748b;
+    font-size:13px;
+}
+@media screen and (max-width: 768px) {
+    .layui-body { left: 0; }
+    .layui-footer { left: 0; }
+}
+</style>
+
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">
+            <i class="layui-icon layui-icon-chart-screen"></i>
+            智能瞭望与问数后台
+        </div>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a href="javascript:;">
+                    <i class="layui-icon layui-icon-username"></i>
+                    {{ username }}
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" onclick="showProfile()">个人信息</a></dd>
+                    <dd><a href="javascript:;" onclick="showChangePwd()">修改密码</a></dd>
+                    <dd><a href="/admin/" onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();">退出登录</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <div class="layui-side">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" lay-filter="side-nav">
+                {% for parent in user_info.get('menu_tree', []) %}
+                {% if parent.get('children', []) %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% elif parent.get('has_active_child') %}layui-nav-itemed{% end %}">
+                    <a href="javascript:;">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                    <dl class="layui-nav-child">
+                        {% for child in parent.get('children', []) %}
+                        <dd class="{% if request.path == child.get('func_route') %}layui-this{% end %}">
+                            <a href="{{ child.get('func_route') }}"><i class="layui-icon {{ child.get('func_icon') }}"></i> {{ child.get('func_name') }}</a>
+                        </dd>
+                        {% end %}
+                    </dl>
+                </li>
+                {% else %}
+                <li class="layui-nav-item {% if request.path == parent.get('func_route') %}layui-this{% end %}">
+                    <a href="{{ parent.get('func_route') }}">
+                        <i class="layui-icon {{ parent.get('func_icon') }}"></i> {{ parent.get('func_name') }}
+                    </a>
+                </li>
+                {% end %}
+                {% end %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <div class="screen-main">
+            <div class="left-col">
+                <div class="chart-panel">
+                    <div class="panel-title"><i class="layui-icon" style="color:#f97316;">&#xe64a;</i> 概览统计</div>
+                    <div class="chart-body" id="stat-cards">
+                        <div class="stat-cards">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color:#3b82f6;">&#9888;</div>
+                                <div class="stat-value" id="stat-total">--</div>
+                                <div class="stat-label">预警总数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color:#ef4444;">&#9993;</div>
+                                <div class="stat-value" id="stat-unread">--</div>
+                                <div class="stat-label">未读预警</div>
+                            </div>
+                            <div class="stat-card full">
+                                <div class="stat-icon" style="color:#f97316;">&#9888;</div>
+                                <div class="stat-value" id="stat-high">--</div>
+                                <div class="stat-label">高危预警</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-panel">
+                    <div class="panel-title"><i class="layui-icon" style="color:#22c55e;">&#xe667;</i> 类别分布</div>
+                    <div class="chart-body" id="chart-category-pie"></div>
+                </div>
+            </div>
+            <div class="center-col">
+                <div class="chart-panel">
+                    <div class="panel-title"><i class="layui-icon" style="color:#60a5fa;">&#xe63c;</i> 预警列表
+                        <span style="float:right;font-size:11px;color:#64748b;" id="warn-count-label"></span>
+                        <span style="float:right;font-size:11px;color:#22c55e;margin-right:10px;" id="scan-msg"></span>
+                        <span style="float:right;font-size:11px;margin-right:10px;">
+                            <button class="btn btn-primary btn-sm" onclick="openWordModal()"><i class="layui-icon">&#xe642;</i> 敏感词管理</button>
+                            <button class="btn btn-warning btn-sm" onclick="triggerScan()" id="scan-btn"><i class="layui-icon">&#xe669;</i> 扫描对话</button>
+                        </span>
+                    </div>
+                    <div class="warn-table-wrap" id="warn-table-wrap">
+                        <table class="warn-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:68px;">时间</th>
+                                    <th style="width:52px;">来源</th>
+                                    <th style="width:70px;">匹配词</th>
+                                    <th style="width:44px;">级别</th>
+                                    <th style="width:56px;">状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="warn-tbody"></tbody>
+                        </table>
+                        <div class="empty-state" id="warn-empty">暂无预警数据</div>
+                    </div>
+                </div>
+                <div class="detail-card" id="detail-card" style="display:none;">
+                    <div class="detail-row">
+                        <div class="detail-label">来源内容</div>
+                        <div class="detail-value" id="detail-content"></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">匹配词</div>
+                        <div class="detail-value" id="detail-matched"></div>
+                    </div>
+                    <div class="detail-row" id="detail-analysis-row" style="display:none;">
+                        <div class="detail-label">AI分析</div>
+                        <div class="detail-value" id="detail-analysis"></div>
+                    </div>
+                    <div class="detail-row" id="detail-score-row" style="display:none;">
+                        <div class="detail-label">风险评分</div>
+                        <div class="detail-value">
+                            <div class="score-bar">
+                                <div class="bar-track">
+                                    <div class="bar-fill" id="detail-score-fill" style="width:0%;"></div>
+                                </div>
+                                <span class="bar-label" id="detail-score-label">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn btn-warning btn-sm" id="btn-ai-analyze" onclick="aiAnalyze()"><i class="layui-icon">&#xe667;</i> AI分析</button>
+                        <button class="btn btn-primary btn-sm" id="btn-mark-read" onclick="markRead()"><i class="layui-icon">&#xe642;</i> 标为已读</button>
+                        <button class="btn btn-success btn-sm" id="btn-ack-feedback" onclick="ackWithFeedback()"><i class="layui-icon">&#xe618;</i> 确认反馈</button>
+                        <input type="text" class="feedback-input" id="feedback-input" placeholder="输入反馈意见（选填）" style="width:160px;display:none;" />
+                    </div>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="chart-panel">
+                    <div class="panel-title"><i class="layui-icon" style="color:#22c55e;">&#xe752;</i> 近30天趋势</div>
+                    <div class="chart-body" id="chart-trend"></div>
+                </div>
+                <div class="chart-panel">
+                    <div class="panel-title"><i class="layui-icon" style="color:#3b82f6;">&#xe60b;</i> 反馈记录</div>
+                    <div class="chart-body feedback-section" id="feedback-section">
+                        <div class="empty-state" style="height:60px;">暂无反馈记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-footer">
+        &copy; 2024 智能瞭望与问数系统 - 政务数据智能分析平台
+    </div>
+</div>
+
+<div id="word-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;justify-content:center;align-items:center;" onclick="if(event.target===this)closeWordModal()">
+    <div style="background:#1e293b;border:1px solid rgba(148,163,184,.15);border-radius:12px;width:680px;max-height:80vh;display:flex;flex-direction:column;">
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(148,163,184,.1);display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#e2e8f0;font-size:16px;font-weight:600;"><i class="layui-icon" style="color:#3b82f6;">&#xe642;</i> 敏感词管理</span>
+            <span onclick="closeWordModal()" style="color:#94a3b8;cursor:pointer;font-size:20px;">&times;</span>
+        </div>
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(148,163,184,.08);display:flex;gap:8px;align-items:center;">
+            <input id="word-input-word" placeholder="敏感词" style="flex:2;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);border-radius:6px;padding:7px 10px;color:#e2e8f0;font-size:12px;outline:none;">
+            <input id="word-input-category" placeholder="分类" value="攻击防护" style="flex:1;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);border-radius:6px;padding:7px 10px;color:#e2e8f0;font-size:12px;outline:none;">
+            <select id="word-input-severity" style="flex:0 0 80px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);border-radius:6px;padding:7px 6px;color:#e2e8f0;font-size:12px;outline:none;">
+                <option value="high">high</option>
+                <option value="medium">medium</option>
+                <option value="low">low</option>
+            </select>
+            <input type="hidden" id="word-edit-id" value="">
+            <button class="btn btn-success btn-sm" onclick="saveWord()" id="word-save-btn"><i class="layui-icon">&#xe618;</i> 添加</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:8px 18px 14px;">
+            <table class="warn-table">
+                <thead><tr><th>词</th><th>分类</th><th>级别</th><th style="width:70px;">操作</th></tr></thead>
+                <tbody id="word-tbody"></tbody>
+            </table>
+            <div class="empty-state" id="word-empty" style="height:60px;">暂无敏感词</div>
+        </div>
+    </div>
+</div>
+
+{% include "profile_modals.html" %}
+{% end %}
+
+{% block script %}
+    <script src="{{ static_url('dist/echarts/echarts.min.js') }}"></script>
+<script>
+var pieChart = echarts.init(document.getElementById('chart-category-pie'));
+var trendChart = echarts.init(document.getElementById('chart-trend'));
+
+window.addEventListener('resize', function() {
+    pieChart.resize(); trendChart.resize();
+});
+
+var selectedWarnId = null;
+var warnData = [];
+
+function formatTime(ts) {
+    if (!ts) return '--';
+    var d = new Date(ts);
+    var pad = function(n){return n<10?'0'+n:n;};
+    return pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function severityBadge(s) {
+    var cls = 'badge-low';
+    if (s === 'high' || s === '高危') cls = 'badge-high';
+    else if (s === 'medium' || s === '中危') cls = 'badge-medium';
+    return '<span class="badge '+cls+'">'+(s||'low')+'</span>';
+}
+
+function statusBadge(s) {
+    var cls = 'badge-unread';
+    var label = '未读';
+    if (s === 'read' || s === '已读') { cls = 'badge-read'; label = '已读'; }
+    else if (s === 'acknowledged' || s === '已确认') { cls = 'badge-acknowledged'; label = '已确认'; }
+    return '<span class="badge '+cls+'">'+label+'</span>';
+}
+
+function scoreColor(s) {
+    if (s >= 70) return '#ef4444';
+    if (s >= 40) return '#f97316';
+    return '#22c55e';
+}
+
+function selectWarn(id) {
+    selectedWarnId = id;
+    var rows = document.querySelectorAll('#warn-tbody tr');
+    for (var i=0;i<rows.length;i++) {
+        rows[i].classList.remove('active');
+        if (rows[i].dataset.id == id) rows[i].classList.add('active');
+    }
+    var item = null;
+    for (var i=0;i<warnData.length;i++) {
+        if (warnData[i].id == id) { item = warnData[i]; break; }
+    }
+    if (!item) return;
+    document.getElementById('detail-card').style.display = 'block';
+    document.getElementById('detail-content').textContent = item.source_content || item.content || '--';
+    document.getElementById('detail-matched').innerHTML = '<span class="highlight">'+(item.matched_word||'--')+'</span>';
+    var analysisEl = document.getElementById('detail-analysis-row');
+    var scoreEl = document.getElementById('detail-score-row');
+    if (item.ai_analysis) {
+        analysisEl.style.display = '';
+        document.getElementById('detail-analysis').textContent = item.ai_analysis;
+    } else {
+        analysisEl.style.display = 'none';
+    }
+    if (item.risk_score != null) {
+        scoreEl.style.display = '';
+        var s = parseInt(item.risk_score) || 0;
+        document.getElementById('detail-score-fill').style.width = s+'%';
+        document.getElementById('detail-score-fill').style.background = scoreColor(s);
+        document.getElementById('detail-score-label').textContent = s;
+    } else {
+        scoreEl.style.display = 'none';
+    }
+    var isRead = item.status === 'read' || item.status === '已读' || item.status === 'acknowledged' || item.status === '已确认';
+    var isAcked = item.status === 'acknowledged' || item.status === '已确认';
+    document.getElementById('btn-ai-analyze').style.display = item.ai_analysis ? 'none' : '';
+    document.getElementById('btn-mark-read').style.display = isRead ? 'none' : '';
+    document.getElementById('btn-ack-feedback').style.display = isAcked ? 'none' : '';
+    document.getElementById('feedback-input').style.display = isRead && !isAcked ? '' : 'none';
+}
+
+function loadAll() {
+    fetch('/api/opinion/stats').then(function(r){return r.json()}).then(function(res){
+        if (!res.success) return;
+        var d = res.data;
+        document.getElementById('stat-total').textContent = d.total_warnings || 0;
+        document.getElementById('stat-unread').textContent = d.unread_count || 0;
+        document.getElementById('stat-high').textContent = d.high_count || 0;
+
+        // 类别饼图
+        if (d.by_category && d.by_category.length) {
+            pieChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 10 }, itemWidth: 10, itemHeight: 10 },
+                series: [{
+                    type: 'pie', radius: ['30%', '55%'], center: ['50%', '48%'],
+                    itemStyle: { borderRadius: 4 },
+                    label: { color: '#e2e8f0', fontSize: 11 },
+                    data: d.by_category
+                }]
+            });
+        } else { pieChart.clear(); }
+
+        // 趋势图
+        if (d.trend && d.trend.length) {
+            trendChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: 40, right: 10, bottom: 25, top: 10 },
+                xAxis: { type: 'category', data: d.trend.map(function(x){return x.date;}), axisLabel: { color:'#94a3b8', fontSize:9, rotate:30 } },
+                yAxis: { type: 'value', minInterval: 1, axisLabel: { color:'#94a3b8', fontSize:10 }, splitLine: { lineStyle: { color:'rgba(148,163,184,.1)' } } },
+                series: [{
+                    type: 'line', smooth: true, data: d.trend.map(function(x){return x.count;}),
+                    lineStyle: { width: 2, color: '#ef4444' }, areaStyle: { color: 'rgba(239,68,68,.15)' },
+                    itemStyle: { color: '#ef4444' }
+                }]
+            });
+        }
+    });
+
+    fetch('/api/opinion/warnings').then(function(r){return r.json()}).then(function(res){
+        if (!res.success || !res.data || !res.data.length) {
+            document.getElementById('warn-tbody').innerHTML = '';
+            document.getElementById('warn-empty').style.display = '';
+            document.getElementById('warn-count-label').textContent = '';
+            return;
+        }
+        document.getElementById('warn-empty').style.display = 'none';
+        warnData = res.data;
+        document.getElementById('warn-count-label').textContent = '共 '+res.data.length+' 条';
+        var html = '';
+        for (var i=0;i<res.data.length;i++) {
+            var d = res.data[i];
+            html += '<tr data-id="'+d.id+'" onclick="selectWarn('+d.id+')">'+
+                '<td>'+formatTime(d.created_at||d.time)+'</td>'+
+                '<td>'+(d.source_type==='user_chat'?'用户对话':d.source_type==='data_warehouse'?'采集数据':d.source_type||'--')+'</td>'+
+                '<td>'+(d.matched_word||'--')+'</td>'+
+                '<td>'+severityBadge(d.severity)+'</td>'+
+                '<td>'+statusBadge(d.status)+'</td>'+
+                '</tr>';
+        }
+        document.getElementById('warn-tbody').innerHTML = html;
+        if (selectedWarnId) {
+            var stillExists = false;
+            for (var i=0;i<res.data.length;i++) {
+                if (res.data[i].id == selectedWarnId) { stillExists = true; break; }
+            }
+            if (stillExists) selectWarn(selectedWarnId);
+            else { selectedWarnId = null; document.getElementById('detail-card').style.display = 'none'; }
+        }
+    });
+
+    // 反馈记录
+    fetch('/api/opinion/warnings?status=acknowledged&page_size=50').then(function(r){return r.json()}).then(function(res){
+        if (!res.success || !res.data || !res.data.length) {
+            document.getElementById('feedback-section').innerHTML = '<div class="empty-state" style="height:60px;">暂无反馈记录</div>';
+            return;
+        }
+        var html = '';
+        for (var i=0;i<res.data.length;i++) {
+            var f = res.data[i];
+            html += '<div class="feedback-item">'+
+                '<div><span class="fb-time">'+formatTime(f.created_at)+'</span></div>'+
+                (f.user_feedback ? '<div class="fb-text">'+f.user_feedback+'</div>' : '<div class="fb-text" style="color:#64748b;">（已确认，无反馈内容）</div>')+
+                '</div>';
+        }
+        document.getElementById('feedback-section').innerHTML = html;
+    });
+}
+
+function aiAnalyze() {
+    if (!selectedWarnId) return;
+    var btn = document.getElementById('btn-ai-analyze');
+    btn.disabled = true; btn.textContent = '分析中...';
+    postJSON('/api/opinion/ai-analyze', {id:selectedWarnId})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) { loadAll(); }
+        else { alert(res.message || '分析失败'); }
+    }).catch(function(){alert('请求失败');}).finally(function(){
+        btn.disabled = false; btn.innerHTML = '<i class="layui-icon">&#xe667;</i> AI分析';
+    });
+}
+
+function markRead() {
+    if (!selectedWarnId) return;
+    postJSON('/api/opinion/acknowledge', {id:selectedWarnId, status:'read'})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) loadAll();
+        else alert(res.message || '操作失败');
+    }).catch(function(){alert('请求失败');});
+}
+
+function ackWithFeedback() {
+    if (!selectedWarnId) return;
+    var feedback = document.getElementById('feedback-input').value.trim();
+    postJSON('/api/opinion/acknowledge', {id:selectedWarnId, status:'acknowledged', user_feedback:feedback||''})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) { document.getElementById('feedback-input').value = ''; loadAll(); }
+        else alert(res.message || '操作失败');
+    }).catch(function(){alert('请求失败');});
+}
+
+function getXsrf() {
+    var m = document.cookie.match(/(_xsrf=([^;]*)|$)/);
+    return m ? m[2] : '';
+}
+function postJSON(url, body) {
+    return fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-Xsrftoken':getXsrf()}, body:JSON.stringify(body)});
+}
+function triggerScan(quiet) {
+    var btn = document.getElementById('scan-btn');
+    if (!quiet) { btn.disabled = true; btn.innerHTML = '<i class="layui-icon">&#xe63d;</i> 扫描中...'; }
+    postJSON('/api/opinion/scan', {})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) {
+            loadAll();
+            if (!quiet) {
+                var el = document.getElementById('scan-msg');
+                el.textContent = res.new_count ? '✓ 新增 '+res.new_count+' 条预警' : '✓ 无新增预警';
+                setTimeout(function(){ el.textContent = ''; }, 2000);
+            }
+        } else if (!quiet) { alert(res.message || '扫描失败'); }
+    }).catch(function(){if(!quiet)alert('请求失败');}).finally(function(){
+        if (!quiet) { btn.disabled = false; btn.innerHTML = '<i class="layui-icon">&#xe669;</i> 扫描对话'; }
+    });
+}
+
+// 敏感词管理
+function openWordModal() {
+    document.getElementById('word-modal-overlay').style.display = 'flex';
+    loadWords();
+}
+function closeWordModal() {
+    document.getElementById('word-modal-overlay').style.display = 'none';
+    document.getElementById('word-edit-id').value = '';
+    document.getElementById('word-input-word').value = '';
+    document.getElementById('word-input-category').value = '攻击防护';
+    document.getElementById('word-input-severity').value = 'high';
+    document.getElementById('word-save-btn').innerHTML = '<i class="layui-icon">&#xe618;</i> 添加';
+}
+function loadWords() {
+    fetch('/api/opinion/sensitive-words').then(function(r){return r.json()}).then(function(res){
+        if (!res.success || !res.data || !res.data.length) {
+            document.getElementById('word-tbody').innerHTML = '';
+            document.getElementById('word-empty').style.display = '';
+            return;
+        }
+        document.getElementById('word-empty').style.display = 'none';
+        var html = '';
+        for (var i=0;i<res.data.length;i++) {
+            var w = res.data[i];
+            html += '<tr>'+
+                '<td>'+w.word+'</td>'+
+                '<td>'+w.category+'</td>'+
+                '<td>'+severityBadge(w.severity)+'</td>'+
+                '<td>'+
+                    '<button class="btn btn-primary btn-sm" style="padding:2px 8px;font-size:10px;margin-right:4px;" onclick="editWord('+w.id+')">编辑</button>'+
+                    '<button class="btn btn-warning btn-sm" style="padding:2px 8px;font-size:10px;" onclick="deleteWord('+w.id+',\''+w.word.replace(/'/g,"\\'")+'\')">删除</button>'+
+                '</td></tr>';
+        }
+        document.getElementById('word-tbody').innerHTML = html;
+    });
+}
+function editWord(id) {
+    fetch('/api/opinion/sensitive-words?id='+id).then(function(r){return r.json()}).then(function(res){
+        if (!res.success || !res.data) return;
+        var w = res.data;
+        document.getElementById('word-edit-id').value = w.id;
+        document.getElementById('word-input-word').value = w.word;
+        document.getElementById('word-input-category').value = w.category;
+        document.getElementById('word-input-severity').value = w.severity;
+        document.getElementById('word-save-btn').innerHTML = '<i class="layui-icon">&#xe618;</i> 更新';
+    });
+}
+function saveWord() {
+    var word = document.getElementById('word-input-word').value.trim();
+    var category = document.getElementById('word-input-category').value.trim();
+    var severity = document.getElementById('word-input-severity').value;
+    var editId = document.getElementById('word-edit-id').value;
+    if (!word) { alert('请输入敏感词'); return; }
+    var url = editId ? '/api/opinion/sensitive-words/update' : '/api/opinion/sensitive-words/create';
+    var body = editId ? {id:parseInt(editId), word:word, category:category, severity:severity} : {word:word, category:category, severity:severity};
+    var btn = document.getElementById('word-save-btn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    postJSON(url, body).then(function(r){return r.json()}).then(function(res){
+        if (res.success) {
+            document.getElementById('word-edit-id').value = '';
+            document.getElementById('word-input-word').value = '';
+            loadWords();
+            btn.innerHTML = '<i class="layui-icon">&#xe618;</i> 添加';
+        } else { alert(res.message || '操作失败'); }
+    }).catch(function(){alert('请求失败');}).finally(function(){
+        btn.disabled = false;
+    });
+}
+function deleteWord(id, word) {
+    if (!confirm('确认删除敏感词「'+word+'」吗？')) return;
+    postJSON('/api/opinion/sensitive-words/delete', {id:id})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) loadWords();
+        else alert(res.message || '删除失败');
+    }).catch(function(){alert('请求失败');});
+}
+
+setInterval(function(){ triggerScan(true); }, 30000);
+setInterval(loadAll, 30000);
+loadAll();
+triggerScan(true);
+</script>
+{% end %}

@@ -12,7 +12,13 @@ from app.controllers.user_chat import (
     UserConversationsApiHandler,
     UserChatApiHandler
 )
-from app.controllers.home import IndexHandler, AdminIndexHandler, DashboardStatsApiHandler
+from app.controllers.home import (IndexHandler, AdminIndexHandler, DashboardStatsApiHandler,
+    DataScreenHandler, DataScreenStatsApiHandler, DataScreenWordcloudApiHandler,
+    DataScreenTrendsApiHandler, DataScreenSourceApiHandler, DataScreenSankeyApiHandler,
+    OpinionScreenHandler, OpinionWarningsApiHandler, OpinionStatsApiHandler,
+    OpinionAIAnalyzeApiHandler, OpinionAcknowledgeApiHandler, OpinionFeedbackApiHandler,
+    OpinionScanApiHandler, SensitiveWordsApiHandler, SensitiveWordsCreateApiHandler,
+    SensitiveWordsUpdateApiHandler, SensitiveWordsDeleteApiHandler)
 from app.controllers.admin_user import (
     UserManagementHandler,
     UserListApiHandler,
@@ -136,6 +142,25 @@ def webapp():
         (r"/admin/index", AdminIndexHandler),
         # 控制台统计数据API（实时刷新用）
         (r"/api/dashboard/stats", DashboardStatsApiHandler),
+        # 数智大屏
+        (r"/admin/data-screen", DataScreenHandler),
+        (r"/api/data-screen/stats", DataScreenStatsApiHandler),
+        (r"/api/data-screen/wordcloud", DataScreenWordcloudApiHandler),
+        (r"/api/data-screen/trends", DataScreenTrendsApiHandler),
+        (r"/api/data-screen/source", DataScreenSourceApiHandler),
+        (r"/api/data-screen/sankey", DataScreenSankeyApiHandler),
+        # 舆情大屏
+        (r"/admin/opinion-screen", OpinionScreenHandler),
+        (r"/api/opinion/stats", OpinionStatsApiHandler),
+        (r"/api/opinion/warnings", OpinionWarningsApiHandler),
+        (r"/api/opinion/ai-analyze", OpinionAIAnalyzeApiHandler),
+        (r"/api/opinion/acknowledge", OpinionAcknowledgeApiHandler),
+        (r"/api/opinion/feedback", OpinionFeedbackApiHandler),
+        (r"/api/opinion/scan", OpinionScanApiHandler),
+        (r"/api/opinion/sensitive-words", SensitiveWordsApiHandler),
+        (r"/api/opinion/sensitive-words/create", SensitiveWordsCreateApiHandler),
+        (r"/api/opinion/sensitive-words/update", SensitiveWordsUpdateApiHandler),
+        (r"/api/opinion/sensitive-words/delete", SensitiveWordsDeleteApiHandler),
         # 用户管理
         (r"/admin/user-management", UserManagementHandler),
         (r"/api/users/list", UserListApiHandler),
@@ -612,6 +637,71 @@ if __name__ == '__main__':
                 )
             )
             print("✓ 已迁移天气员工参数（format=%C... → format=j1，支持中文输出）")
+
+        # ============================================================
+        # 迁移旧版 big_screen → data_screen（兼容已有数据库）
+        # ============================================================
+        old_bs = conn.execute("SELECT id FROM functions WHERE code='big_screen'").fetchone()
+        if old_bs:
+            conn.execute("UPDATE functions SET code='data_screen', route='/admin/data-screen' WHERE code='big_screen'")
+            print("✓ 已迁移旧版 big_screen → data_screen")
+
+        # ============================================================
+        # 创建数智大屏功能（如果不存在）
+        # ============================================================
+        ds_func = conn.execute("SELECT id FROM functions WHERE code='data_screen'").fetchone()
+        if not ds_func:
+            hub_func = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()
+            parent_id = hub_func["id"] if hub_func else 0
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("数智大屏", "data_screen", "layui-icon-chart-screen", "/admin/data-screen", 3, parent_id, 1)
+            )
+            print("✓ 已创建「数智大屏」功能")
+
+        # ============================================================
+        # 创建舆情大屏功能（如果不存在）
+        # ============================================================
+        op_func = conn.execute("SELECT id FROM functions WHERE code='opinion_screen'").fetchone()
+        if not op_func:
+            hub_func = conn.execute("SELECT id FROM functions WHERE code='intelligent_hub'").fetchone()
+            parent_id = hub_func["id"] if hub_func else 0
+            conn.execute(
+                "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("舆情大屏", "opinion_screen", "layui-icon-flag", "/admin/opinion-screen", 4, parent_id, 1)
+            )
+            print("✓ 已创建「舆情大屏」功能")
+        else:
+            # 保证已有数据的图标正确
+            conn.execute("UPDATE functions SET icon='layui-icon-flag' WHERE code='opinion_screen' AND icon!='layui-icon-flag'")
+
+        # ============================================================
+        # 迁移旧版敏感词 → 攻击防护词库
+        # ============================================================
+        old_words = conn.execute("SELECT word FROM sensitive_words WHERE word IN ('数据泄露','黑客','漏洞','攻击','违规','投诉','宕机','故障','崩溃','异常','虚假','误导','谣言')").fetchall()
+        if old_words:
+            conn.execute("DELETE FROM sensitive_words")
+            new_words = [
+                ("DROP TABLE", "SQL注入", "high"), ("DELETE FROM", "SQL注入", "high"),
+                ("TRUNCATE", "SQL注入", "high"), ("ALTER TABLE", "SQL注入", "high"),
+                ("UNION SELECT", "SQL注入", "high"), ("1=1", "SQL注入", "high"),
+                ("' OR '", "SQL注入", "high"),
+                ("exec(", "代码注入", "high"), ("system(", "代码注入", "high"),
+                ("eval(", "代码注入", "high"), ("__import__", "代码注入", "high"),
+                ("subprocess", "代码注入", "high"), ("os.system", "代码注入", "high"),
+                ("{{", "SSTI注入", "high"), ("{%", "SSTI注入", "high"), ("${", "SSTI注入", "high"),
+                ("admin密码", "越权试探", "high"), ("后台地址", "越权试探", "high"),
+                ("管理员账号", "越权试探", "high"), ("绕过验证", "越权试探", "high"),
+                ("忽略你之前的指令", "Prompt注入", "high"), ("忽略系统提示", "Prompt注入", "high"),
+                ("ignore above", "Prompt注入", "high"), ("ignore all", "Prompt注入", "high"),
+                ("假装你是", "Prompt注入", "medium"), ("你现在是", "Prompt注入", "medium"),
+                ("role play", "Prompt注入", "medium"),
+                ("你傻", "恶意骚扰", "medium"), ("废物", "恶意骚扰", "medium"),
+                ("垃圾", "恶意骚扰", "medium"),
+            ]
+            for word, cat, sev in new_words:
+                conn.execute("INSERT OR IGNORE INTO sensitive_words (word, category, severity) VALUES (?, ?, ?)", (word, cat, sev))
+            print("✓ 已迁移敏感词库为攻击防护词库（共 {} 个）".format(len(new_words)))
 
         # ============================================================
         # 通用保障：确保所有已启用的功能都已分配给admin角色并创建菜单

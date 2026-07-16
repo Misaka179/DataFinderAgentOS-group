@@ -151,6 +151,31 @@
     padding-bottom: 12px;
     border-bottom: 1px solid #e2e8f0;
 }
+.dashboard-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.dashboard-chart-box {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    padding: 16px;
+}
+.dashboard-chart-box h4 {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+.dashboard-chart-box .chart-container {
+    width: 100%;
+    height: 240px;
+}
+@media screen and (max-width: 1024px) {
+    .dashboard-charts { grid-template-columns: 1fr 1fr; }
+}
 @media screen and (max-width: 768px) {
     .layui-body {
         left: 0;
@@ -292,6 +317,21 @@
             </div>
         </div>
 
+        <div class="dashboard-charts">
+            <div class="dashboard-chart-box">
+                <h4><i class="layui-icon layui-icon-flag" style="color:#22c55e;"></i> 深度采集覆盖率</h4>
+                <div class="chart-container" id="chart-deep-donut"></div>
+            </div>
+            <div class="dashboard-chart-box">
+                <h4><i class="layui-icon layui-icon-chart" style="color:#22c55e;"></i> 近7天数据趋势</h4>
+                <div class="chart-container" id="chart-daily-line"></div>
+            </div>
+            <div class="dashboard-chart-box">
+                <h4><i class="layui-icon layui-icon-component" style="color:#a855f7;"></i> 采集任务状态分布</h4>
+                <div class="chart-container" id="chart-module-bar"></div>
+            </div>
+        </div>
+
         <div class="dashboard-panel">
             <h3>系统概览 <span style="font-size:12px;color:#94a3b8;font-weight:normal;" id="refresh-time"></span></h3>
             <blockquote class="layui-elem-quote">
@@ -355,6 +395,8 @@
 {% end %}
 
 {% block script %}
+<script src="{{ static_url('dist/echarts/echarts.min.js') }}"></script>
+<script src="{{ static_url('js/dashboard-charts.js') }}"></script>
 <script>
 layui.use(['element', 'layer', 'jquery'], function() {
     var element = layui.element;
@@ -392,6 +434,8 @@ layui.use(['element', 'layer', 'jquery'], function() {
                     $tbody.find('tr').eq(3).find('td').eq(2).html('共配置 <strong>' + (d.model_count||0) + '</strong> 个AI模型');
                     $tbody.find('tr').eq(4).find('td').eq(2).html('共 <strong>' + (d.de_count||0) + '</strong> 个数字员工');
                     $tbody.find('tr').eq(5).find('td').eq(2).html('累计 <strong>' + (d.task_count||0) + '</strong> 次采集任务');
+                    // 更新图表
+                    DashboardCharts.updateAll(d);
                     // 更新刷新时间
                     var now = new Date();
                     $('#refresh-time').text('上次更新: ' + now.toLocaleTimeString('zh-CN'));
@@ -402,6 +446,8 @@ layui.use(['element', 'layer', 'jquery'], function() {
 
     // 页面加载完成后立即刷新一次，然后每30秒自动刷新
     $(function() {
+        // 初始化图表
+        DashboardCharts.init('chart-deep-donut', 'chart-daily-line', 'chart-module-bar');
         refreshStats();
         setInterval(refreshStats, 30000);
     });

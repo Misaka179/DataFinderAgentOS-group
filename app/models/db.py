@@ -323,6 +323,41 @@ def init_db():
             """
         )
         
+        # 敏感词表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sensitive_words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word TEXT NOT NULL UNIQUE,
+                category TEXT DEFAULT '一般',
+                severity TEXT DEFAULT 'medium',
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        
+        # 舆情告警表
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS public_opinion_warnings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_type TEXT NOT NULL,
+                source_id TEXT,
+                source_content TEXT,
+                matched_word TEXT NOT NULL,
+                word_category TEXT DEFAULT '一般',
+                severity TEXT DEFAULT 'medium',
+                risk_analysis TEXT,
+                risk_score REAL DEFAULT 0,
+                status TEXT DEFAULT 'unread',
+                user_feedback TEXT,
+                user_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        
         # 插入默认角色（如果不存在）
         cursor = conn.execute("SELECT id FROM roles WHERE code = 'admin'")
         if not cursor.fetchone():
@@ -394,5 +429,53 @@ def init_db():
                 "INSERT INTO functions (name, code, icon, route, sort_order, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 ("数字员工", "digital_employee", "layui-icon-user", "/admin/digital-employee", 2, hub_id, 1)
             )
+        
+        # 插入默认敏感词（用户攻击防护，如果不存在）
+        sw_count = conn.execute("SELECT COUNT(*) FROM sensitive_words").fetchone()[0]
+        if sw_count == 0:
+            default_words = [
+                # SQL注入
+                ("DROP TABLE", "SQL注入", "high"),
+                ("DELETE FROM", "SQL注入", "high"),
+                ("TRUNCATE", "SQL注入", "high"),
+                ("ALTER TABLE", "SQL注入", "high"),
+                ("UNION SELECT", "SQL注入", "high"),
+                ("1=1", "SQL注入", "high"),
+                ("' OR '", "SQL注入", "high"),
+                # 代码注入
+                ("exec(", "代码注入", "high"),
+                ("system(", "代码注入", "high"),
+                ("eval(", "代码注入", "high"),
+                ("__import__", "代码注入", "high"),
+                ("subprocess", "代码注入", "high"),
+                ("os.system", "代码注入", "high"),
+                # SSTI模板注入
+                ("{{", "SSTI注入", "high"),
+                ("{%", "SSTI注入", "high"),
+                ("${", "SSTI注入", "high"),
+                # 越权/社工
+                ("admin密码", "越权试探", "high"),
+                ("后台地址", "越权试探", "high"),
+                ("管理员账号", "越权试探", "high"),
+                ("绕过验证", "越权试探", "high"),
+                # Prompt注入
+                ("忽略你之前的指令", "Prompt注入", "high"),
+                ("忽略系统提示", "Prompt注入", "high"),
+                ("ignore above", "Prompt注入", "high"),
+                ("ignore all", "Prompt注入", "high"),
+                ("假装你是", "Prompt注入", "medium"),
+                ("你现在是", "Prompt注入", "medium"),
+                ("role play", "Prompt注入", "medium"),
+                # 恶意骚扰
+                ("你傻", "恶意骚扰", "medium"),
+                ("废物", "恶意骚扰", "medium"),
+                ("垃圾", "恶意骚扰", "medium"),
+            ]
+            for word, category, severity in default_words:
+                conn.execute(
+                    "INSERT OR IGNORE INTO sensitive_words (word, category, severity) VALUES (?, ?, ?)",
+                    (word, category, severity)
+                )
+            print("✓ 已插入默认敏感词（用户攻击防护）")
         
         conn.commit()
