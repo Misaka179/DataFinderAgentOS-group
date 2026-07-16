@@ -436,7 +436,7 @@ class UserChatApiHandler(BaseHandler):
             categories.append(cat_val)
             values.append(n_val)
 
-        if len(set(categories)) <= 1:
+        if len(categories) == 0:
             return None
 
         return {
@@ -458,7 +458,7 @@ class UserChatApiHandler(BaseHandler):
             categories.append(cat_val)
             values.append(n_val)
 
-        if len(categories) <= 1:
+        if len(categories) == 0:
             return None
 
         return {

@@ -64,12 +64,13 @@ class UserExportPdfApiHandler(BaseHandler):
         import datetime
         from urllib.parse import quote
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"chat_export_{timestamp}.pdf"
+        filename_cn = f"对话导出_{timestamp}.pdf"
 
-        # 使用 filename*=UTF-8 编码支持中文文件名
+        # 使用 filename*=UTF-8 编码支持中文文件名（RFC 5987）
         self.set_header("Content-Type", "application/pdf")
+        encoded_filename = quote(filename_cn)
         self.set_header("Content-Disposition",
-                        f'attachment; filename="{filename}"')
+                        f'attachment; filename="chat_export_{timestamp}.pdf"; filename*=UTF-8\'\'{encoded_filename}')
         self.set_header("Content-Length", str(len(pdf_bytes)))
         self.write(pdf_bytes)
         self.finish()

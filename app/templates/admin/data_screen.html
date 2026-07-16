@@ -208,7 +208,7 @@ function loadAll() {
         };
         sankeyChart.setOption({
             backgroundColor: 'transparent',
-            tooltip: { trigger: 'item', formatter: function(p){return p.data.source+' → '+p.data.target+': '+p.data.value;} },
+            tooltip: { trigger: 'item', formatter: function(p){var d=p.data;return d.source!=null?d.source+' → '+d.target+': '+d.value:d.name;} },
             series: [{
                 type: 'sankey', layout:'none', draggable:false,
                 nodeWidth: 18, nodeGap: 30, layoutIterations: 0,

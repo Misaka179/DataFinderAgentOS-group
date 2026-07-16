@@ -82,12 +82,22 @@ class WarehouseBatchDeleteApiHandler(BaseHandler):
 # ========== 深度采集核心逻辑（模块级函数，可被多个Handler复用） ==========
 
 def _find_deep_collect_employee():
-    """查找用于深度采集的数字员工（优先采集专员）"""
+    """查找用于深度采集的数字员工
+    优先级：1. 启用了 crawl4ai 的 LLM 型员工  2. 第一个启用的 LLM 型员工  3. 第一个启用的员工
+    """
     employees = DigitalEmployeeRepository.get_all(page=1, page_size=100, search="", type_filter="llm")
-    for emp in employees.get("data", []):
-        if "采集专员" in emp.get("name", ""):
+    emp_list = employees.get("data", [])
+    # 优先：启用 crawl4ai 的 LLM 员工
+    for emp in emp_list:
+        if emp.get("status") == 1 and emp.get("crawl4ai_enabled") == 1:
             return emp
-    for emp in employees.get("data", []):
+    # 其次：任意启用的 LLM 员工
+    for emp in emp_list:
+        if emp.get("status") == 1:
+            return emp
+    # 最后：查找所有类型中启用的员工
+    all_emps = DigitalEmployeeRepository.get_all(page=1, page_size=100, search="", type_filter="")
+    for emp in all_emps.get("data", []):
         if emp.get("status") == 1:
             return emp
     return None

@@ -172,6 +172,16 @@
     .layui-body { left: 0; }
     .layui-footer { left: 0; }
 }
+.tool-btn {
+    display:inline-flex; align-items:center; gap:3px;
+    padding:2px 9px; border-radius:4px; font-size:11px; font-weight:500;
+    cursor:pointer; border:1px solid rgba(148,163,184,.2);
+    background:transparent; color:#94a3b8;
+    transition:all .15s; line-height:1.5;
+}
+.tool-btn:hover { border-color:#60a5fa; color:#e2e8f0; background:rgba(96,165,250,.08); }
+.tool-btn.scan-btn:hover { border-color:#34d399; color:#34d399; background:rgba(52,211,153,.08); }
+.tool-btn i { font-size:11px; }
 </style>
 
 <div class="layui-layout layui-layout-admin">
@@ -251,6 +261,11 @@
                                 <div class="stat-value" id="stat-high">--</div>
                                 <div class="stat-label">高危预警</div>
                             </div>
+                            <div class="stat-card full">
+                                <div class="stat-icon" style="color:#f97316;">&#9888;</div>
+                                <div class="stat-value" id="stat-pending">--</div>
+                                <div class="stat-label">待AI审核</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -262,11 +277,12 @@
             <div class="center-col">
                 <div class="chart-panel">
                     <div class="panel-title"><i class="layui-icon" style="color:#60a5fa;">&#xe63c;</i> 预警列表
-                        <span style="float:right;font-size:11px;color:#64748b;" id="warn-count-label"></span>
-                        <span style="float:right;font-size:11px;color:#22c55e;margin-right:10px;" id="scan-msg"></span>
-                        <span style="float:right;font-size:11px;margin-right:10px;">
-                            <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="openWordModal()"><i class="layui-icon">&#xe642;</i> 敏感词管理</button>
-                            <button class="layui-btn layui-btn-sm layui-btn-primary" onclick="triggerScan()" id="scan-btn"><i class="layui-icon">&#xe669;</i> 扫描对话</button>
+                        <span style="float:right;display:flex;align-items:center;gap:6px;">
+                            <span style="color:#64748b;font-size:11px;" id="warn-count-label"></span>
+                            <span style="color:#22c55e;font-size:11px;" id="scan-msg"></span>
+                            <button class="layui-btn layui-btn-xs" onclick="openWordModal()"><i class="layui-icon layui-icon-edit"></i> 管理</button>
+                            <button class="layui-btn layui-btn-xs layui-btn-normal" onclick="batchReview()" id="review-btn"><i class="layui-icon layui-icon-ok-circle"></i> 审核</button>
+                            <button class="layui-btn layui-btn-xs layui-btn-warm" onclick="triggerScan()" id="scan-btn"><i class="layui-icon layui-icon-util"></i> 扫描</button>
                         </span>
                     </div>
                     <div class="warn-table-wrap" id="warn-table-wrap">
@@ -278,6 +294,7 @@
                                     <th style="width:70px;">匹配词</th>
                                     <th style="width:44px;">级别</th>
                                     <th style="width:56px;">状态</th>
+                                    <th style="width:48px;">审核</th>
                                 </tr>
                             </thead>
                             <tbody id="warn-tbody"></tbody>
@@ -398,9 +415,11 @@ function formatTime(ts) {
 
 function severityBadge(s) {
     var cls = 'badge-low';
-    if (s === 'high' || s === '高危') cls = 'badge-high';
-    else if (s === 'medium' || s === '中危') cls = 'badge-medium';
-    return '<span class="badge '+cls+'">'+(s||'low')+'</span>';
+    var label = s||'low';
+    if (s === 'high' || s === '高危') { cls = 'badge-high'; label = '高危'; }
+    else if (s === 'medium' || s === '中危') { cls = 'badge-medium'; label = '中危'; }
+    else if (s === 'pending') { cls = 'badge-medium'; label = '待审'; }
+    return '<span class="badge '+cls+'">'+label+'</span>';
 }
 
 function statusBadge(s) {
@@ -408,7 +427,13 @@ function statusBadge(s) {
     var label = '未读';
     if (s === 'read' || s === '已读') { cls = 'badge-read'; label = '已读'; }
     else if (s === 'acknowledged' || s === '已确认') { cls = 'badge-acknowledged'; label = '已确认'; }
+    else if (s === 'pending' || s === '待审核') { cls = 'badge-medium'; label = '待审核'; }
     return '<span class="badge '+cls+'">'+label+'</span>';
+}
+
+function reviewStatus(item) {
+    if (item.risk_analysis) return '<span class="badge badge-low" style="font-size:10px;">已AI审核</span>';
+    return '<span class="badge badge-medium" style="font-size:10px;background:rgba(249,115,22,.15);color:#f97316;">待AI审核</span>';
 }
 
 function scoreColor(s) {
@@ -434,9 +459,9 @@ function selectWarn(id) {
     document.getElementById('detail-matched').innerHTML = '<span class="highlight">'+(item.matched_word||'--')+'</span>';
     var analysisEl = document.getElementById('detail-analysis-row');
     var scoreEl = document.getElementById('detail-score-row');
-    if (item.ai_analysis) {
+    if (item.risk_analysis) {
         analysisEl.style.display = '';
-        document.getElementById('detail-analysis').textContent = item.ai_analysis;
+        document.getElementById('detail-analysis').textContent = item.risk_analysis;
     } else {
         analysisEl.style.display = 'none';
     }
@@ -451,7 +476,9 @@ function selectWarn(id) {
     }
     var isRead = item.status === 'read' || item.status === '已读' || item.status === 'acknowledged' || item.status === '已确认';
     var isAcked = item.status === 'acknowledged' || item.status === '已确认';
-    document.getElementById('btn-ai-analyze').style.display = item.ai_analysis ? 'none' : '';
+    var hasAnalysis = !!(item.risk_analysis);
+    document.getElementById('btn-ai-analyze').style.display = hasAnalysis ? 'none' : '';
+    document.getElementById('btn-ai-analyze').textContent = hasAnalysis ? '' : (item.risk_analysis === null ? 'AI审核' : '重新审核');
     document.getElementById('btn-mark-read').style.display = isRead ? 'none' : '';
     document.getElementById('btn-ack-feedback').style.display = isAcked ? 'none' : '';
     document.getElementById('feedback-input').style.display = isRead && !isAcked ? '' : 'none';
@@ -464,6 +491,8 @@ function loadAll() {
         document.getElementById('stat-total').textContent = d.total_warnings || 0;
         document.getElementById('stat-unread').textContent = d.unread_count || 0;
         document.getElementById('stat-high').textContent = d.high_count || 0;
+        var pendingEl = document.getElementById('stat-pending');
+        if (pendingEl) pendingEl.textContent = d.pending_count || 0;
 
         // 类别饼图
         if (d.by_category && d.by_category.length) {
@@ -508,7 +537,7 @@ function loadAll() {
         document.getElementById('warn-empty').style.display = 'none';
         warnData = res.data;
         document.getElementById('warn-count-label').textContent = '共 '+res.data.length+' 条';
-        var html = '';
+                var html = '';
         for (var i=0;i<res.data.length;i++) {
             var d = res.data[i];
             html += '<tr data-id="'+d.id+'" onclick="selectWarn('+d.id+')">'+
@@ -517,6 +546,7 @@ function loadAll() {
                 '<td>'+(d.matched_word||'--')+'</td>'+
                 '<td>'+severityBadge(d.severity)+'</td>'+
                 '<td>'+statusBadge(d.status)+'</td>'+
+                '<td style="font-size:10px;">'+(d.risk_analysis?'<span class="badge badge-low" style="background:rgba(34,197,94,.12);color:#22c55e;">已审核</span>':'<span class="badge badge-medium" style="background:rgba(249,115,22,.12);color:#f97316;">待审核</span>')+'</td>'+
                 '</tr>';
         }
         document.getElementById('warn-tbody').innerHTML = html;
@@ -682,9 +712,26 @@ function deleteWord(id, word) {
     }).catch(function(){alert('请求失败');});
 }
 
+function batchReview() {
+    var btn = document.getElementById('review-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="layui-icon">&#xe63d;</i> 审核中...';
+    postJSON('/api/opinion/batch-review', {})
+    .then(function(r){return r.json()}).then(function(res){
+        if (res.success) {
+            loadAll();
+            var msg = res.data.reviewed ? '已完成 '+res.data.reviewed+' 条审核' : '无需审核';
+            document.getElementById('scan-msg').textContent = msg;
+            setTimeout(function(){ document.getElementById('scan-msg').textContent = ''; }, 3000);
+        } else { alert(res.message || '审核失败'); }
+    }).catch(function(){alert('请求失败');}).finally(function(){
+        btn.disabled = false; btn.innerHTML = '<i class="layui-icon">&#xe667;</i> AI批量审核';
+    });
+}
+
 setInterval(function(){ triggerScan(true); }, 30000);
 setInterval(loadAll, 30000);
 loadAll();
 triggerScan(true);
+setTimeout(function(){ batchReview(); }, 2000);
 </script>
 {% end %}

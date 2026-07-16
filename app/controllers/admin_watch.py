@@ -44,7 +44,15 @@ class WatchCollectApiHandler(BaseHandler):
         if page < 1:
             page = 1
 
-        id_list = [int(x) for x in source_ids.split(",") if x.strip()]
+        id_list = []
+        for x in source_ids.split(","):
+            x = x.strip()
+            if not x:
+                continue
+            try:
+                id_list.append(int(x))
+            except (ValueError, TypeError):
+                continue
         all_items = []
 
         for sid in id_list:
@@ -92,7 +100,13 @@ class WatchCollectApiHandler(BaseHandler):
         if page_param:
             params[page_param] = str(page_offset)
         if params:
-            url = url_template + urllib.parse.urlencode(params)
+            # Auto-detect separator: add ? or & as needed
+            if '?' not in url_template:
+                url = url_template + '?' + urllib.parse.urlencode(params)
+            elif url_template.endswith('&') or url_template.endswith('?'):
+                url = url_template + urllib.parse.urlencode(params)
+            else:
+                url = url_template + '&' + urllib.parse.urlencode(params)
         else:
             url = url_template
 
@@ -102,8 +116,9 @@ class WatchCollectApiHandler(BaseHandler):
         except (json.JSONDecodeError, TypeError):
             headers = {}
 
-        # 发起请求
-        req = urllib.request.Request(url, method="GET")
+        # 发起请求（使用瞭源配置的 HTTP 方法）
+        req_method = source.get("method", "GET") or "GET"
+        req = urllib.request.Request(url, method=req_method)
         for k, v in headers.items():
             if k.lower() not in ("host", "content-length", "content-type"):
                 req.add_header(k, v)

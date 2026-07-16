@@ -27,7 +27,7 @@ from app.controllers.home import (IndexHandler, GestureHandler, AdminIndexHandle
     DataScreenTrendsApiHandler, DataScreenSourceApiHandler, DataScreenSankeyApiHandler,
     OpinionScreenHandler, OpinionWarningsApiHandler, OpinionStatsApiHandler,
     OpinionAIAnalyzeApiHandler, OpinionAcknowledgeApiHandler, OpinionFeedbackApiHandler,
-    OpinionScanApiHandler, SensitiveWordsApiHandler, SensitiveWordsCreateApiHandler,
+    OpinionScanApiHandler, OpinionBatchReviewApiHandler, SensitiveWordsApiHandler, SensitiveWordsCreateApiHandler,
     SensitiveWordsUpdateApiHandler, SensitiveWordsDeleteApiHandler)
 from app.controllers.auth import FaceLoginHandler
 from app.controllers.admin_user import (
@@ -37,6 +37,15 @@ from app.controllers.admin_user import (
     UserCreateApiHandler,
     UserUpdateApiHandler,
     UserDeleteApiHandler
+)
+from app.controllers.admin_conversation import (
+    ConversationManagementHandler,
+    MessageManagementHandler,
+    ConversationListApiHandler,
+    ConversationMessagesApiHandler,
+    ConversationDeleteApiHandler,
+    ConversationDeleteMessageApiHandler,
+    ConversationMessagesAllApiHandler
 )
 from app.controllers.admin_role import (
     RoleManagementHandler,
@@ -184,6 +193,7 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/opinion/acknowledge", OpinionAcknowledgeApiHandler),
         (r"/api/opinion/feedback", OpinionFeedbackApiHandler),
         (r"/api/opinion/scan", OpinionScanApiHandler),
+        (r"/api/opinion/batch-review", OpinionBatchReviewApiHandler),
         (r"/api/opinion/sensitive-words", SensitiveWordsApiHandler),
         (r"/api/opinion/sensitive-words/create", SensitiveWordsCreateApiHandler),
         (r"/api/opinion/sensitive-words/update", SensitiveWordsUpdateApiHandler),
@@ -194,6 +204,15 @@ cookie_secret=config.COOKIE_SECRET,
         (r"/api/users/create", UserCreateApiHandler),
         (r"/api/users/update", UserUpdateApiHandler),
         (r"/api/users/delete", UserDeleteApiHandler),
+        # 会话管理 & 对话管理
+        (r"/admin/conversation-management", ConversationManagementHandler),
+        (r"/admin/message-management", MessageManagementHandler),
+        (r"/api/admin/conversations/list", ConversationListApiHandler),
+        (r"/api/admin/conversations/messages", ConversationMessagesApiHandler),
+        (r"/api/admin/conversations/delete", ConversationDeleteApiHandler),
+        (r"/api/admin/conversations/messages/delete", ConversationDeleteMessageApiHandler),
+        (r"/api/admin/conversations/messages-all", ConversationMessagesAllApiHandler),
+        # 角色管理
         (r"/admin/role-management", RoleManagementHandler),
         (r"/api/roles/list", RoleListApiHandler),
         (r"/api/roles/get", RoleGetApiHandler),

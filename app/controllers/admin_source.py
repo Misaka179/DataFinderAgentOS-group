@@ -68,6 +68,12 @@ class SourceCreateApiHandler(BaseHandler):
             self.write(json.dumps({"success": False, "message": "名称和URL模板不能为空"}))
             return
 
+        # URL模板合法性校验
+        if "://" not in url_template:
+            self.set_status(400)
+            self.write(json.dumps({"success": False, "message": "URL模板格式无效，需包含协议头（如 https://）"}))
+            return
+
         # 尝试解析headers为JSON
         try:
             if isinstance(headers, str):
