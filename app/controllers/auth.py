@@ -22,7 +22,7 @@ class LoginHandler(BaseHandler):
             self.set_status(401)
             return self.render("login.html",title="登录页面",error="用户名或密码错误")
         
-        self.set_secure_cookie("username", username)
+        self.set_secure_cookie("username", username, expires_days=1, httponly=True)
         self.redirect("/index")
 
 class LogoutHandler(BaseHandler):
@@ -56,7 +56,7 @@ class FaceLoginHandler(BaseHandler):
             if UserRepository.verify_user(username, password):
                 user = UserRepository.get_user_by_username(username)
                 if user and user["status"] == 1:
-                    self.set_secure_cookie("username", username, httponly=True)
+                    self.set_secure_cookie("username", username, httponly=True, expires_days=1)
                     self.redirect("/index")
                     return
         self.set_status(403)
@@ -82,7 +82,7 @@ class AdminLoginHandler(BaseHandler):
             self.set_status(403)
             return self.render("admin/login.html",title="后台登录",error="无管理员权限")
         
-        self.set_secure_cookie("username", username, httponly=True)
+        self.set_secure_cookie("username", username, httponly=True, expires_days=1)
         self.redirect("/admin/index")
 
 class AdminLogoutHandler(BaseHandler):

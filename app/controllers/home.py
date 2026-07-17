@@ -9,26 +9,58 @@ from datetime import datetime, timedelta
 import time
 
 
-LLM_REVIEW_PROMPT = """你是一个安全审核专家。根据以下信息判断内容是否属于真实攻击。
+LLM_REVIEW_PROMPT = """你是一个安全审核专家，任务是对系统匹配到的敏感词告警做二次研判，过滤误报。
 
 【敏感词】{matched_word}
 【风险类别】{category}
+【来源类型】{source_type}
 【内容摘要】{source_content}
 
 请严格按以下 JSON 格式输出，不要额外解释：
 {{"classification": "real_attack|false_positive|suspicious", "reason": "判断理由", "risk_score": 0-100}}
 
-分类说明：
-- real_attack (风险分 70-100): 明确的安全攻击载荷，如 SQL注入、代码执行、XSS、Prompt注入等
-- false_positive (风险分 0-30): 正常文本，敏感词出现在正常语境中，无攻击意图
-- suspicious (风险分 31-69): 存在可疑特征但无法明确判断，需人工复核
+## 分类标准
 
-示例：
-输入: 敏感词="SELECT * FROM", 类别="SQL注入", 内容="SELECT * FROM users WHERE id=1"
-输出: {{"classification": "real_attack", "reason": "SQL查询语句出现在用户对话中", "risk_score": 85}}
+### false_positive（误报，风险分 0-30）— 以下情形必须判为误报：
+1. 敏感词出现在**新闻报道、文章、标题**等引用性语境中，非用户主动构造的攻击语句
+2. 用户正在**提问/请教**相关概念（如"什么是 SQL 注入？"、"DELETE FROM 怎么用？"），无攻击意图
+3. 敏感词是**常见术语、文件名、编程概念**的正常提及（如 system32、admin 目录、eval 函数）
+4. 内容明显是**代码片段、技术文档、教学示例**的一部分
+5. 敏感词出现在**采集的新闻/网页正文**中（来源类型为 data_warehouse 时优先考虑误报）
+6. 敏感词命中但**上下文明显无关安全**（如"你傻"出现在玩笑对话中）
 
-输入: 敏感词="DROP TABLE", 类别="SQL注入", 内容="常见 SQL 命令包括 SELECT、DROP TABLE 等"
-输出: {{"classification": "false_positive", "reason": "敏感词出现在教学上下文，非实际攻击", "risk_score": 15}}"""
+### real_attack（真实攻击，风险分 70-100）— 同时满足以下条件：
+1. 用户**主动构造**攻击载荷，而非引用或提问
+2. 有明显的**攻击意图**：尝试绕过、注入、越权、获取敏感信息
+3. 包含**可执行的攻击语法**（如拼合的 SQL、系统命令、脚本标签）
+4. 对话上下文显示用户在**尝试利用**漏洞而非学习
+
+### suspicious（可疑，风险分 31-69）— 无法明确归类时：
+- 有攻击特征但上下文不完整
+- 内容模糊两可，无法确定意图
+
+## 关键原则（减少误报）
+- 来源为 data_warehouse（采集数据）时，大概率是新闻报道含安全术语，优先判 false_positive
+- 来源为 user_chat（用户对话）时，需判断用户是在提问还是在构造攻击
+- 单个敏感词命中不构成攻击，要看完整语句的意图
+- 技术讨论、教学、新闻报道中的安全术语不算攻击
+
+## 示例
+
+输入: 敏感词="exec(", 类别="代码注入", 来源类型="user_chat", 内容="Python 中 exec() 可以执行动态代码，请问有什么安全风险？"
+输出: {{"classification": "false_positive", "reason": "用户在提问学习 exec() 的安全风险，无攻击意图", "risk_score": 10}}
+
+输入: 敏感词="exec(", 类别="代码注入", 来源类型="user_chat", 内容="exec(__import__('os').system('rm -rf /'))"
+输出: {{"classification": "real_attack", "reason": "用户构造了可执行的系统命令攻击代码", "risk_score": 95}}
+
+输入: 敏感词="DROP TABLE", 类别="SQL注入", 来源类型="data_warehouse", 内容="某公司数据库遭攻击，黑客使用 DROP TABLE 删除了用户表"
+输出: {{"classification": "false_positive", "reason": "新闻报道引用安全事件，非实际攻击", "risk_score": 5}}
+
+输入: 敏感词="DELETE FROM", 类别="SQL注入", 来源类型="user_chat", 内容="DELETE FROM users WHERE id=1"
+输出: {{"classification": "real_attack", "reason": "用户直接构造了删除数据的 SQL 语句", "risk_score": 82}}
+
+输入: 敏感词="admin密码", 类别="越权试探", 来源类型="user_chat", 内容="请问如何重置 admin 密码？"
+输出: {{"classification": "false_positive", "reason": "用户正常提问管理操作，无越权意图", "risk_score": 8}}"""
 
 
 def llm_classify_warning(source_content, matched_word, category):

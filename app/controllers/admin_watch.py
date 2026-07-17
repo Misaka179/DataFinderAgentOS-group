@@ -1,5 +1,6 @@
 import json
 import re
+import socket
 import urllib.request
 import urllib.parse
 import ssl
@@ -14,6 +15,33 @@ from app.utils.logger import get_logger
 from app.parsers import ParserRegistry
 
 logger = get_logger('admin_watch')
+
+
+def _is_private_ip(hostname):
+    """检查hostname是否指向私有/内网地址（SSRF防护）"""
+    try:
+        ip = socket.gethostbyname(hostname)
+        parts = ip.split(".")
+        if len(parts) != 4:
+            return True
+        # 私有/保留IP段
+        if parts[0] == "10":
+            return True
+        if parts[0] == "127":
+            return True
+        if parts[0] == "172" and 16 <= int(parts[1]) <= 31:
+            return True
+        if parts[0] == "192" and parts[1] == "168":
+            return True
+        if parts[0] == "0" or ip == "0.0.0.0":
+            return True
+        if ip.startswith("169.254"):
+            return True
+        if parts[0] >= "224":
+            return True
+    except (socket.gaierror, ValueError):
+        return True
+    return False
 
 
 class WatchManagementHandler(AdminBaseHandler):
@@ -109,6 +137,12 @@ class WatchCollectApiHandler(AdminBaseHandler):
                 url = url_template + '&' + urllib.parse.urlencode(params)
         else:
             url = url_template
+
+        # SSRF防护：检查目标URL是否指向内网地址
+        parsed_url = urllib.parse.urlparse(url)
+        hostname = parsed_url.hostname or ""
+        if _is_private_ip(hostname):
+            raise ValueError(f"禁止访问内网/保留地址: {hostname}")
 
         # 解析headers
         try:

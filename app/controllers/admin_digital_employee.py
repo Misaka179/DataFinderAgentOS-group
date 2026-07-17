@@ -140,10 +140,10 @@ class DigitalEmployeeUploadMdHandler(AdminBaseHandler):
     def post(self):
         try:
             name = self.get_argument("name", "")
-            if not name:
+            if not name or ".." in name or "/" in name or "\\" in name:
                 self.set_header("Content-Type", "application/json")
                 self.set_status(400)
-                self.write(json.dumps({"success": False, "message": "缺少数字员工名称"}))
+                self.write(json.dumps({"success": False, "message": "无效的数字员工名称"}))
                 self.finish()
                 return
 
@@ -157,6 +157,10 @@ class DigitalEmployeeUploadMdHandler(AdminBaseHandler):
                 for file_info in self.request.files[field_name]:
                     filename = file_info.get("filename", "")
                     if not filename.lower().endswith(".md"):
+                        continue
+                    # 路径遍历防护：只取文件名部分，拒绝含路径的文件名
+                    filename = os.path.basename(filename)
+                    if not filename or filename.startswith(".") or os.sep in filename or "/" in filename or "\\" in filename:
                         continue
                     body = file_info.get("body", b"")
                     filepath = os.path.join(base_dir, filename)
